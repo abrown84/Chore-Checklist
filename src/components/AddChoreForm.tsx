@@ -22,7 +22,8 @@ export const AddChoreForm: React.FC = () => {
     const newChore = {
       ...formData,
       points: DIFFICULTY_POINTS[formData.difficulty],
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      // Removed approval fields - no longer needed
     }
     
     addChore(newChore)

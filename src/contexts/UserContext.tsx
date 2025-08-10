@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useCallback } from 'react'
 import { User, UserStats, Household, UserInvite } from '../types/user'
-import { Chore } from '../types/chore'
+import { Chore, LEVELS, MAX_LEVEL } from '../types/chore'
 
 interface UserState {
   currentUser: User | null
@@ -16,7 +16,9 @@ type UserAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_CURRENT_USER'; payload: User }
+  | { type: 'UPDATE_CURRENT_USER'; payload: Partial<User> }
   | { type: 'SET_HOUSEHOLD'; payload: Household }
+  | { type: 'UPDATE_HOUSEHOLD'; payload: Partial<Household> }
   | { type: 'SET_MEMBERS'; payload: User[] }
   | { type: 'ADD_MEMBER'; payload: User }
   | { type: 'REMOVE_MEMBER'; payload: string }
@@ -51,8 +53,21 @@ function userReducer(state: UserState, action: UserAction): UserState {
     case 'SET_CURRENT_USER':
       return { ...state, currentUser: action.payload }
     
+    case 'UPDATE_CURRENT_USER':
+      return { 
+        ...state, 
+        currentUser: state.currentUser ? { ...state.currentUser, ...action.payload } : null 
+      }
+    
     case 'SET_HOUSEHOLD':
       return { ...state, household: action.payload }
+    
+    case 'UPDATE_HOUSEHOLD':
+      if (!state.household) return state
+      return {
+        ...state,
+        household: { ...state.household, ...action.payload }
+      }
     
     case 'SET_MEMBERS':
       return { ...state, members: action.payload }
@@ -135,133 +150,134 @@ function userReducer(state: UserState, action: UserAction): UserState {
   }
 }
 
-// Efficient user stats calculation with memoization
-function useUserStats(members: User[], chores: Chore[]) {
-  return useMemo(() => {
-    if (members.length === 0 || chores.length === 0) {
-      return members.map(member => ({
-        userId: member.id,
-        totalChores: 0,
-        completedChores: 0,
-        totalPoints: 0,
-        earnedPoints: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        currentLevel: 1,
-        currentLevelPoints: 0,
-        pointsToNextLevel: 100,
-        lastActive: new Date()
-      }))
-    }
+// Convert from hook to regular function since it's called outside of React components
+function calculateUserStats(members: User[], chores: Chore[]) {
+  if (members.length === 0 || chores.length === 0) {
+    return members.map(member => ({
+      userId: member.id,
+      totalChores: 0,
+      completedChores: 0,
+      totalPoints: 0,
+      earnedPoints: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      currentLevel: 1,
+      currentLevelPoints: 0,
+      pointsToNextLevel: 100,
+      lastActive: new Date()
+    }))
+  }
 
-    return members.map(member => {
-      // Get chores explicitly assigned to this user
-      let userChores = chores.filter(c => c.assignedTo === member.id)
+  return members.map(member => {
+    // Get chores explicitly assigned to this user
+    let userChores = chores.filter(c => c.assignedTo === member.id)
+    
+    // If no chores are assigned, distribute chores evenly among household members
+    if (userChores.length === 0) {
+      const memberIds = members.map(m => m.id)
+      const userIndex = memberIds.indexOf(member.id)
       
-      // If no chores are assigned, distribute chores evenly among household members
-      if (userChores.length === 0) {
-        const memberIds = members.map(m => m.id)
-        const userIndex = memberIds.indexOf(member.id)
-        
-        if (userIndex !== -1) {
-          // Distribute chores evenly: each user gets every Nth chore where N is the number of members
-          userChores = chores.filter((_, index) => index % memberIds.length === userIndex)
-        }
+      if (userIndex !== -1) {
+        // Distribute chores evenly: each user gets every Nth chore where N is the number of members
+        userChores = chores.filter((_, index) => index % memberIds.length === userIndex)
       }
+    }
+    
+    const completedChores = userChores.filter(c => c.completed)
+    
+    // Calculate total points from completed chores
+    // Use finalPoints if available (includes bonuses/penalties), otherwise fall back to base points
+    const baseEarnedPoints = completedChores.reduce((sum, c) => {
+      const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
+      return sum + earnedPoints
+    }, 0)
+    
+    // Also count points from chores that were completed but reset (preserved in finalPoints)
+    const resetChoresPoints = userChores.reduce((sum, c) => {
+      // If chore has finalPoints but is not currently completed, it was reset
+      // These points should still count toward lifetime total
+      if (!c.completed && c.finalPoints !== undefined) {
+        return sum + c.finalPoints
+      }
+      return sum
+    }, 0)
+    
+    // Total lifetime points = completed chore points + reset chore points
+    const earnedPoints = baseEarnedPoints + resetChoresPoints
+    
+    // Calculate total potential points from all assigned chores
+    const totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
+    
+    // Calculate streak efficiently
+    const completedChoresWithDates = completedChores
+      .filter(chore => chore.completedAt)
+      .map(chore => new Date(chore.completedAt!).setHours(0, 0, 0, 0))
+      .sort((a, b) => b - a)
+    
+    let currentStreak = 0
+    let longestStreak = 0
+    
+    if (completedChoresWithDates.length > 0) {
+      const today = new Date().setHours(0, 0, 0, 0)
       
-      const completedChores = userChores.filter(c => c.completed)
-      
-      // Calculate total points from completed chores
-      const earnedPoints = completedChores.reduce((sum, c) => {
-        return sum + (c.finalPoints || c.points || 0)
-      }, 0)
-      
-      // Calculate total potential points from all assigned chores
-      const totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
-      
-      // Calculate streak efficiently
-      const completedChoresWithDates = completedChores
-        .filter(chore => chore.completedAt)
-        .map(chore => new Date(chore.completedAt!).setHours(0, 0, 0, 0))
-        .sort((a, b) => b - a)
-      
-      let currentStreak = 0
-      let longestStreak = 0
-      
-      if (completedChoresWithDates.length > 0) {
-        const today = new Date().setHours(0, 0, 0, 0)
-        
-        // Calculate current streak
-        if (completedChoresWithDates[0] === today) {
-          let streak = 1
-          for (let i = 1; i < completedChoresWithDates.length; i++) {
-            const expectedDate = today - (i * 24 * 60 * 60 * 1000)
-            if (completedChoresWithDates[i] === expectedDate) {
-              streak++
-            } else {
-              break
-            }
-          }
-          currentStreak = streak
-        }
-        
-        // Calculate longest streak
-        let tempStreak = 1
+      // Calculate current streak
+      if (completedChoresWithDates[0] === today) {
+        let streak = 1
         for (let i = 1; i < completedChoresWithDates.length; i++) {
-          const daysDiff = (completedChoresWithDates[i-1] - completedChoresWithDates[i]) / (24 * 60 * 60 * 1000)
-          if (daysDiff === 1) {
-            tempStreak++
+          const expectedDate = today - (i * 24 * 60 * 60 * 1000)
+          if (completedChoresWithDates[i] === expectedDate) {
+            streak++
           } else {
-            longestStreak = Math.max(longestStreak, tempStreak)
-            tempStreak = 1
+            break
           }
         }
-        longestStreak = Math.max(longestStreak, tempStreak)
+        currentStreak = streak
       }
       
-      // Calculate level based on earned points
-      let currentLevel = 1
-      const LEVELS = [
-        { level: 1, pointsRequired: 0 },
-        { level: 2, pointsRequired: 100 },
-        { level: 3, pointsRequired: 250 },
-        { level: 4, pointsRequired: 450 },
-        { level: 5, pointsRequired: 700 },
-        { level: 6, pointsRequired: 1000 },
-        { level: 7, pointsRequired: 1350 },
-        { level: 8, pointsRequired: 1750 },
-        { level: 9, pointsRequired: 2200 },
-        { level: 10, pointsRequired: 2700 }
-      ]
-      
-      for (let i = LEVELS.length - 1; i >= 0; i--) {
-        if (earnedPoints >= LEVELS[i].pointsRequired) {
-          currentLevel = LEVELS[i].level
-          break
+      // Calculate longest streak
+      let tempStreak = 1
+      for (let i = 1; i < completedChoresWithDates.length; i++) {
+        const daysDiff = (completedChoresWithDates[i-1] - completedChoresWithDates[i]) / (24 * 60 * 60 * 1000)
+        if (daysDiff === 1) {
+          tempStreak++
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak)
+          tempStreak = 1
         }
       }
-      
-      const currentLevelData = LEVELS.find(level => level.level === currentLevel)
-      const nextLevelData = LEVELS.find(level => level.level === currentLevel + 1)
-      
-      const currentLevelPoints = earnedPoints - (currentLevelData?.pointsRequired || 0)
-      const pointsToNextLevel = nextLevelData ? nextLevelData.pointsRequired - earnedPoints : 0
-      
-      return {
-        userId: member.id,
-        totalChores: userChores.length,
-        completedChores: completedChores.length,
-        totalPoints,
-        earnedPoints,
-        currentStreak,
-        longestStreak,
-        currentLevel: Math.min(currentLevel, 10),
-        currentLevelPoints,
-        pointsToNextLevel,
-        lastActive: new Date()
+      longestStreak = Math.max(longestStreak, tempStreak)
+    }
+    
+    // Calculate level based on earned points using the LEVELS constant
+    let currentLevel = 1
+    
+    for (let i = LEVELS.length - 1; i >= 0; i--) {
+      if (earnedPoints >= LEVELS[i].pointsRequired) {
+        currentLevel = LEVELS[i].level
+        break
       }
-    })
-  }, [members, chores])
+    }
+    
+    const currentLevelData = LEVELS.find(level => level.level === currentLevel)
+    const nextLevelData = LEVELS.find(level => level.level === currentLevel + 1)
+    
+    const currentLevelPoints = earnedPoints - (currentLevelData?.pointsRequired || 0)
+    const pointsToNextLevel = nextLevelData ? nextLevelData.pointsRequired - earnedPoints : 0
+    
+    return {
+      userId: member.id,
+      totalChores: userChores.length,
+      completedChores: completedChores.length,
+      totalPoints,
+      earnedPoints,
+      currentStreak,
+      longestStreak,
+      currentLevel: Math.min(currentLevel, MAX_LEVEL),
+      currentLevelPoints,
+      pointsToNextLevel,
+      lastActive: new Date()
+    }
+  })
 }
 
 const UserContext = createContext<{
@@ -279,70 +295,39 @@ const UserContext = createContext<{
   updateHouseholdSettings: (settings: Partial<Household['settings']>) => void
   clearLeaderboard: () => void
   recalculateStats: (chores: Chore[]) => void
+  updateCurrentUser: (updates: Partial<User>) => void
+  syncWithAuth: (authUser: { id: string; email: string; name: string }) => void
 } | null>(null)
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(userReducer, initialState)
 
-  // Initialize with demo data
-  useEffect(() => {
-    const demoUser: User = {
-      id: '1',
-      name: 'Alex',
-      email: 'alex@example.com',
+  // Demo data initialization removed - users will start with a clean slate
+  // Authentication is now required - no demo data will be created automatically
+
+  // Initialize member stats as empty - they will be calculated when needed
+  const memberStats: UserStats[] = []
+
+  // Add method to sync with authentication state
+  const syncWithAuth = useCallback((authUser: { id: string; email: string; name: string }) => {
+    // Create or update current user
+    const currentUser: User = {
+      id: authUser.id,
+      name: authUser.name,
+      email: authUser.email,
       avatar: '👤',
       role: 'admin',
       joinedAt: new Date(),
       isActive: true
     }
-
-    const demoRoommate: User = {
-      id: '2',
-      name: 'Roommate',
-      email: 'roommate@example.com',
-      avatar: '👥',
-      role: 'member',
-      joinedAt: new Date(),
-      isActive: true
+    
+    dispatch({ type: 'SET_CURRENT_USER', payload: currentUser })
+    
+    // Ensure current user is in members array for stats calculation
+    if (!state.members.find(m => m.id === authUser.id)) {
+      dispatch({ type: 'ADD_MEMBER', payload: currentUser })
     }
-
-    const demoFamilyMember: User = {
-      id: '3',
-      name: 'Family Member',
-      email: 'family@example.com',
-      avatar: '👨‍👩‍👧‍👦',
-      role: 'member',
-      joinedAt: new Date(),
-      isActive: true
-    }
-
-    const demoHousehold: Household = {
-      id: '1',
-      name: 'Alex\'s Household',
-      description: 'A fun household for managing chores together!',
-      createdAt: new Date(),
-      members: [demoUser, demoRoommate, demoFamilyMember],
-      settings: {
-        allowInvites: true,
-        requireApproval: false,
-        maxMembers: 10
-      }
-    }
-
-    dispatch({ type: 'SET_CURRENT_USER', payload: demoUser })
-    dispatch({ type: 'SET_HOUSEHOLD', payload: demoHousehold })
-    dispatch({ type: 'SET_MEMBERS', payload: [demoUser, demoRoommate, demoFamilyMember] })
-  }, [])
-
-  // Calculate user stats efficiently with memoization
-  const memberStats = useUserStats(state.members, [])
-
-  // Update member stats when they change
-  useEffect(() => {
-    if (memberStats.length > 0) {
-      dispatch({ type: 'SET_MEMBER_STATS', payload: memberStats })
-    }
-  }, [memberStats])
+  }, []) // Empty dependency array - function will be stable
 
   const createHousehold = useCallback((name: string, description?: string) => {
     if (!state.currentUser) return
@@ -361,10 +346,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
 
     dispatch({ type: 'SET_HOUSEHOLD', payload: newHousehold })
-  }, [state.currentUser])
+  }, []) // Remove state.currentUser dependency to prevent infinite loops
 
-  const joinHousehold = useCallback((inviteCode: string) => {
-    console.log('Joining household with code:', inviteCode)
+  const joinHousehold = useCallback((_inviteCode: string) => {
+    // TODO: Implement household joining logic
   }, [])
 
   const inviteMember = useCallback((email: string) => {
@@ -380,7 +365,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
 
     dispatch({ type: 'ADD_INVITE', payload: newInvite })
-  }, [state.currentUser, state.household])
+  }, []) // Remove state dependencies to prevent infinite loops
 
   const acceptInvite = useCallback((inviteId: string) => {
     const invite = state.invites.find(i => i.id === inviteId)
@@ -398,57 +383,83 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     dispatch({ type: 'ADD_MEMBER', payload: newMember })
     dispatch({ type: 'UPDATE_INVITE', payload: { ...invite, status: 'accepted' } })
-  }, [state.invites])
+  }, []) // Remove state.invites dependency to prevent infinite loops
 
   const declineInvite = useCallback((inviteId: string) => {
     const invite = state.invites.find(i => i.id === inviteId)
     if (invite) {
       dispatch({ type: 'UPDATE_INVITE', payload: { ...invite, status: 'declined' } })
     }
-  }, [state.invites])
+  }, []) // Remove state.invites dependency to prevent infinite loops
 
   const removeMember = useCallback((userId: string) => {
     if (state.currentUser?.id === userId) return
     dispatch({ type: 'REMOVE_MEMBER', payload: userId })
-  }, [state.currentUser])
+  }, []) // Remove state.currentUser dependency to prevent infinite loops
 
   const updateMemberRole = useCallback((userId: string, role: 'admin' | 'member') => {
     const member = state.members.find(m => m.id === userId)
     if (member) {
       dispatch({ type: 'UPDATE_MEMBER', payload: { ...member, role } })
     }
-  }, [state.members])
+  }, []) // Remove state.members dependency to prevent infinite loops
 
   const updateMemberStats = useCallback((userId: string, _chores: Chore[]) => {
     const member = state.members.find(m => m.id === userId)
     if (!member) return
     
-    const stats = useUserStats([member], _chores)[0]
+    const stats = calculateUserStats([member], _chores)[0]
     dispatch({ type: 'UPDATE_MEMBER_STATS', payload: stats })
-  }, [state.members])
+  }, []) // Remove state.members dependency to prevent infinite loops
 
   const getMemberStats = useCallback((userId: string) => {
     return state.memberStats.find(s => s.userId === userId)
-  }, [state.memberStats])
+  }, []) // Remove state.memberStats dependency to prevent infinite loops
 
   const getCurrentUserStats = useCallback(() => {
     if (!state.currentUser) return undefined
     return getMemberStats(state.currentUser.id)
-  }, [state.currentUser, getMemberStats])
+  }, []) // Remove dependencies to prevent infinite loops
 
   const updateHouseholdSettings = useCallback((settings: Partial<Household['settings']>) => {
     if (!state.household) return
     dispatch({ type: 'UPDATE_HOUSEHOLD_SETTINGS', payload: settings })
-  }, [state.household])
+  }, []) // Remove state.household dependency to prevent infinite loops
 
   const clearLeaderboard = useCallback(() => {
     dispatch({ type: 'CLEAR_LEADERBOARD' })
   }, [])
 
-  const recalculateStats = useCallback(() => {
-    // This function is now handled automatically by the useUserStats hook
-    // It will recalculate whenever chores or members change
-  }, [])
+  const recalculateStats = useCallback((chores: Chore[]) => {
+    const newMemberStats = calculateUserStats(state.members, chores)
+    
+    // Update each member's stats
+    newMemberStats.forEach(userStat => {
+      dispatch({ 
+        type: 'UPDATE_MEMBER_STATS', 
+        payload: userStat
+      })
+    })
+  }, []) // Remove state.members dependency to prevent infinite loops
+
+  const updateCurrentUser = useCallback((updates: Partial<User>) => {
+    dispatch({ type: 'UPDATE_CURRENT_USER', payload: updates })
+    
+    // If updating the name, also update household name if it contains the old name
+    if (updates.name && state.currentUser && state.household) {
+      const oldName = state.currentUser.name
+      const newName = updates.name
+      
+      // Check if household name contains the old user name
+      if (state.household.name.includes(oldName)) {
+        const newHouseholdName = state.household.name.replace(oldName, newName)
+        dispatch({ 
+          type: 'UPDATE_HOUSEHOLD', 
+          payload: { name: newHouseholdName } 
+        })
+      }
+    }
+  }, [state.currentUser, state.household])
 
   return (
     <UserContext.Provider value={{
@@ -465,14 +476,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       getCurrentUserStats,
       updateHouseholdSettings,
       clearLeaderboard,
-      recalculateStats
+      recalculateStats,
+      updateCurrentUser,
+      syncWithAuth
     }}>
       {children}
     </UserContext.Provider>
   )
 }
 
-export function useUsers() {
+// Export the hook with a consistent name for Fast Refresh compatibility
+export const useUsers = () => {
   const context = useContext(UserContext)
   if (!context) {
     throw new Error('useUsers must be used within a UserProvider')

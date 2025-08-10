@@ -58,8 +58,10 @@ export function resetDailyChores(chores: Chore[]): Chore[] {
         completed: false,
         completedAt: undefined,
         dueDate,
-        finalPoints: undefined,
-        bonusMessage: undefined
+        // Don't clear finalPoints - preserve for lifetime tracking
+        // finalPoints: undefined,
+        bonusMessage: undefined,
+        // Removed approval fields - no longer needed
       }
     }
     return chore

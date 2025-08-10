@@ -1,17 +1,51 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { testLifetimePointsCalculation, simulateChoreLifecycle } from '../utils/lifetimePointsTest'
 
 export const DebugPoints: React.FC = () => {
   const { state: choreState } = useChores()
   const { state: userState } = useUsers()
-  const { getAllUserStats, getChoreDistribution, updateUserPoints } = useStats()
+  const { getAllUserStats } = useStats()
+  
+  // Get all user stats to debug level calculations
+  const allUserStats = getAllUserStats()
+  
+  // Debug logging for current user stats
+  useEffect(() => {
+    if (userState.currentUser && allUserStats.length > 0) {
+      const currentUserStats = allUserStats.find(s => s.userId === userState.currentUser?.id)
+      if (currentUserStats) {
+        // Stats are available for debugging if needed
+      }
+    }
+  }, [userState.currentUser, allUserStats])
+  
+  // Get chore distribution from StatsContext
+  const { getChoreDistribution, updateUserPoints } = useStats()
 
-  const memberStats = getAllUserStats()
+
+
+
+
+  
   const choreDistribution = getChoreDistribution()
+  
+  // Get member stats from StatsContext
+  const memberStats = getAllUserStats()
+  
+  const handleTestLifetimePoints = () => {
+    testLifetimePointsCalculation()
+  }
+  
+  const handleSimulateChoreLifecycle = () => {
+    simulateChoreLifecycle()
+  }
+  
+
 
   return (
     <div className="space-y-6">
@@ -29,13 +63,28 @@ export const DebugPoints: React.FC = () => {
               <div>Total Potential Points: {choreState.chores.reduce((sum, c) => sum + c.points, 0)}</div>
               <div>Total Earned Points: {choreState.chores
                 .filter(c => c.completed)
-                .reduce((sum, c) => sum + (c.finalPoints || c.points), 0)
+                .reduce((sum, c) => {
+                  const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
+                  return sum + earnedPoints
+                }, 0) + choreState.chores
+                .filter(c => !c.completed && c.finalPoints !== undefined)
+                .reduce((sum, c) => sum + (c.finalPoints || 0), 0)
               }</div>
             </div>
             
             {/* Action Buttons */}
             <div className="mt-3 flex gap-2">
               {/* Button removed - no longer needed with new chore distribution logic */}
+            </div>
+            
+            {/* Test Buttons */}
+            <div className="mt-3 flex gap-2">
+              <Button onClick={handleTestLifetimePoints} variant="outline" size="sm">
+                Test Lifetime Points
+              </Button>
+              <Button onClick={handleSimulateChoreLifecycle} variant="outline" size="sm">
+                Simulate Chore Lifecycle
+              </Button>
             </div>
           </div>
 
@@ -46,7 +95,18 @@ export const DebugPoints: React.FC = () => {
               {userState.members.map(member => {
                 const userChores = choreDistribution[member.id] || []
                 const completedChores = userChores.filter(c => c.completed)
-                const earnedPoints = completedChores.reduce((sum, c) => sum + (c.finalPoints || c.points), 0)
+                
+                // Calculate lifetime points including reset chores
+                const baseEarnedPoints = completedChores.reduce((sum, c) => {
+                  const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
+                  return sum + earnedPoints
+                }, 0)
+                
+                const resetChoresPoints = userChores
+                  .filter(c => !c.completed && c.finalPoints !== undefined)
+                  .reduce((sum, c) => sum + (c.finalPoints || 0), 0)
+                
+                const earnedPoints = baseEarnedPoints + resetChoresPoints
                 const totalPotentialPoints = userChores.reduce((sum, c) => sum + c.points, 0)
 
                 return (

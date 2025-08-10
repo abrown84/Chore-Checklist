@@ -14,7 +14,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Take out trash',
@@ -27,7 +28,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Wipe kitchen counters',
@@ -40,7 +42,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Load/unload dishwasher',
@@ -53,7 +56,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Quick bathroom tidy',
@@ -66,7 +70,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Feed pets',
@@ -79,7 +84,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Pick up clutter',
@@ -92,7 +98,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Daily Chores - Medium (10 points)
@@ -107,7 +114,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Sweep/mop floors',
@@ -120,7 +128,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Organize living room',
@@ -133,7 +142,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Water indoor plants',
@@ -146,7 +156,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date()
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // ===== WEEKLY CHORES =====
@@ -162,7 +173,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Empty all trash bins',
@@ -175,7 +187,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Clean mirrors and windows',
@@ -188,7 +201,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Organize mail and papers',
@@ -201,7 +215,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Weekly Chores - Medium (10 points)
@@ -216,7 +231,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Vacuum living room',
@@ -229,7 +245,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Deep clean bathroom',
@@ -242,7 +259,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Garden maintenance',
@@ -255,7 +273,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Meal prep for the week',
@@ -268,7 +287,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Clean refrigerator',
@@ -281,7 +301,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Weekly Chores - Hard (15 points)
@@ -296,7 +317,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Organize and declutter',
@@ -309,7 +331,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // ===== MONTHLY CHORES =====
@@ -325,7 +348,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Wash throw blankets',
@@ -338,7 +362,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Clean air vents',
@@ -351,7 +376,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Monthly Chores - Medium (10 points)
@@ -366,7 +392,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Wash windows thoroughly',
@@ -379,7 +406,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Deep clean carpets',
@@ -392,7 +420,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Organize pantry',
@@ -405,7 +434,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Monthly Chores - Hard (15 points)
@@ -420,7 +450,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Spring cleaning',
@@ -433,7 +464,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Clean garage/shed',
@@ -446,7 +478,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // ===== SEASONAL CHORES =====
@@ -462,7 +495,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'Seasonal wardrobe rotation',
@@ -475,7 +509,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Seasonal Chores - Medium (10 points)
@@ -490,7 +525,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
   {
     title: 'HVAC filter replacement',
@@ -503,7 +539,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   },
 
   // Seasonal Chores - Hard (15 points)
@@ -518,7 +555,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
       const date = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       date.setHours(18, 0, 0, 0) // 6:00 PM
       return date
-    })()
+    })(),
+    // Removed approval fields - no longer needed
   }
 ]
 

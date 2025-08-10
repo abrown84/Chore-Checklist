@@ -31,7 +31,7 @@ export const RewardSystem: React.FC = () => {
     font: 'default',
     effect: 'none'
   })
-  const [activeTab, setActiveTab] = useState<'rewards' | 'customize'>('rewards')
+  const [activeTab, setActiveTab] = useState<'rewards'>('rewards')
   const [customAvatar, setCustomAvatar] = useState<string | null>(null)
   const [avatarName, setAvatarName] = useState<string>('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['avatar', 'theme']))
@@ -753,600 +753,479 @@ export const RewardSystem: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab('rewards')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'rewards'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          🎁 Available Rewards
-        </button>
-        <button
-          onClick={() => setActiveTab('customize')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'customize'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          🎨 Customize Profile
-        </button>
+      {/* Level Up Rewards Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">🎯 Level Up Rewards</h2>
+        </div>
+        
+        {/* Current Progress Info */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+            <Crown className="w-5 h-5 mr-2 text-yellow-500" />
+            Your Progress
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
+              <div className="text-2xl font-bold text-blue-600">{currentLevel}</div>
+              <div className="text-sm text-blue-700">Current Level</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg border border-purple-100">
+              <div className="text-2xl font-bold text-purple-600">{state.stats.earnedPoints}</div>
+              <div className="text-sm text-purple-700">Earned Points</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg border border-green-100">
+              <div className="text-2xl font-bold text-green-600">{getAvailableOptions('avatar').length}</div>
+              <div className="text-sm text-green-700">Avatar Options</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          {LEVELS.map((level) => (
+            <div key={level.level} className="border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <span className={`text-2xl ${level.color}`}>{level.icon}</span>
+                <div>
+                  <h3 className={`font-medium ${level.color}`}>{level.name}</h3>
+                  <p className="text-sm text-gray-500">{level.pointsRequired} points required</p>
+                </div>
+                {isRewardUnlocked(level.level) ? (
+                  <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
+                ) : (
+                  <Lock className="w-5 h-5 text-gray-400 ml-auto" />
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {level.rewards.map((reward, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-2 p-2 rounded ${
+                      isRewardUnlocked(level.level)
+                        ? 'bg-green-50 text-green-700'
+                        : 'bg-gray-50 text-gray-500'
+                    }`}
+                  >
+                    {getRewardIcon(reward)}
+                    <span className="text-sm font-medium">{reward}</span>
+                    {isRewardUnlocked(level.level) ? (
+                      <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-gray-400 ml-auto" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {!isRewardUnlocked(level.level) && (
+                <div className="mt-3 text-sm text-gray-500">
+                  <span>
+                    Need {level.pointsRequired - state.stats.earnedPoints} more points to unlock
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">💡 How to unlock rewards:</h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Complete daily, weekly, and monthly chores</li>
+            <li>• Higher difficulty chores give more points</li>
+            <li>• Maintain streaks for bonus points</li>
+            <li>• Each level unlocks new profile customization options</li>
+            <li>• Default chores are automatically loaded when you start</li>
+          </ul>
+        </div>
       </div>
 
-      {activeTab === 'rewards' && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">🎯 Level Up Rewards</h2>
-          </div>
+      {/* Profile Customization Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile Preview */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">👀 Profile Preview</h3>
+          {getProfilePreview()}
+        </div>
+
+        {/* Customization Options */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900">🎨 Customization Options</h3>
           
-          {/* Current Progress Info */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-3 flex items-center">
-              <Crown className="w-5 h-5 mr-2 text-yellow-500" />
-              Your Progress
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
-                <div className="text-2xl font-bold text-blue-600">{currentLevel}</div>
-                <div className="text-sm text-blue-700">Current Level</div>
-              </div>
-              <div className="text-center p-3 bg-white rounded-lg border border-purple-100">
-                <div className="text-2xl font-bold text-purple-600">{state.stats.earnedPoints}</div>
-                <div className="text-sm text-purple-700">Earned Points</div>
-              </div>
-              <div className="text-center p-3 bg-white rounded-lg border border-green-100">
-                <div className="text-2xl font-bold text-green-600">{getAvailableOptions('avatar').length}</div>
-                <div className="text-sm text-green-700">Avatar Options</div>
-              </div>
+          {/* Custom Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📷 Upload Custom Image {!canUploadCustomAvatar() && <span className="text-red-500">(Level 3 Required)</span>}
+            </label>
+            <div className="space-y-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={!canUploadCustomAvatar()}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!canUploadCustomAvatar()}
+                className={`w-full border-dashed border-2 transition-all ${
+                  canUploadCustomAvatar()
+                    ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                    : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {canUploadCustomAvatar() ? 'Choose Image (Max 5MB)' : 'Locked - Reach Level 3'}
+              </Button>
+              
+              {!canUploadCustomAvatar() && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Lock className="w-4 h-4 text-yellow-600" />
+                    <p className="text-sm text-yellow-800">
+                      Complete more chores to reach level 3 and unlock custom avatar uploads!
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {customAvatar && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={customAvatar} 
+                        alt="Custom Avatar" 
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-green-800">{avatarName}</p>
+                        <p className="text-xs text-green-600">Custom avatar uploaded</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeCustomAvatar}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="space-y-6">
-            {LEVELS.map((level) => (
-              <div key={level.level} className="border rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className={`text-2xl ${level.color}`}>{level.icon}</span>
-                  <div>
-                    <h3 className={`font-medium ${level.color}`}>{level.name}</h3>
-                    <p className="text-sm text-gray-500">{level.pointsRequired} points required</p>
-                  </div>
-                  {isRewardUnlocked(level.level) ? (
-                    <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
-                  ) : (
-                    <Lock className="w-5 h-5 text-gray-400 ml-auto" />
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {level.rewards.map((reward, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-2 p-2 rounded ${
-                        isRewardUnlocked(level.level)
-                          ? 'bg-green-50 text-green-700'
-                          : 'bg-gray-50 text-gray-500'
+
+          {/* Avatar Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('avatar')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <User className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-gray-900">Avatar Selection</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('avatar').length} options) - Level {currentLevel}</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('avatar') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('avatar') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-3 gap-2">
+                  {getAvailableOptions('avatar').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('avatar', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.avatar === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      {getRewardIcon(reward)}
-                      <span className="text-sm font-medium">{reward}</span>
-                      {isRewardUnlocked(level.level) ? (
-                        <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
-                      ) : (
-                        <Lock className="w-4 h-4 text-gray-400 ml-auto" />
-                      )}
-                    </div>
+                      <div className="text-2xl mb-1">{option.icon}</div>
+                      <div className="text-xs">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
                   ))}
                 </div>
-                
-                {!isRewardUnlocked(level.level) && (
-                  <div className="mt-3 text-sm text-gray-500">
-                    <span>
-                      Need {level.pointsRequired - state.stats.earnedPoints} more points to unlock
-                    </span>
-                  </div>
-                )}
               </div>
-            ))}
+            )}
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">💡 How to unlock rewards:</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Complete daily, weekly, and monthly chores</li>
-              <li>• Higher difficulty chores give more points</li>
-              <li>• Maintain streaks for bonus points</li>
-              <li>• Each level unlocks new profile customization options</li>
-              <li>• Default chores are automatically loaded when you start</li>
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'customize' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Profile Preview */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">👀 Profile Preview</h3>
-            {getProfilePreview()}
-          </div>
-
-          {/* Customization Options */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">🎨 Customization Options</h3>
-            
-            {/* Custom Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📷 Upload Custom Image {!canUploadCustomAvatar() && <span className="text-red-500">(Level 3 Required)</span>}
-              </label>
-              <div className="space-y-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={!canUploadCustomAvatar()}
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!canUploadCustomAvatar()}
-                  className={`w-full border-dashed border-2 transition-all ${
-                    canUploadCustomAvatar()
-                      ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                      : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {canUploadCustomAvatar() ? 'Choose Image (Max 5MB)' : 'Locked - Reach Level 3'}
-                </Button>
-                
-                {!canUploadCustomAvatar() && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Lock className="w-4 h-4 text-yellow-600" />
-                      <p className="text-sm text-yellow-800">
-                        Complete more chores to reach level 3 and unlock custom avatar uploads!
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {customAvatar && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={customAvatar} 
-                          alt="Custom Avatar" 
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-green-800">{avatarName}</p>
-                          <p className="text-xs text-green-600">Custom avatar uploaded</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={removeCustomAvatar}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Avatar Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('avatar')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium text-gray-900">Avatar Selection</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('avatar').length} options) - Level {currentLevel}</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('avatar') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('avatar') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-3 gap-2">
-                    {getAvailableOptions('avatar').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('avatar', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.avatar === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-2xl mb-1">{option.icon}</div>
-                        <div className="text-xs">{option.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Theme Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('theme')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Palette className="w-5 h-5 text-purple-600" />
-                  <span className="font-medium text-gray-900">Theme Selection</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('theme').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('theme') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('theme') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('theme').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('theme', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.theme === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Special Theme Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('special-themes')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Sparkles className="w-5 h-5 text-yellow-600" />
-                  <span className="font-medium text-gray-900">Special Themes</span>
-                  {currentLevel < 7 && <span className="text-red-500 text-sm">(Level 7+ Required)</span>}
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('special-themes') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('special-themes') && (
-                <div className="p-4 border-t bg-gray-50">
-                  {currentLevel >= 7 ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => handleCustomizationChange('theme', 'holographic_7')}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.theme === 'holographic_7'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">Holographic</div>
-                        <div className="text-xs text-gray-500">Level 7</div>
-                      </button>
-                      <button
-                        onClick={() => handleCustomizationChange('theme', 'neon_8')}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.theme === 'neon_8'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">Neon</div>
-                        <div className="text-xs text-gray-500">Level 8</div>
-                      </button>
-                      <button
-                        onClick={() => handleCustomizationChange('theme', 'rainbow_9')}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.theme === 'rainbow_9'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">Rainbow</div>
-                        <div className="text-xs text-gray-500">Level 9</div>
-                      </button>
-                      <button
-                        onClick={() => handleCustomizationChange('theme', 'legendary_10')}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.theme === 'legendary_10'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">Legendary</div>
-                        <div className="text-xs text-gray-500">Level 10</div>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <Lock className="w-4 h-4 text-yellow-600" />
-                        <p className="text-sm text-yellow-800">
-                          Reach level 7 to unlock special themes with advanced visual effects!
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Border Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('border')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Target className="w-5 h-5 text-green-600" />
-                  <span className="font-medium text-gray-900">Border Style</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('border').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('border') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('border') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('border').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('border', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.border === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Background Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('background')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Star className="w-5 h-5 text-yellow-600" />
-                  <span className="font-medium text-gray-900">Background Pattern</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('background').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('background') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('background') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('background').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('background', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.background === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Badge Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('badge')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Award className="w-5 h-5 text-amber-600" />
-                  <span className="font-medium text-gray-900">Badge Selection</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('badge').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('badge') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('badge') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('badge').map((option) => {
-                      const badgeText = badgeOptions[option.value as keyof typeof badgeOptions] || option.label
-                      
-                      return (
-                        <button
-                          key={option.value}
-                          onClick={() => handleCustomizationChange('badge', option.value)}
-                          className={`p-3 rounded-lg border-2 text-center transition-all ${
-                            selectedCustomizations.badge === option.value
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="text-sm font-medium">{badgeText}</div>
-                          <div className="text-xs text-gray-500">Level {option.level}</div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Animation Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('animation')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Zap className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium text-gray-900">Animation Effects</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('animation').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('animation') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('animation') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('animation').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('animation', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.animation === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Font Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('font')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Eye className="w-5 h-5 text-indigo-600" />
-                  <span className="font-medium text-gray-900">Font Selection</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('font').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('font') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('font') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('font').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('font', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.font === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Effect Selection */}
-            <div className="border rounded-lg">
-              <button
-                onClick={() => toggleCategory('effect')}
-                className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Sparkle className="w-5 h-5 text-pink-600" />
-                  <span className="font-medium text-gray-900">Visual Effects</span>
-                  <span className="text-sm text-gray-500">({getAvailableOptions('effect').length} options)</span>
-                </div>
-                <div className={`transform transition-transform ${isCategoryExpanded('effect') ? 'rotate-180' : ''}`}>
-                  ▼
-                </div>
-              </button>
-              
-              {isCategoryExpanded('effect') && (
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAvailableOptions('effect').map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange('effect', option.value)}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedCustomizations.effect === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">Level {option.level}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-
-
-            {/* Save Button */}
-            <Button 
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-              onClick={() => {
-                // Here you could save the customizations to localStorage or a database
-                alert('Profile customizations saved! 🎉')
-              }}
+          {/* Theme Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('theme')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
-              💾 Save Customizations
-            </Button>
+              <div className="flex items-center space-x-3">
+                <Palette className="w-5 h-5 text-purple-600" />
+                <span className="font-medium text-gray-900">Theme Selection</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('theme').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('theme') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('theme') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('theme').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('theme', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.theme === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Border Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('border')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Target className="w-5 h-5 text-green-600" />
+                <span className="font-medium text-gray-900">Border Style</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('border').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('border') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('border') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('border').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('border', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.border === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Background Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('background')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Star className="w-5 h-5 text-yellow-600" />
+                <span className="font-medium text-gray-900">Background Style</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('background').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('background') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('background') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('background').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('background', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.background === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Badge Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('badge')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Award className="w-5 h-5 text-amber-600" />
+                <span className="font-medium text-gray-900">Badge Selection</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('badge').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('badge') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('badge') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('badge').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('badge', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.badge === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Animation Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('animation')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Zap className="w-5 h-5 text-yellow-600" />
+                <span className="font-medium text-gray-900">Animation Style</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('animation').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('animation') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('animation') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('animation').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('animation', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.animation === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Font Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('font')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Eye className="w-5 h-5 text-indigo-600" />
+                <span className="font-medium text-gray-900">Font Selection</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('font').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('font') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('font') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('font').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('font', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.font === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Effect Selection */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => toggleCategory('effect')}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Sparkle className="w-5 h-5 text-pink-600" />
+                <span className="font-medium text-gray-900">Visual Effects</span>
+                <span className="text-sm text-gray-500">({getAvailableOptions('effect').length} options)</span>
+              </div>
+              <div className={`transform transition-transform ${isCategoryExpanded('effect') ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </button>
+            
+            {isCategoryExpanded('effect') && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableOptions('effect').map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleCustomizationChange('effect', option.value)}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedCustomizations.effect === option.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-500">Level {option.level}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
-  )
-}
+  );
+};

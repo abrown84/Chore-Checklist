@@ -3,21 +3,39 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { useChores } from '../contexts/ChoreContext'
+import { useStats } from '../contexts/StatsContext'
+import { useAuth } from '../hooks/useAuth'
 import { Target, Star, Trophy, Crown, Award, CheckCircle } from 'lucide-react'
 import { LEVELS } from '../types/chore'
 
 export const ChoreProgress: React.FC = () => {
   const { state, resetChores } = useChores()
-  const { stats } = state
+  const { getUserStats } = useStats()
+  const { user } = useAuth()
+  
+  // Get the current user's stats from StatsContext
+  const userStats = user ? getUserStats(user.id) : null
+  
+  // Use userStats if available, otherwise create fallback stats
+  const stats = userStats || {
+    totalChores: state.chores.length,
+    completedChores: state.chores.filter(c => c.completed).length,
+    totalPoints: state.chores.reduce((sum, c) => sum + c.points, 0),
+    earnedPoints: state.chores.filter(c => c.completed).reduce((sum, c) => sum + (c.finalPoints || c.points), 0),
+    currentStreak: 0,
+    longestStreak: 0,
+    currentLevel: 1,
+    currentLevelPoints: 0,
+    pointsToNextLevel: 100,
+    lastActive: new Date()
+  }
 
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
   const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
 
   const progressToNextLevel = nextLevelData 
-    ? (stats.currentLevelPoints / (nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) * 100
+    ? Math.max(0, Math.min(100, (stats.currentLevelPoints / Math.max(1, nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) * 100))
     : 100
-
-
 
   const handleInspectStorage = () => {
     const savedChores = localStorage.getItem('chores')
@@ -90,25 +108,28 @@ export const ChoreProgress: React.FC = () => {
         </div>
 
         {/* Progress to Next Level */}
-        {nextLevelData && (
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Progress to Level {nextLevelData.level}</span>
-              <span className="text-sm font-medium text-indigo-600">
-                {stats.currentLevelPoints} / {nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0)} points
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(progressToNextLevel, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1 text-center">
-              {stats.pointsToNextLevel} points to next level
-            </p>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              {nextLevelData ? `Progress to Level ${nextLevelData.level}` : 'Current Level Progress'}
+            </span>
+            <span className="text-sm font-medium text-indigo-600">
+              {stats.currentLevelPoints} / {nextLevelData ? (nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0)) : '100'} points
+            </span>
           </div>
-        )}
+          <div className="w-full bg-gray-200 rounded-full h-3" style={{ border: '1px solid #ccc' }}>
+            <div 
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${Math.min(progressToNextLevel, 100)}%`,
+                minWidth: '1px'
+              }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1 text-center">
+            {stats.pointsToNextLevel} points to next level
+          </p>
+        </div>
 
         {/* Current Level Rewards */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">

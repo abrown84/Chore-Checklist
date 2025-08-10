@@ -3,88 +3,42 @@ import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
-import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS } from '../types/chore'
-import { CheckCircle, Circle, Trash2, Calendar, Clock, Target, Zap, RotateCcw, Filter } from 'lucide-react'
+import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, LEVELS } from '../types/chore'
+import { CheckCircle, Circle, Trash2, Calendar, Clock, Target, Zap, RotateCcw, Filter, Crown, Star, Trophy } from 'lucide-react'
 
 export const ChoreList: React.FC = () => {
   const { state, completeChore, deleteChore, resetChores } = useChores()
-  const { recalculateStats } = useUsers()
+  const { recalculateStats, getCurrentUserStats } = useUsers()
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'priority' | 'difficulty' | 'dueDate'>('priority')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [groupByCategory, setGroupByCategory] = useState<boolean>(true)
 
-  // Temporary debug section
-  useEffect(() => {
-    console.log('🔍 DEBUG: ChoreList component mounted')
-    console.log('🔍 DEBUG: Total chores from context:', state.chores.length)
-    console.log('🔍 DEBUG: Chores data:', state.chores)
-    
-    // Check localStorage directly
-    const storedChores = localStorage.getItem('chores')
-    console.log('🔍 DEBUG: Raw localStorage data:', storedChores)
-    
-    if (storedChores) {
-      try {
-        const parsed = JSON.parse(storedChores)
-        console.log('🔍 DEBUG: Parsed localStorage data:', parsed)
-      } catch (e) {
-        console.log('🔍 DEBUG: Error parsing localStorage:', e)
-      }
-    } else {
-      console.log('🔍 DEBUG: No chores in localStorage!')
-    }
-  }, [state.chores])
-
-  // Add a function to manually load default chores for debugging
-  const loadDefaultChoresForDebug = () => {
-    console.log('🔧 Manually loading default chores for debugging...')
-    resetChores()
-  }
-
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 ChoreList Debug:', {
-      totalChores: state.chores.length,
-      completedChores: state.chores.filter(c => c.completed).length,
-      pendingChores: state.chores.filter(c => !c.completed).length,
-      chores: state.chores.map(c => ({ 
-        id: c.id, 
-        title: c.title, 
-        completed: c.completed, 
-        category: c.category,
-        priority: c.priority 
-      })),
-      filter,
-      categoryFilter,
-      sortBy,
-      groupByCategory
-    })
-    
-    // Check if chores exist but are filtered out
-    const filteredChores = state.chores.filter(chore => {
-      if (filter === 'pending' && chore.completed) return false
-      if (filter === 'completed' && !chore.completed) return false
-      if (categoryFilter !== 'all' && chore.category !== categoryFilter) return false
-      return true
-    })
-    
-    console.log('🔍 Filtered Chores:', {
-      totalFiltered: filteredChores.length,
-      filteredChores: filteredChores.map(c => ({ 
-        id: c.id, 
-        title: c.title, 
-        completed: c.completed, 
-        category: c.category 
-      }))
-    })
-  }, [state.chores, filter, categoryFilter, sortBy, groupByCategory])
-
-  // Trigger stats recalculation when chores are loaded
+  // Get current user stats for level display
+  const currentUserStats = getCurrentUserStats()
+  const currentLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1))
+  const nextLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1) + 1)
+  
+  // Initialize stats when component mounts
   useEffect(() => {
     if (state.chores.length > 0) {
-      console.log('🔄 Chores loaded, triggering stats recalculation')
+      recalculateStats(state.chores)
+    }
+  }, []) // Empty dependency array - only run once on mount
+
+  // Get level icon based on level
+  const getLevelIcon = (level: number) => {
+    if (level >= 10) return <Crown className="w-6 h-6 text-amber-600" />
+    if (level >= 8) return <Crown className="w-6 h-6 text-pink-600" />
+    if (level >= 6) return <Trophy className="w-6 h-6 text-red-600" />
+    if (level >= 4) return <Star className="w-6 h-6 text-purple-600" />
+    return <Target className="w-6 h-6 text-blue-600" />
+  }
+
+  // Trigger stats recalculation when chores change
+  useEffect(() => {
+    if (state.chores.length > 0) {
       recalculateStats(state.chores)
     }
   }, [state.chores, recalculateStats])
@@ -156,11 +110,9 @@ export const ChoreList: React.FC = () => {
   const handleCompleteChore = (chore: Chore) => {
     // Prevent completing already completed chores
     if (chore.completed) {
-      console.log('Chore already completed:', chore.id, chore.title)
       return
     }
     
-    console.log('Completing chore:', chore.id, chore.title)
     completeChore(chore.id)
     // You could add a toast notification here
   }
@@ -713,20 +665,83 @@ export const ChoreList: React.FC = () => {
                   </option>
                 ))}
               </select>
-
-              {/* Debug Button */}
-              <Button
-                onClick={loadDefaultChoresForDebug}
-                variant="outline"
-                size="sm"
-                className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300"
-              >
-                🐛 Debug: Load Defaults
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Level Display Section */}
+      {currentUserStats ? (
+        <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 shadow-md rounded-xl border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex justify-center">
+                  {getLevelIcon(currentUserStats.currentLevel)}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Level {currentUserStats.currentLevel}
+                  </h3>
+                  <p className={`text-lg font-medium mb-1 ${currentLevelData?.color || 'text-gray-600'}`}>
+                    {currentLevelData?.icon} {currentLevelData?.name || 'Beginner'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {currentUserStats.earnedPoints} total points earned
+                  </p>
+                </div>
+              </div>
+              
+              {/* Progress to Next Level */}
+              {nextLevelData && (
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Progress to Level {nextLevelData.level}
+                  </div>
+                  <div className="w-32 bg-gray-200 rounded-full h-2 mb-2">
+                    <div 
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(() => {
+                          const pointsForCurrentLevel = currentLevelData?.pointsRequired || 0
+                          const pointsForNextLevel = nextLevelData?.pointsRequired || 0
+                          const pointsNeeded = pointsForNextLevel - pointsForCurrentLevel
+                          
+                          if (pointsNeeded <= 0) return 100 // Max level reached
+                          
+                          const progress = (currentUserStats.currentLevelPoints || 0) / pointsNeeded
+                          return Math.min(100, Math.max(0, progress * 100))
+                        })()}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {(() => {
+                      const pointsForCurrentLevel = currentLevelData?.pointsRequired || 0
+                      const pointsForNextLevel = nextLevelData?.pointsRequired || 0
+                      const pointsNeeded = pointsForNextLevel - pointsForCurrentLevel
+                      
+                      if (pointsNeeded <= 0) return 'Max Level!'
+                      
+                      return `${currentUserStats.currentLevelPoints || 0} / ${pointsNeeded} points`
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-gradient-to-r from-gray-50 to-gray-100 shadow-md rounded-xl border-0">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-2">👤</div>
+              <h3 className="text-lg font-medium text-gray-700 mb-1">No User Stats Available</h3>
+              <p className="text-sm text-gray-500">Complete some chores to see your level progress!</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Stats Bar */}
       {categoryFilter !== 'all' && (

@@ -3,31 +3,26 @@ import { Trophy, Star, Zap, TrendingUp, Target, Award, Users, Home, BarChart3, C
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'
 import { useChores } from '../contexts/ChoreContext'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { LEVELS } from '../types/chore'
-
 
 export const Leaderboard: React.FC = () => {
   const { state: userState } = useUsers()
-  const { getAllUserStats, refreshStats } = useStats()
+  const { getAllUserStats } = useStats()
   const { state: choreState } = useChores()
   const [activeTab, setActiveTab] = useState<'overview' | 'leaderboard' | 'progress' | 'rewards'>('overview')
   const [rankingMode, setRankingMode] = useState<'points' | 'efficiency' | 'lifetime'>('points')
   
-
-
-  // Force refresh of stats when component mounts or when needed
-  useEffect(() => {
-    refreshStats()
-  }, [])
-
+  // Get unified stats from StatsContext (single source of truth)
   const memberStats = getAllUserStats()
+  
   const sortedLeaderboard = memberStats
     .map(stats => {
       // Find the corresponding user information
       const user = userState.members.find(m => m.id === stats.userId)
       if (!user) return null
       
+      // Use stats from unified system - no need to recalculate levels
       const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
       const nextLevelData = LEVELS.find(level => level.level === (stats.currentLevel || 1) + 1)
       const progressToNextLevel = nextLevelData 
@@ -55,8 +50,6 @@ export const Leaderboard: React.FC = () => {
         return b.completedChores - a.completedChores
       }
     })
-
-
 
   // Household overview stats
   const totalHouseholdPoints = memberStats.reduce((sum, stats) => sum + stats.earnedPoints, 0)
@@ -99,8 +92,6 @@ export const Leaderboard: React.FC = () => {
     if (score >= 40) return { text: 'Getting There', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
     return { text: 'Room to Improve', color: 'bg-red-100 text-red-800 border-red-200' }
   }
-
-
 
   const renderOverviewTab = () => (
     <div className="space-y-6">
@@ -166,17 +157,17 @@ export const Leaderboard: React.FC = () => {
           <div className="space-y-3">
             {sortedLeaderboard.slice(0, 3).map((member, index) => (
               <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                 <div className="flex items-center space-x-3">
-                   <span className="text-2xl">{getRankIcon(index)}</span>
-                   <span className="text-2xl">{member.avatar}</span>
-                   <div>
-                     <p className="font-medium text-gray-900">{member.name}</p>
-                     <p className="text-sm text-gray-600 flex items-center">
-                       <span className="mr-1">{member.currentLevelData?.icon || '🌱'}</span>
-                       Lv {member.currentLevel}
-                     </p>
-                   </div>
-                 </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{getRankIcon(index)}</span>
+                  <span className="text-2xl">{member.avatar}</span>
+                  <div>
+                    <p className="font-medium text-gray-900">{member.name}</p>
+                    <p className="text-sm text-gray-600 flex items-center">
+                      <span className="mr-1">{member.currentLevelData?.icon || '🌱'}</span>
+                      Lv {member.currentLevel}
+                    </p>
+                  </div>
+                </div>
                 <div className="text-right">
                   <p className="font-bold text-gray-900">{member.earnedPoints} pts</p>
                   <p className="text-sm text-gray-600">{member.efficiencyScore}% eff</p>
@@ -214,7 +205,7 @@ export const Leaderboard: React.FC = () => {
 
       {/* Household Progress Overview */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
           <BarChart3 className="w-5 h-5 mr-2 text-purple-500" />
           Household Progress
         </h3>
@@ -508,7 +499,7 @@ export const Leaderboard: React.FC = () => {
       </div>
 
       {/* Efficiency Explanation */}
-              {rankingMode === 'efficiency' && (
+      {rankingMode === 'efficiency' && (
         <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
           <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
             <Award className="w-5 h-5 mr-2" />
@@ -738,7 +729,7 @@ export const Leaderboard: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('progress')}
-            className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
               activeTab === 'progress'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'

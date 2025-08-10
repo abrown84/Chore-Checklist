@@ -1,32 +1,62 @@
 import { useEffect, useState, useRef } from 'react'
-import { useChores } from '../contexts/ChoreContext'
+import { useStats } from '../contexts/StatsContext'
+import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
 import { Star, Crown, Target, Trophy, X } from 'lucide-react'
 
 export const LevelUpCelebration: React.FC = () => {
-  const { state } = useChores()
+  const { getUserStats } = useStats()
+  const { user } = useAuth()
   const [showCelebration, setShowCelebration] = useState(false)
   const [previousLevel, setPreviousLevel] = useState(1)
   const [currentLevel, setCurrentLevel] = useState(1)
+  const [isInitialized, setIsInitialized] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
+  // Get current user's stats
+  const userStats = user ? getUserStats(user.id) : null
+  const currentUserLevel = userStats?.currentLevel || 1
+
   useEffect(() => {
-    if (state.stats.currentLevel > previousLevel) {
+    if (!user || !userStats) return
+
+    // Initialize previous level from localStorage on first load
+    if (!isInitialized) {
+      const storedLevel = localStorage.getItem(`choreAppLevel_${user.id}`)
+      if (storedLevel) {
+        const parsedLevel = parseInt(storedLevel, 10)
+        if (!isNaN(parsedLevel)) {
+          setPreviousLevel(parsedLevel)
+        }
+      }
+      setIsInitialized(true)
+      return
+    }
+
+    // Only show celebration if we've actually leveled up (not just signed back in)
+    if (currentUserLevel > previousLevel && previousLevel > 0) {
       setShowCelebration(true)
-      setPreviousLevel(state.stats.currentLevel)
+      setPreviousLevel(currentUserLevel)
       
-      // Hide celebration after 2.5 seconds (reduced from 5 seconds)
+      // Store the new level in localStorage
+      localStorage.setItem(`choreAppLevel_${user.id}`, currentUserLevel.toString())
+      
+      // Hide celebration after 2.5 seconds
       const timer = setTimeout(() => {
         setShowCelebration(false)
       }, 2500)
       
       return () => clearTimeout(timer)
+    } else if (currentUserLevel !== previousLevel) {
+      // Update previous level if it changed (but don't show celebration)
+      setPreviousLevel(currentUserLevel)
+      localStorage.setItem(`choreAppLevel_${user.id}`, currentUserLevel.toString())
     }
-  }, [state.stats.currentLevel, previousLevel])
+  }, [currentUserLevel, previousLevel, user, userStats, isInitialized])
 
   useEffect(() => {
-    setCurrentLevel(state.stats.currentLevel)
-  }, [state.stats.currentLevel])
+    setCurrentLevel(currentUserLevel)
+  }, [currentUserLevel])
 
   // Handle click outside to close
   useEffect(() => {

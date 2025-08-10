@@ -21,6 +21,12 @@ export interface UserStats {
   pointsToNextLevel: number
   lastActive: Date
   efficiencyScore?: number
+  levelPersistenceInfo?: {
+    originalLevel: number
+    persistedLevel: number
+    expiresAt: number
+    pointsAtRedemption: number
+  }
 }
 
 export interface Household {

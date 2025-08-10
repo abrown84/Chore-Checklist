@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useMemo, useCa
 import { Chore, ChoreStats, LEVELS } from '../types/chore'
 import { resetChoresToDefaults } from '../utils/defaultChores'
 import { isMidnightResetTime, resetDailyChores } from '../utils/midnightReset'
+// Removed useStats import to fix circular dependency
 
 interface ChoreState {
   chores: Chore[]
@@ -15,6 +16,7 @@ type ChoreAction =
   | { type: 'UPDATE_CHORE'; payload: Chore }
   | { type: 'LOAD_CHORES'; payload: Chore[] }
   | { type: 'RESET_CHORES'; payload?: never }
+  // Removed APPROVE_CHORE and REJECT_CHORE actions - no longer needed
 
 const initialState: ChoreState = {
   chores: [],
@@ -39,7 +41,8 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
         ...action.payload,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date(),
-        completed: false
+        completed: false,
+        // Removed approval fields - no longer needed
       }
       return {
         ...state,
@@ -48,28 +51,21 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
     }
     
     case 'COMPLETE_CHORE': {
-      const choreToComplete = state.chores.find(c => c.id === action.payload.id)
-      if (!choreToComplete || choreToComplete.completed) {
-        return state
-      }
-      
-      // Calculate bonus/penalty points based on due date
+      const choreToComplete = state.chores.find(chore => chore.id === action.payload.id)
+      if (!choreToComplete) return state
+
       let finalPoints = choreToComplete.points
       let bonusMessage = ''
-      
+
+      // Calculate bonus/penalty based on completion time
       if (choreToComplete.dueDate) {
-        const dueDateTime = new Date(choreToComplete.dueDate)
-        if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-          dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-        }
-        
-        const completedDate = new Date()
-        const hoursDiff = (dueDateTime.getTime() - completedDate.getTime()) / (1000 * 60 * 60)
-        
+        const now = new Date()
+        const dueDate = new Date(choreToComplete.dueDate)
+        const hoursDiff = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+
         if (hoursDiff > 0) {
           // Early completion bonus
-          const bonusMultiplier = Math.min(hoursDiff * 0.01, 0.5)
-          const bonus = Math.round(choreToComplete.points * bonusMultiplier)
+          const bonus = Math.round(choreToComplete.points * 0.2)
           finalPoints += bonus
           
           const daysEarly = Math.floor(hoursDiff / 24)
@@ -108,7 +104,8 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
               completedAt: new Date(),
               completedBy: action.payload.completedBy,
               finalPoints: finalPoints,
-              bonusMessage: bonusMessage
+              bonusMessage: bonusMessage,
+              // Removed approval fields - no longer needed
             }
           : chore
       )
@@ -138,9 +135,15 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
     }
     
     case 'LOAD_CHORES': {
+      // Ensure all chores have the required fields (approval fields are no longer used)
+      const validatedChores = action.payload.map(chore => ({
+        ...chore,
+        // Removed approval fields - no longer needed
+      }))
+      
       return {
         ...state,
-        chores: action.payload
+        chores: validatedChores
       }
     }
     
@@ -150,7 +153,8 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
         ...chore,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date(),
-        completed: false
+        completed: false,
+        // Removed approval fields - no longer needed
       }))
       
       return {
@@ -159,12 +163,14 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
       }
     }
     
+    // Removed APPROVE_CHORE and REJECT_CHORE cases - no longer needed
+    
     default:
       return state
   }
 }
 
-// Efficient stats calculation with memoization
+// Simplified stats calculation - only basic chore stats, no level calculation
 function useChoreStats(chores: Chore[]) {
   return useMemo(() => {
     const totalChores = chores.length
@@ -172,7 +178,12 @@ function useChoreStats(chores: Chore[]) {
     const totalPoints = chores.reduce((sum, chore) => sum + chore.points, 0)
     const earnedPoints = chores
       .filter(chore => chore.completed)
-      .reduce((sum, chore) => sum + (chore.finalPoints || chore.points), 0)
+      .reduce((sum, chore) => {
+        const earnedPoints = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
+        return sum + earnedPoints
+      }, 0) + chores
+      .filter(chore => !chore.completed && chore.finalPoints !== undefined)
+      .reduce((sum, chore) => sum + (chore.finalPoints || 0), 0)
     
     // Calculate streak efficiently
     const completedChoresWithDates = chores
@@ -214,21 +225,7 @@ function useChoreStats(chores: Chore[]) {
       longestStreak = Math.max(longestStreak, tempStreak)
     }
     
-    // Calculate level
-    let currentLevel = 1
-    for (let i = LEVELS.length - 1; i >= 0; i--) {
-      if (earnedPoints >= LEVELS[i].pointsRequired) {
-        currentLevel = LEVELS[i].level
-        break
-      }
-    }
-    
-    const currentLevelData = LEVELS.find(level => level.level === currentLevel)
-    const nextLevelData = LEVELS.find(level => level.level === currentLevel + 1)
-    
-    const currentLevelPoints = earnedPoints - (currentLevelData?.pointsRequired || 0)
-    const pointsToNextLevel = nextLevelData ? nextLevelData.pointsRequired - earnedPoints : 0
-    
+    // Simplified stats - no level calculation here
     return {
       totalChores,
       completedChores,
@@ -236,9 +233,9 @@ function useChoreStats(chores: Chore[]) {
       earnedPoints,
       currentStreak,
       longestStreak,
-      currentLevel,
-      currentLevelPoints,
-      pointsToNextLevel,
+      currentLevel: 1, // Placeholder - actual level comes from StatsContext
+      currentLevelPoints: 0, // Placeholder
+      pointsToNextLevel: 100, // Placeholder
       totalLevels: LEVELS.length
     }
   }, [chores])
@@ -253,12 +250,13 @@ export const ChoreContext = createContext<{
   updateChore: (chore: Chore) => void
   resetChores: () => void
   getCurrentChores: () => Chore[]
+  // Removed approveChore and rejectChore from context
 } | null>(null)
 
-export function ChoreProvider({ children, currentUserId }: { children: React.ReactNode; currentUserId?: string }) {
+export const ChoreProvider = ({ children, currentUserId }: { children: React.ReactNode; currentUserId?: string }) => {
   const [state, dispatch] = useReducer(choreReducer, initialState)
   
-  // Calculate stats efficiently with memoization
+  // Calculate basic chore stats efficiently with memoization
   const stats = useChoreStats(state.chores)
   
   // Update state when stats change
@@ -277,8 +275,16 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
         const parsedChores = JSON.parse(savedChores)
         
         if (Array.isArray(parsedChores)) {
-          if (parsedChores.length === 0) {
-            // Load default chores if empty
+          // Check if chores array is effectively empty (no actual chore data)
+          const hasValidChores = parsedChores.some(chore => 
+            chore && 
+            chore.title && 
+            chore.title.trim() !== '' && 
+            chore.description !== undefined
+          )
+          
+          if (parsedChores.length === 0 || !hasValidChores) {
+            // Load default chores if empty or no valid chores
             const defaultChores = resetChoresToDefaults().map(chore => ({
               ...chore,
               id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -300,7 +306,8 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
               completedAt: chore.completedAt && chore.completed ? new Date(chore.completedAt) : undefined,
               completedBy: chore.completedBy || undefined,
               dueDate: chore.dueDate ? new Date(chore.dueDate) : undefined,
-              assignedTo: chore.assignedTo || undefined
+              assignedTo: chore.assignedTo || undefined,
+              // Removed approval fields - no longer needed
             }))
             dispatch({ type: 'LOAD_CHORES', payload: chores })
           }
@@ -308,6 +315,15 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
       } catch (error) {
         console.error('Failed to load chores from localStorage:', error)
         localStorage.removeItem('chores')
+        // Load default chores after clearing corrupted localStorage
+        const defaultChores = resetChoresToDefaults().map(chore => ({
+          ...chore,
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          createdAt: new Date(),
+          completed: false,
+          // Removed approval fields - no longer needed
+        }))
+        dispatch({ type: 'LOAD_CHORES', payload: defaultChores })
       }
     } else {
       // Load default chores if none exist
@@ -315,7 +331,8 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
         ...chore,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date(),
-        completed: false
+        completed: false,
+        // Removed approval fields - no longer needed
       }))
       dispatch({ type: 'LOAD_CHORES', payload: defaultChores })
     }
@@ -369,6 +386,8 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
     return state.chores
   }, [state.chores])
   
+  // Removed approveChore and rejectChore functions - no longer needed
+  
   return (
     <ChoreContext.Provider value={{
       state: { ...state, stats },
@@ -379,13 +398,15 @@ export function ChoreProvider({ children, currentUserId }: { children: React.Rea
       updateChore,
       resetChores,
       getCurrentChores
+      // Removed approveChore and rejectChore from provider
     }}>
       {children}
     </ChoreContext.Provider>
   )
 }
 
-export function useChores() {
+// Export the hook with a consistent name for Fast Refresh compatibility
+export const useChores = () => {
   const context = useContext(ChoreContext)
   if (!context) {
     throw new Error('useChores must be used within a ChoreProvider')

@@ -14,6 +14,7 @@ export interface Chore {
   assignedTo?: string
   finalPoints?: number
   bonusMessage?: string
+  // Removed approval system fields - no longer needed for chores
 }
 
 export interface ChoreStats {

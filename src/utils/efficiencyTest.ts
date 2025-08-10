@@ -16,7 +16,8 @@ export const testEfficiencyCalculation = () => {
       createdAt: new Date('2024-01-01'),
       completedAt: new Date('2024-01-01T10:00:00'),
       dueDate: new Date('2024-01-01T18:00:00'), // Early completion
-      assignedTo: 'user1'
+      assignedTo: 'user1',
+      // Removed approval fields - no longer needed
     },
     {
       id: '2',
@@ -30,7 +31,8 @@ export const testEfficiencyCalculation = () => {
       createdAt: new Date('2024-01-01'),
       completedAt: new Date('2024-01-02T20:00:00'),
       dueDate: new Date('2024-01-02T18:00:00'), // Late completion
-      assignedTo: 'user1'
+      assignedTo: 'user1',
+      // Removed approval fields - no longer needed
     },
     {
       id: '3',
@@ -42,7 +44,8 @@ export const testEfficiencyCalculation = () => {
       priority: 'medium',
       completed: false,
       createdAt: new Date('2024-01-01'),
-      assignedTo: 'user1'
+      assignedTo: 'user1',
+      // Removed approval fields - no longer needed
     }
   ]
 
@@ -104,8 +107,19 @@ export const testEfficiencyCalculation = () => {
   
   // Points efficiency
   const totalPotentialPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
-  const pointsEfficiency = totalPotentialPoints > 0 ? 
-    completedChores.reduce((sum, c) => sum + (c.finalPoints || c.points || 0), 0) / totalPotentialPoints : 0
+  
+  // Use the same logic as the main system for consistency
+  const baseEarnedPoints = completedChores.reduce((sum, c) => {
+    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
+    return sum + earnedPoints
+  }, 0)
+  
+  const resetChoresPoints = userChores
+    .filter(c => !c.completed && c.finalPoints !== undefined)
+    .reduce((sum, c) => sum + (c.finalPoints || 0), 0)
+  
+  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints
+  const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0
   
   // Final efficiency score
   const efficiencyScore = (
