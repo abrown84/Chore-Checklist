@@ -2,6 +2,10 @@
 
 A modern, gamified chore management application that helps families track household tasks, earn points, and build good habits together.
 
+## 🌐 Live Preview
+
+**Try the app live:** [chore-checklist.vercel.app](https://chore-checklist.vercel.app)
+
 ## ✨ Features
 
 ### 🎯 **Smart Chore Management**
