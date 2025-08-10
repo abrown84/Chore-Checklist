@@ -1,7 +1,7 @@
 import React, { useContext, useState, useRef } from 'react'
 import { ChoreContext } from '../contexts/ChoreContext'
 import { LEVELS } from '../types/chore'
-import { CheckCircle, Lock, Star, Crown, Sparkles, Palette, User, Zap, Target, Award, Upload, X, Eye, Sparkle } from 'lucide-react'
+import { CheckCircle, Lock, Star, Crown, Palette, User, Zap, Target, Award, Upload, X, Eye, Sparkle } from 'lucide-react'
 import { Button } from './ui/button'
 
 
@@ -31,7 +31,6 @@ export const RewardSystem: React.FC = () => {
     font: 'default',
     effect: 'none'
   })
-  const [activeTab, setActiveTab] = useState<'rewards'>('rewards')
   const [customAvatar, setCustomAvatar] = useState<string | null>(null)
   const [avatarName, setAvatarName] = useState<string>('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['avatar', 'theme']))

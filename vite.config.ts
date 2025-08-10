@@ -18,5 +18,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false
+  },
+  define: {
+    __dirname: JSON.stringify(__dirname),
+    'process.env': process.env
   }
 })

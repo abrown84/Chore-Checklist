@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { CheckCircle, Star, Zap } from 'lucide-react'
 

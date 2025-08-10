@@ -1,20 +1,30 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { useUsers } from '../contexts/UserContext';
-import { useStats } from '../contexts/StatsContext';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Edit, Save, X, Trophy, Star, Zap, Award, Target, Sparkles, Eye, Palette, User, Lock, Upload } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react'
+import { Button } from './ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { useUsers } from '../contexts/UserContext'
+import { useStats } from '../contexts/StatsContext'
+import { 
+  Palette, 
+  User, 
+  X, 
+  Save,
+  Lock,
+  Target,
+  Award,
+  Edit
+} from 'lucide-react'
 
 const CustomizeProfile: React.FC = () => {
   const { state: { currentUser, household }, updateCurrentUser } = useUsers();
-  const { userStats } = useStats();
+  const { getCurrentUserStats } = useStats();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(currentUser?.name || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const currentLevel = userStats?.level || 1;
+  const userStats = getCurrentUserStats();
+  const currentLevel = userStats?.currentLevel || 1;
   const currentPoints = userStats?.totalPoints || 0;
   const currentStreak = userStats?.currentStreak || 0;
 
@@ -109,11 +119,11 @@ const CustomizeProfile: React.FC = () => {
   const getAvatarGradient = useCallback((name: string) => {
     const colors = [
       'from-blue-400 to-blue-600',
+      'from-green-400 to-green-600',
       'from-purple-400 to-purple-600',
       'from-pink-400 to-pink-600',
-      'from-green-400 to-green-600',
       'from-yellow-400 to-yellow-600',
-      'from-red-400 to-red-600',
+      'from-red-400 to-red-600'
     ];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];

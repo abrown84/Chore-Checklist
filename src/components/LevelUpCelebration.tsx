@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useStats } from '../contexts/StatsContext'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'

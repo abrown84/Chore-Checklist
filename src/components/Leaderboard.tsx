@@ -1,9 +1,9 @@
 
+import React, { useState } from 'react'
 import { Trophy, Star, Zap, TrendingUp, Target, Award, Users, Home, BarChart3, CheckCircle, Sparkles, Activity, Lock } from 'lucide-react'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'
 import { useChores } from '../contexts/ChoreContext'
-import { useState } from 'react'
 import { LEVELS } from '../types/chore'
 
 export const Leaderboard: React.FC = () => {

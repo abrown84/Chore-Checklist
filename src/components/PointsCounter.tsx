@@ -1,4 +1,5 @@
 
+import React from 'react'
 import { useStats } from '../contexts/StatsContext'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
