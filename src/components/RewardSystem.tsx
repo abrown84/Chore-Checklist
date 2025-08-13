@@ -753,7 +753,7 @@ export const RewardSystem: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Level Up Rewards Section */}
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-blue-50 shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">🎯 Level Up Rewards</h2>
         </div>
@@ -765,15 +765,15 @@ export const RewardSystem: React.FC = () => {
             Your Progress
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
               <div className="text-2xl font-bold text-blue-600">{currentLevel}</div>
               <div className="text-sm text-blue-700">Current Level</div>
             </div>
-            <div className="text-center p-3 bg-white rounded-lg border border-purple-100">
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-purple-100">
               <div className="text-2xl font-bold text-purple-600">{state.stats.earnedPoints}</div>
               <div className="text-sm text-purple-700">Earned Points</div>
             </div>
-            <div className="text-center p-3 bg-white rounded-lg border border-green-100">
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-green-100">
               <div className="text-2xl font-bold text-green-600">{getAvailableOptions('avatar').length}</div>
               <div className="text-sm text-green-700">Avatar Options</div>
             </div>

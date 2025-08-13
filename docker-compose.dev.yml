@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  chore-checklist-dev:
+  daily-grind-dev:
     build: 
       context: .
       dockerfile: Dockerfile.dev

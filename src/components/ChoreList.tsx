@@ -5,6 +5,7 @@ import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
 import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, LEVELS } from '../types/chore'
 import { CheckCircle, Circle, Trash2, Calendar, Clock, Target, Zap, RotateCcw, Filter, Crown, Star, Trophy } from 'lucide-react'
+import { isOverdue as checkIsOverdue, getCompletionStatus, getCurrentDueStatus, normalizeDueDate } from '../utils/dateHelpers'
 
 export const ChoreList: React.FC = () => {
   const { state, completeChore, deleteChore, resetChores } = useChores()
@@ -14,19 +15,13 @@ export const ChoreList: React.FC = () => {
   const [sortBy, setSortBy] = useState<'priority' | 'difficulty' | 'dueDate'>('priority')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [groupByCategory, setGroupByCategory] = useState<boolean>(true)
+  const [animatingChores, setAnimatingChores] = useState<Set<string>>(new Set())
 
   // Get current user stats for level display
   const currentUserStats = getCurrentUserStats()
   const currentLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1))
   const nextLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1) + 1)
   
-  // Initialize stats when component mounts
-  useEffect(() => {
-    if (state.chores.length > 0) {
-      recalculateStats(state.chores)
-    }
-  }, []) // Empty dependency array - only run once on mount
-
   // Get level icon based on level
   const getLevelIcon = (level: number) => {
     if (level >= 10) return <Crown className="w-6 h-6 text-amber-600" />
@@ -79,14 +74,22 @@ export const ChoreList: React.FC = () => {
   }
 
   const filteredChores = state.chores.filter(chore => {
-    // Status filter
-    if (filter === 'pending' && chore.completed) return false
-    if (filter === 'completed' && !chore.completed) return false
-    
     // Category filter
     if (categoryFilter !== 'all' && chore.category !== categoryFilter) return false
     
-    return true
+    // Show animating chores regardless of completion status
+    if (animatingChores.has(chore.id)) return true
+    
+    // Status filter
+    switch (filter) {
+      case 'pending':
+        return !chore.completed
+      case 'completed':
+        return chore.completed
+      case 'all':
+      default:
+        return !chore.completed // Hide completed chores in 'all' view
+    }
   })
 
   const sortedChores = [...filteredChores].sort((a, b) => {
@@ -108,13 +111,27 @@ export const ChoreList: React.FC = () => {
   })
 
   const handleCompleteChore = (chore: Chore) => {
-    // Prevent completing already completed chores
-    if (chore.completed) {
+    // Prevent completing already completed chores or chores already animating
+    if (chore.completed || animatingChores.has(chore.id)) {
       return
     }
     
-    completeChore(chore.id)
-    // You could add a toast notification here
+    // Add chore to animating set to show the animation
+    setAnimatingChores(prev => new Set(prev).add(chore.id))
+    
+    // Start animation, then complete chore after animation duration
+    setTimeout(() => {
+      // Complete the chore in the context
+      completeChore(chore.id)
+      
+      // Remove from animating set immediately after completion
+      // This will cause the chore to be filtered out and trigger the collapse
+      setAnimatingChores(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(chore.id)
+        return newSet
+      })
+    }, 800) // Match the animation duration (0.8s)
   }
 
   const handleDeleteChore = (chore: Chore) => {
@@ -150,7 +167,7 @@ export const ChoreList: React.FC = () => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'daily': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'daily': return 'bg-slate-100 text-slate-800 border-slate-200'
       case 'weekly': return 'bg-green-100 text-green-800 border-green-200'
       case 'monthly': return 'bg-purple-100 text-purple-800 border-purple-200'
       case 'seasonal': return 'bg-pink-100 text-pink-800 border-pink-200'
@@ -169,107 +186,19 @@ export const ChoreList: React.FC = () => {
 
   const isOverdue = (chore: Chore) => {
     if (!chore.dueDate || chore.completed) return false
-    const dueDateTime = new Date(chore.dueDate)
-    // Set due time to 6 PM if no specific time is set
-    if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-      dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-    }
-    return dueDateTime < new Date()
+    return checkIsOverdue(new Date(chore.dueDate))
   }
 
-  const isDueSoon = (chore: Chore) => {
-    if (!chore.dueDate || chore.completed) return false
-    const dueDateTime = new Date(chore.dueDate)
-    // Set due time to 6 PM if no specific time is set
-    if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-      dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-    }
-    const now = new Date()
-    const hoursUntilDue = (dueDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-    return hoursUntilDue <= 24 && hoursUntilDue >= 0 // Due within 24 hours
-  }
+
 
   const getDueDateStatus = (chore: Chore) => {
     if (!chore.dueDate) return null
     
-    if (chore.completed) {
-      const completedDate = new Date(chore.completedAt!)
-      const dueDateTime = new Date(chore.dueDate)
-      // Set due time to 6 PM if no specific time is set
-      if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-        dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-      }
-      
-      const hoursDiff = (dueDateTime.getTime() - completedDate.getTime()) / (1000 * 60 * 60)
-      
-      if (hoursDiff > 0) {
-        // Early completion
-        const daysEarly = Math.floor(hoursDiff / 24)
-        const hoursEarly = Math.floor(hoursDiff % 24)
-        let message = ''
-        if (daysEarly > 0) {
-          message = `${daysEarly} day${daysEarly > 1 ? 's' : ''} ${hoursEarly > 0 ? hoursEarly + ' hour' + (hoursEarly > 1 ? 's' : '') : ''} early`
-        } else {
-          message = `${hoursEarly} hour${hoursEarly > 1 ? 's' : ''} early`
-        }
-        return { type: 'early', hours: hoursDiff, message, color: 'text-green-600', bg: 'bg-green-100', icon: '🎯' }
-      } else if (hoursDiff === 0) {
-        return { type: 'on-time', hours: 0, message: 'Completed on time!', color: 'text-blue-600', bg: 'bg-blue-100', icon: '✅' }
-      } else {
-        // Late completion
-        const daysLate = Math.floor(Math.abs(hoursDiff) / 24)
-        const hoursLate = Math.floor(Math.abs(hoursDiff) % 24)
-        let message = ''
-        if (daysLate > 0) {
-          message = `${daysLate} day${daysLate > 1 ? 's' : ''} ${hoursLate > 0 ? hoursLate + ' hour' + (hoursLate > 1 ? 's' : '') : ''} late`
-        } else {
-          message = `${hoursLate} hour${hoursLate > 1 ? 's' : ''} late`
-        }
-        return { type: 'late', hours: Math.abs(hoursDiff), message, color: 'text-orange-600', bg: 'bg-orange-100', icon: '⏰' }
-      }
+    if (chore.completed && chore.completedAt) {
+      return getCompletionStatus(new Date(chore.completedAt), new Date(chore.dueDate))
     }
     
-    if (isOverdue(chore)) {
-      const dueDateTime = new Date(chore.dueDate)
-      if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-        dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-      }
-      const now = new Date()
-      const hoursOverdue = (now.getTime() - dueDateTime.getTime()) / (1000 * 60 * 60)
-      const daysOverdue = Math.floor(hoursOverdue / 24)
-      const hoursRemaining = Math.floor(hoursOverdue % 24)
-      
-      let message = ''
-      if (daysOverdue > 0) {
-        message = `${daysOverdue} day${daysOverdue > 1 ? 's' : ''} ${hoursRemaining > 0 ? hoursRemaining + ' hour' + (hoursRemaining > 1 ? 's' : '') : ''} overdue`
-      } else {
-        message = `${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''} overdue`
-      }
-      
-      return { type: 'overdue', hours: hoursOverdue, message, color: 'text-red-600', bg: 'bg-red-100', icon: '🚨' }
-    }
-    
-    if (isDueSoon(chore)) {
-      const dueDateTime = new Date(chore.dueDate)
-      if (dueDateTime.getHours() === 0 && dueDateTime.getMinutes() === 0) {
-        dueDateTime.setHours(18, 0, 0, 0) // 6 PM
-      }
-      const now = new Date()
-      const hoursUntilDue = (dueDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-      const daysUntilDue = Math.floor(hoursUntilDue / 24)
-      const hoursRemaining = Math.floor(hoursUntilDue % 24)
-      
-      let message = ''
-      if (daysUntilDue > 0) {
-        message = `Due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} ${hoursRemaining > 0 ? hoursRemaining + ' hour' + (hoursRemaining > 1 ? 's' : '') : ''}`
-      } else {
-        message = `Due in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''}`
-      }
-      
-      return { type: 'due-soon', hours: hoursUntilDue, message, color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '⚠️' }
-    }
-    
-    return null
+    return getCurrentDueStatus(new Date(chore.dueDate))
   }
 
   const getDueDateDisplay = (chore: Chore) => {
@@ -278,20 +207,16 @@ export const ChoreList: React.FC = () => {
     const status = getDueDateStatus(chore)
     if (!status) return null
     
-    const dueDate = new Date(chore.dueDate)
-    // Format the date with time if it's set, otherwise show "6 PM" for date-only
-    let formattedDate = ''
-    if (dueDate.getHours() === 0 && dueDate.getMinutes() === 0) {
-      formattedDate = `${dueDate.toLocaleDateString()} at 6:00 PM`
-    } else {
-      formattedDate = dueDate.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
-    }
+    const dueDate = normalizeDueDate(new Date(chore.dueDate))
+    const formattedDate = dueDate.getHours() === 18 && dueDate.getMinutes() === 0
+      ? `${dueDate.toLocaleDateString()} at 6:00 PM`
+      : dueDate.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
     
     return { status, message: status.message, formattedDate }
   }
@@ -303,7 +228,7 @@ export const ChoreList: React.FC = () => {
           <div className="text-8xl mb-6">🏠</div>
           <h3 className="text-2xl font-bold text-gray-900 mb-4">No chores yet!</h3>
           <p className="text-gray-600 mb-6 text-lg">Add your first chore to start earning points and building good habits.</p>
-          <div className="bg-white rounded-lg p-6 shadow-sm max-w-md mx-auto">
+          <div className="bg-blue-50 rounded-lg p-6 shadow-sm max-w-md mx-auto">
             <div className="text-sm text-gray-600 space-y-2">
               <div className="flex items-center justify-between">
                 <span>Easy chores</span>
@@ -328,7 +253,7 @@ export const ChoreList: React.FC = () => {
   const renderGroupedChores = () => {
     if (!groupByCategory) {
       return (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+        <div className={viewMode === 'grid' ? 'chore-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300' : 'chore-container space-y-4 transition-all duration-300'}>
           {sortedChores.map((chore) => renderChoreCard(chore))}
         </div>
       )
@@ -344,9 +269,19 @@ export const ChoreList: React.FC = () => {
           if (!categoryChores || categoryChores.length === 0) return null
           
           const filteredCategoryChores = categoryChores.filter(chore => {
-            if (filter === 'pending' && chore.completed) return false
-            if (filter === 'completed' && !chore.completed) return false
-            return true
+            // Show animating chores regardless of completion status
+            if (animatingChores.has(chore.id)) return true
+            
+            // Status filter
+            switch (filter) {
+              case 'pending':
+                return !chore.completed
+              case 'completed':
+                return chore.completed
+              case 'all':
+              default:
+                return !chore.completed // Hide completed chores in 'all' view
+            }
           })
           
           if (filteredCategoryChores.length === 0) return null
@@ -370,7 +305,7 @@ export const ChoreList: React.FC = () => {
               </div>
               
               {/* Chores Grid */}
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              <div className={viewMode === 'grid' ? 'chore-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300' : 'chore-container space-y-4 transition-all duration-300'}>
                 {filteredCategoryChores.map((chore) => renderChoreCard(chore))}
               </div>
             </div>
@@ -380,27 +315,64 @@ export const ChoreList: React.FC = () => {
     )
   }
 
-  const renderChoreCard = (chore: Chore) => (
-    <Card 
-      key={chore.id} 
-      className={`transition-all duration-300 hover:shadow-xl hover:scale-105 ${
-        chore.completed 
-          ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-200' 
-          : isOverdue(chore)
-          ? 'bg-gradient-to-br from-red-50 to-pink-100 border-red-200'
-          : 'bg-white hover:border-indigo-300'
-      } ${viewMode === 'list' ? 'flex-row' : ''}`}
-    >
-      <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+  const renderChoreCard = (chore: Chore) => {
+    const isAnimating = animatingChores.has(chore.id)
+    const accentBorder = chore.completed
+      ? 'border-l-4 border-l-green-500/60'
+      : isOverdue(chore)
+      ? 'border-l-4 border-l-red-500/60'
+      : chore.category === 'daily'
+      ? 'border-l-4 border-l-slate-400/50'
+      : chore.category === 'weekly'
+      ? 'border-l-4 border-l-green-500/50'
+      : chore.category === 'monthly'
+      ? 'border-l-4 border-l-purple-500/50'
+      : chore.category === 'seasonal'
+      ? 'border-l-4 border-l-pink-500/50'
+      : 'border-l-4 border-l-gray-400/50'
+    const toneClasses = chore.completed
+      ? 'dark:bg-green-900/20 dark:border-green-700/30'
+      : isOverdue(chore)
+      ? 'dark:bg-red-900/20 dark:border-red-700/30'
+      : chore.category === 'daily'
+      ? 'dark:bg-slate-900/20 dark:border-slate-700/30'
+      : chore.category === 'weekly'
+      ? 'dark:bg-emerald-900/20 dark:border-emerald-700/30'
+      : chore.category === 'monthly'
+      ? 'dark:bg-purple-900/20 dark:border-purple-700/30'
+      : chore.category === 'seasonal'
+      ? 'dark:bg-pink-900/20 dark:border-pink-700/30'
+      : 'dark:bg-gray-900/20 dark:border-gray-700/30'
+    
+    return (
+      <div 
+        key={`${chore.id}-${chore.completed ? 'completed' : 'pending'}`}
+        className={`chore-container ${isAnimating ? 'animate-chore-disappear' : ''} transition-all duration-300`}
+      >
+        <Card 
+          className={`transition-all duration-300 bg-card border border-border ${toneClasses} ${accentBorder} ${viewMode === 'list' ? 'flex-row' : ''} ${!chore.completed && !isAnimating ? 'cursor-pointer' : ''}`}
+          onClick={(e) => {
+            // Only trigger completion if not clicking on a button, chore is not completed, and not animating
+            if (!(e.target as HTMLElement).closest('button') && !chore.completed && !isAnimating) {
+              handleCompleteChore(chore)
+            }
+          }}
+        >
+      <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''} card-content-clickable`}>
         <div className={`${viewMode === 'list' ? 'flex items-center space-x-4' : ''}`}>
           {/* Completion Button */}
           <div className={`${viewMode === 'list' ? 'flex-shrink-0' : 'mb-4'}`}>
             <button
-              onClick={() => handleCompleteChore(chore)}
-              disabled={chore.completed}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCompleteChore(chore)
+              }}
+              disabled={chore.completed || isAnimating}
               className={`text-3xl transition-transform ${
                 chore.completed 
                   ? 'text-green-600 cursor-not-allowed' 
+                  : isAnimating
+                  ? 'text-gray-400 cursor-not-allowed'
                   : 'text-gray-400 hover:text-indigo-500 hover:scale-110 cursor-pointer'
               }`}
             >
@@ -530,7 +502,7 @@ export const ChoreList: React.FC = () => {
           <div className={`flex flex-col items-end space-y-3 ${viewMode === 'list' ? 'flex-shrink-0 ml-4' : 'mt-4'}`}>
             {/* Points Display */}
             <div className="text-center">
-              <div className="text-3xl font-bold text-indigo-600">
+              <div className="text-3xl font-semibold text-muted-foreground">
                 {chore.points}
               </div>
               <div className="text-xs text-gray-500 font-medium">POINTS</div>
@@ -541,7 +513,10 @@ export const ChoreList: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDeleteChore(chore)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteChore(chore)
+                }}
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
                 <Trash2 className="w-4 h-4" />
@@ -551,7 +526,9 @@ export const ChoreList: React.FC = () => {
         </div>
       </CardContent>
     </Card>
-  )
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -600,7 +577,7 @@ export const ChoreList: React.FC = () => {
               </Button>
 
               {/* View Mode Toggle */}
-              <div className="flex border border-gray-300 rounded-lg bg-white">
+              <div className="flex border border-gray-300 rounded-lg bg-blue-50">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-3 py-2 text-sm font-medium transition-colors ${
@@ -624,7 +601,7 @@ export const ChoreList: React.FC = () => {
               </div>
 
               {/* Filter Buttons */}
-              <div className="flex border border-gray-300 rounded-lg bg-white">
+              <div className="flex border border-gray-300 rounded-lg bg-blue-50">
                 {(['all', 'pending', 'completed'] as const).map((filterOption) => (
                   <button
                     key={filterOption}
@@ -646,7 +623,7 @@ export const ChoreList: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-blue-50"
               >
                 <option value="priority">Sort by Priority</option>
                 <option value="difficulty">Sort by Difficulty</option>
@@ -657,7 +634,7 @@ export const ChoreList: React.FC = () => {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-blue-50"
               >
                 {categories.map(category => (
                   <option key={category} value={category}>

@@ -62,7 +62,7 @@ export const ChoreCelebration: React.FC = () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 text-center transform animate-bounce pointer-events-auto">
+      <div className="bg-blue-50 rounded-2xl shadow-2xl p-8 text-center transform animate-bounce pointer-events-auto">
         <div className="text-6xl mb-4">🎉</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Chore Completed!</h2>
         <p className="text-gray-600 mb-4">{currentCelebration.choreTitle}</p>

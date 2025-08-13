@@ -44,7 +44,7 @@ export const AddChoreForm: React.FC = () => {
 
   if (!isOpen) {
     return (
-      <Card className="bg-white shadow rounded-lg">
+      <Card className="bg-blue-50 shadow rounded-lg">
         <CardContent className="p-6">
           <Button 
             onClick={() => setIsOpen(true)}
@@ -58,7 +58,7 @@ export const AddChoreForm: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white shadow rounded-lg">
+    <Card className="bg-blue-50 shadow rounded-lg">
       <CardHeader>
         <CardTitle className="text-lg font-medium text-gray-900">Add New Chore</CardTitle>
       </CardHeader>

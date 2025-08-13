@@ -9,9 +9,7 @@ const usePersistentPointDeductions = () => {
     try {
       const savedDeductions = localStorage.getItem('pointDeductions')
       if (savedDeductions) {
-        const parsed = JSON.parse(savedDeductions)
-        console.log('Loaded point deductions from localStorage:', parsed)
-        return parsed
+        return JSON.parse(savedDeductions)
       }
     } catch (error) {
       console.error('Failed to load point deductions:', error)
@@ -20,13 +18,11 @@ const usePersistentPointDeductions = () => {
   })
 
   const updateDeductions = useCallback((userId: string, pointsToDeduct: number) => {
-    console.log(`Updating points for user ${userId}: deducting ${pointsToDeduct} points`)
     setPointDeductions(prev => {
       const newDeductions = {
         ...prev,
         [userId]: (prev[userId] || 0) + pointsToDeduct
       }
-      console.log(`New deductions for user ${userId}: ${newDeductions[userId]} points`)
       // Immediately save to localStorage to ensure persistence
       localStorage.setItem('pointDeductions', JSON.stringify(newDeductions))
       return newDeductions
@@ -35,7 +31,6 @@ const usePersistentPointDeductions = () => {
 
   // Save point deductions to localStorage whenever they change
   useEffect(() => {
-    console.log('Saving point deductions to localStorage:', pointDeductions)
     localStorage.setItem('pointDeductions', JSON.stringify(pointDeductions))
   }, [pointDeductions])
 
@@ -48,9 +43,7 @@ const useLevelPersistence = () => {
     try {
       const saved = localStorage.getItem('levelPersistence')
       if (saved) {
-        const parsed = JSON.parse(saved)
-        console.log('Loaded level persistence from localStorage:', parsed)
-        return parsed
+        return JSON.parse(saved)
       }
     } catch (error) {
       console.error('Failed to load level persistence:', error)
@@ -68,7 +61,7 @@ const useLevelPersistence = () => {
       localStorage.setItem('levelPersistence', JSON.stringify(newPersistence))
       return newPersistence
     })
-    console.log(`Set level persistence for user ${userId}: level ${level} until ${new Date(expiresAt).toLocaleDateString()}`)
+
   }, [])
 
   const clearLevelPersistence = useCallback((userId: string) => {
@@ -78,19 +71,13 @@ const useLevelPersistence = () => {
       localStorage.setItem('levelPersistence', JSON.stringify(newPersistence))
       return newPersistence
     })
-    console.log(`Cleared level persistence for user ${userId}`)
+
   }, [])
 
   // Clean up expired level persistence
   useEffect(() => {
     const now = Date.now()
-    const hasExpired = Object.entries(levelPersistence).some(([userId, data]) => {
-      if (data.expiresAt < now) {
-        console.log(`Level persistence expired for user ${userId}`)
-        return true
-      }
-      return false
-    })
+    const hasExpired = Object.entries(levelPersistence).some(([, data]) => data.expiresAt < now)
 
     if (hasExpired) {
       setLevelPersistence(prev => {
@@ -177,7 +164,6 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       }
     }
     
-    console.log(`calculateUserLevel: earnedPoints=${earnedPoints}, calculated level=${currentLevel}`)
     return currentLevel
   }, [])
 
@@ -282,9 +268,6 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
 
   // Efficient user stats calculation with memoization - SINGLE SOURCE OF TRUTH
   const userStats = useMemo(() => {
-    console.log('StatsContext: Recalculating user stats')
-    console.log('StatsContext: members count:', members.length)
-    console.log('StatsContext: chores count:', Object.values(choreDistribution).flat().length)
     
     return members.map(member => {
       const userChores = choreDistribution[member.id] || []
@@ -316,16 +299,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       const userDeductions = pointDeductions[member.id] || 0
       const earnedPoints = Math.max(0, totalLifetimePoints - userDeductions)
       
-      // Debug logging for point calculations
-      if (member.id === '1') { // Only log for the first user to avoid spam
-        console.log(`User ${member.id} (${member.name}) point calculation:`, {
-          baseEarnedPoints,
-          resetChoresPoints,
-          totalLifetimePoints,
-          userDeductions,
-          earnedPoints
-        })
-      }
+
       
       // Calculate total potential points from all assigned chores
       const totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
@@ -387,7 +361,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
           expiresAt: userLevelPersistence.expiresAt,
           pointsAtRedemption: userLevelPersistence.pointsAtRedemption
         }
-        console.log(`User ${member.id} using persisted level ${finalLevel} (original: ${currentLevel}) until ${new Date(userLevelPersistence.expiresAt).toLocaleDateString()}`)
+
       }
       
 

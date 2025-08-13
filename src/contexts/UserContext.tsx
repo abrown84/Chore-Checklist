@@ -73,6 +73,10 @@ function userReducer(state: UserState, action: UserAction): UserState {
       return { ...state, members: action.payload }
     
     case 'ADD_MEMBER':
+      // Prevent duplicate members
+      if (state.members.find(m => m.id === action.payload.id)) {
+        return state
+      }
       return { ...state, members: [...state.members, action.payload] }
     
     case 'REMOVE_MEMBER':
@@ -297,6 +301,7 @@ const UserContext = createContext<{
   recalculateStats: (chores: Chore[]) => void
   updateCurrentUser: (updates: Partial<User>) => void
   syncWithAuth: (authUser: { id: string; email: string; name: string }) => void
+  resetUserState: () => void
 } | null>(null)
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
@@ -323,21 +328,21 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     dispatch({ type: 'SET_CURRENT_USER', payload: currentUser })
     
-    // Ensure current user is in members array for stats calculation
-    if (!state.members.find(m => m.id === authUser.id)) {
-      dispatch({ type: 'ADD_MEMBER', payload: currentUser })
-    }
+    // Always try to add the member - the reducer can handle duplicates
+    dispatch({ type: 'ADD_MEMBER', payload: currentUser })
   }, []) // Empty dependency array - function will be stable
 
   const createHousehold = useCallback((name: string, description?: string) => {
-    if (!state.currentUser) return
+    // Get current user from state at time of call
+    const currentUser = state.currentUser
+    if (!currentUser) return
 
     const newHousehold: Household = {
       id: Date.now().toString(),
       name,
       description,
       createdAt: new Date(),
-      members: [state.currentUser],
+      members: [currentUser],
       settings: {
         allowInvites: true,
         requireApproval: false,
@@ -346,26 +351,28 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     dispatch({ type: 'SET_HOUSEHOLD', payload: newHousehold })
-  }, []) // Remove state.currentUser dependency to prevent infinite loops
+  }, [state.currentUser])
 
   const joinHousehold = useCallback((_inviteCode: string) => {
     // TODO: Implement household joining logic
   }, [])
 
   const inviteMember = useCallback((email: string) => {
-    if (!state.currentUser || !state.household) return
+    const currentUser = state.currentUser
+    const household = state.household
+    if (!currentUser || !household) return
 
     const newInvite: UserInvite = {
       id: Date.now().toString(),
       email,
-      invitedBy: state.currentUser.id,
+      invitedBy: currentUser.id,
       invitedAt: new Date(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       status: 'pending'
     }
 
     dispatch({ type: 'ADD_INVITE', payload: newInvite })
-  }, []) // Remove state dependencies to prevent infinite loops
+  }, [state.currentUser, state.household])
 
   const acceptInvite = useCallback((inviteId: string) => {
     const invite = state.invites.find(i => i.id === inviteId)
@@ -383,26 +390,26 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     dispatch({ type: 'ADD_MEMBER', payload: newMember })
     dispatch({ type: 'UPDATE_INVITE', payload: { ...invite, status: 'accepted' } })
-  }, []) // Remove state.invites dependency to prevent infinite loops
+  }, [state.invites])
 
   const declineInvite = useCallback((inviteId: string) => {
     const invite = state.invites.find(i => i.id === inviteId)
     if (invite) {
       dispatch({ type: 'UPDATE_INVITE', payload: { ...invite, status: 'declined' } })
     }
-  }, []) // Remove state.invites dependency to prevent infinite loops
+  }, [state.invites])
 
   const removeMember = useCallback((userId: string) => {
     if (state.currentUser?.id === userId) return
     dispatch({ type: 'REMOVE_MEMBER', payload: userId })
-  }, []) // Remove state.currentUser dependency to prevent infinite loops
+  }, [state.currentUser])
 
   const updateMemberRole = useCallback((userId: string, role: 'admin' | 'member') => {
     const member = state.members.find(m => m.id === userId)
     if (member) {
       dispatch({ type: 'UPDATE_MEMBER', payload: { ...member, role } })
     }
-  }, []) // Remove state.members dependency to prevent infinite loops
+  }, [state.members])
 
   const updateMemberStats = useCallback((userId: string, _chores: Chore[]) => {
     const member = state.members.find(m => m.id === userId)
@@ -410,21 +417,21 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     const stats = calculateUserStats([member], _chores)[0]
     dispatch({ type: 'UPDATE_MEMBER_STATS', payload: stats })
-  }, []) // Remove state.members dependency to prevent infinite loops
+  }, [state.members])
 
   const getMemberStats = useCallback((userId: string) => {
     return state.memberStats.find(s => s.userId === userId)
-  }, []) // Remove state.memberStats dependency to prevent infinite loops
+  }, [state.memberStats])
 
   const getCurrentUserStats = useCallback(() => {
     if (!state.currentUser) return undefined
     return getMemberStats(state.currentUser.id)
-  }, []) // Remove dependencies to prevent infinite loops
+  }, [state.currentUser, getMemberStats])
 
   const updateHouseholdSettings = useCallback((settings: Partial<Household['settings']>) => {
     if (!state.household) return
     dispatch({ type: 'UPDATE_HOUSEHOLD_SETTINGS', payload: settings })
-  }, []) // Remove state.household dependency to prevent infinite loops
+  }, [state.household])
 
   const clearLeaderboard = useCallback(() => {
     dispatch({ type: 'CLEAR_LEADERBOARD' })
@@ -440,7 +447,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         payload: userStat
       })
     })
-  }, []) // Remove state.members dependency to prevent infinite loops
+  }, [state.members])
 
   const updateCurrentUser = useCallback((updates: Partial<User>) => {
     dispatch({ type: 'UPDATE_CURRENT_USER', payload: updates })
@@ -461,6 +468,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [state.currentUser, state.household])
 
+  const resetUserState = useCallback(() => {
+    dispatch({ type: 'RESET_STATE' })
+  }, [])
+
   return (
     <UserContext.Provider value={{
       state: { ...state, memberStats },
@@ -478,7 +489,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       clearLeaderboard,
       recalculateStats,
       updateCurrentUser,
-      syncWithAuth
+      syncWithAuth,
+      resetUserState
     }}>
       {children}
     </UserContext.Provider>

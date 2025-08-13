@@ -9,6 +9,11 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading, signIn, signUp } = useAuth()
 
+  // Debug logging
+  console.log('ProtectedRoute render - user:', user, 'isLoading:', isLoading)
+  console.log('ProtectedRoute render - user is null?', user === null)
+  console.log('ProtectedRoute render - isLoading?', isLoading === true)
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
@@ -31,19 +36,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
               <span className="text-4xl">🏠</span>
             </div>
             <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-              Chore Checklist
+              The Daily Grind
             </h1>
             <p className="text-lg text-gray-600 leading-relaxed">
               Transform household chores into a fun, rewarding experience with points, levels, and achievements!
             </p>
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium">
-                🔒 Authentication Required
-              </p>
-              <p className="text-xs text-blue-700 mt-1">
-                Please sign in or create an account to access the app.
-              </p>
-            </div>
           </div>
           <AuthForm onSignIn={signIn} onSignUp={signUp} />
         </div>

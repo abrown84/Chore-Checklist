@@ -170,7 +170,7 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
   }
 }
 
-// Simplified stats calculation - only basic chore stats, no level calculation
+// Basic stats calculation - just counts and points
 function useChoreStats(chores: Chore[]) {
   return useMemo(() => {
     const totalChores = chores.length
@@ -181,61 +181,18 @@ function useChoreStats(chores: Chore[]) {
       .reduce((sum, chore) => {
         const earnedPoints = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
         return sum + earnedPoints
-      }, 0) + chores
-      .filter(chore => !chore.completed && chore.finalPoints !== undefined)
-      .reduce((sum, chore) => sum + (chore.finalPoints || 0), 0)
+      }, 0)
     
-    // Calculate streak efficiently
-    const completedChoresWithDates = chores
-      .filter(chore => chore.completed && chore.completedAt)
-      .map(chore => new Date(chore.completedAt!).setHours(0, 0, 0, 0))
-      .sort((a, b) => b - a)
-    
-    let currentStreak = 0
-    let longestStreak = 0
-    
-    if (completedChoresWithDates.length > 0) {
-      const today = new Date().setHours(0, 0, 0, 0)
-      
-      // Calculate current streak
-      if (completedChoresWithDates[0] === today) {
-        let streak = 1
-        for (let i = 1; i < completedChoresWithDates.length; i++) {
-          const expectedDate = today - (i * 24 * 60 * 60 * 1000)
-          if (completedChoresWithDates[i] === expectedDate) {
-            streak++
-          } else {
-            break
-          }
-        }
-        currentStreak = streak
-      }
-      
-      // Calculate longest streak
-      let tempStreak = 1
-      for (let i = 1; i < completedChoresWithDates.length; i++) {
-        const daysDiff = (completedChoresWithDates[i-1] - completedChoresWithDates[i]) / (24 * 60 * 60 * 1000)
-        if (daysDiff === 1) {
-          tempStreak++
-        } else {
-          longestStreak = Math.max(longestStreak, tempStreak)
-          tempStreak = 1
-        }
-      }
-      longestStreak = Math.max(longestStreak, tempStreak)
-    }
-    
-    // Simplified stats - no level calculation here
     return {
       totalChores,
       completedChores,
       totalPoints,
       earnedPoints,
-      currentStreak,
-      longestStreak,
-      currentLevel: 1, // Placeholder - actual level comes from StatsContext
-      currentLevelPoints: 0, // Placeholder
-      pointsToNextLevel: 100, // Placeholder
+      currentStreak: 0,
+      longestStreak: 0,
+      currentLevel: 1,
+      currentLevelPoints: 0,
+      pointsToNextLevel: 100,
       totalLevels: LEVELS.length
     }
   }, [chores])
@@ -250,6 +207,7 @@ export const ChoreContext = createContext<{
   updateChore: (chore: Chore) => void
   resetChores: () => void
   getCurrentChores: () => Chore[]
+  clearChoreState: () => void
   // Removed approveChore and rejectChore from context
 } | null>(null)
 
@@ -258,13 +216,6 @@ export const ChoreProvider = ({ children, currentUserId }: { children: React.Rea
   
   // Calculate basic chore stats efficiently with memoization
   const stats = useChoreStats(state.chores)
-  
-  // Update state when stats change
-  useEffect(() => {
-    if (JSON.stringify(stats) !== JSON.stringify(state.stats)) {
-      dispatch({ type: 'LOAD_CHORES', payload: state.chores })
-    }
-  }, [stats, state.chores])
   
   // Load chores from localStorage on mount
   useEffect(() => {
@@ -364,7 +315,7 @@ export const ChoreProvider = ({ children, currentUserId }: { children: React.Rea
   
   const completeChore = useCallback((id: string) => {
     if (!currentUserId) {
-      console.warn('Cannot complete chore: no current user ID')
+      // Silently ignore when no current user ID
       return
     }
     dispatch({ type: 'COMPLETE_CHORE', payload: { id, completedBy: currentUserId } })
@@ -386,6 +337,12 @@ export const ChoreProvider = ({ children, currentUserId }: { children: React.Rea
     return state.chores
   }, [state.chores])
   
+  const clearChoreState = useCallback(() => {
+    // Clear chores from localStorage and reset to initial state
+    localStorage.removeItem('chores')
+    dispatch({ type: 'LOAD_CHORES', payload: [] })
+  }, [])
+  
   // Removed approveChore and rejectChore functions - no longer needed
   
   return (
@@ -397,7 +354,8 @@ export const ChoreProvider = ({ children, currentUserId }: { children: React.Rea
       deleteChore,
       updateChore,
       resetChores,
-      getCurrentChores
+      getCurrentChores,
+      clearChoreState
       // Removed approveChore and rejectChore from provider
     }}>
       {children}

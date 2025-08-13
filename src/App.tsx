@@ -13,6 +13,7 @@ import { Button } from './components/ui/button'
 import { ChoreProvider, useChores } from './contexts/ChoreContext'
 import { UserProvider, useUsers } from './contexts/UserContext'
 import { StatsProvider } from './contexts/StatsContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { LevelUpCelebration } from './components/LevelUpCelebration'
 import { Leaderboard } from './components/Leaderboard'
 import { DebugPoints } from './components/DebugPoints'
@@ -20,14 +21,16 @@ import { PointRedemption } from './components/PointRedemption'
 import ProtectedRoute from './components/ProtectedRoute'
 
 import CustomizeProfile from './components/CustomizeProfile'
-import { Trophy, Users, Gift, DollarSign, ClipboardList, LogOut, Trash2, ChevronDown, Palette } from 'lucide-react'
+import { ThemeToggle } from './components/ThemeToggle'
+import { Trophy, Users, Gift, DollarSign, ClipboardList, LogOut, Trash2, Palette } from 'lucide-react'
 
 function AppContent() {
   const { user, signOut } = useAuth()
-  const { resetChores } = useChores()
-  const { syncWithAuth } = useUsers()
+  const { resetChores, clearChoreState } = useChores()
+  const { syncWithAuth, resetUserState } = useUsers()
   const [activeTab, setActiveTab] = useState('chores')
-  const [showSignOutMenu, setShowSignOutMenu] = useState(false)
+  
+
 
   // Sync authentication state with UserContext when user changes
   useEffect(() => {
@@ -37,15 +40,32 @@ function AppContent() {
   }, [user, syncWithAuth])
 
   const handleSignOut = () => {
-    signOut()
-    setShowSignOutMenu(false)
+    try {
+      // Clear chore state first
+      clearChoreState()
+      
+      // Reset user state
+      resetUserState()
+      
+      // Call signOut last to clear auth state
+      signOut()
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // Force sign out even if there's an error
+      signOut()
+    }
   }
 
   const handleClearCredentials = () => {
     // Clear stored credentials by removing from localStorage
     localStorage.removeItem('choreAppUser')
+    localStorage.removeItem('choreAppUsers')
+    localStorage.removeItem('chores')
+    
+    // Clear all application state
+    clearChoreState()
+    resetUserState()
     signOut()
-    setShowSignOutMenu(false)
   }
 
 
@@ -65,16 +85,20 @@ function AppContent() {
 
   const handleInspectStorage = () => {
     const chores = localStorage.getItem('chores')
-    const users = localStorage.getItem('users')
-    console.log('Local Storage - Chores:', chores ? JSON.parse(chores) : 'No chores')
-    console.log('Local Storage - Users:', users ? JSON.parse(users) : 'No users')
+    const users = localStorage.getItem('choreAppUsers')
+    const currentUser = localStorage.getItem('choreAppUser')
+    console.log('Storage inspection:', {
+      chores: chores ? JSON.parse(chores) : 'No chores',
+      users: users ? JSON.parse(users) : 'No users',
+      currentUser: currentUser ? JSON.parse(currentUser) : 'No current user',
+      inMemoryUser: user
+    })
   }
 
 
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         <Toaster position="top-right" />
         
         {/* Header */}
@@ -82,7 +106,10 @@ function AppContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-gray-900">🏠 Chore Checklist</h1>
+                <div className="flex items-center space-x-3">
+                  <img src="/favicon.png" alt="The Daily Grind" className="h-8 w-8" />
+                  <h1 className="text-2xl font-bold text-gray-900">The Daily Grind</h1>
+                </div>
               </div>
               
               {/* Desktop User Info */}
@@ -90,39 +117,27 @@ function AppContent() {
                 <div className="text-sm text-gray-600">
                   Welcome, <span className="font-medium">{user?.name || user?.email}</span>
                 </div>
-                <div className="relative">
+                <div className="flex items-center space-x-2">
+                  <ThemeToggle />
                   <Button 
-                    onClick={() => setShowSignOutMenu(!showSignOutMenu)} 
+                    onClick={handleSignOut} 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center space-x-1"
+                    className="flex items-center"
+                    title="Sign Out"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                    <ChevronDown className="w-4 h-4" />
                   </Button>
-                  
-                  {showSignOutMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                      <div className="py-1">
-                        <button
-                          onClick={handleSignOut}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
-                        </button>
-                        {user?.role === 'admin' && (
-                          <button
-                            onClick={handleClearCredentials}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Clear Saved Data
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                  {user?.role === 'admin' && (
+                    <Button 
+                      onClick={handleClearCredentials}
+                      variant="destructive"
+                      size="sm"
+                      className="flex items-center space-x-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Clear Saved Data</span>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -132,6 +147,16 @@ function AppContent() {
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">{user?.name || user?.email}</span>
                 </div>
+                <ThemeToggle />
+                <Button 
+                  onClick={handleSignOut} 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -144,8 +169,11 @@ function AppContent() {
            <div className="flex flex-col h-full">
              {/* Sidebar Header */}
              <div className="p-6 border-b border-gray-200">
-               <h2 className="text-lg font-semibold text-gray-900">🏠 Chore Hub</h2>
-               <p className="text-sm text-gray-600">Manage your household</p>
+                             <div className="flex items-center space-x-2">
+                <img src="/favicon.png" alt="The Daily Grind" className="h-6 w-6" />
+                <h2 className="text-lg font-semibold text-gray-900">Daily Grind</h2>
+              </div>
+              <p className="text-sm text-gray-600">Your daily productivity hub</p>
              </div>
 
              {/* Navigation Items */}
@@ -169,47 +197,36 @@ function AppContent() {
                })}
              </nav>
 
-             {/* Sidebar Footer */}
-             <div className="p-4 border-t border-gray-200">
-               <div className="relative">
-                 <Button 
-                   onClick={() => setShowSignOutMenu(!showSignOutMenu)} 
-                   variant="outline" 
-                   className="w-full flex items-center justify-center space-x-2"
-                 >
-                   <LogOut className="w-4 h-4" />
-                   <span>Sign Out</span>
-                   <ChevronDown className="w-4 h-4" />
-                 </Button>
-                 
-                 {showSignOutMenu && (
-                   <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                     <div className="py-1">
-                       <button
-                         onClick={handleSignOut}
-                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                       >
-                         <LogOut className="w-4 h-4 mr-2" />
-                         Sign Out
-                       </button>
-                       <button
-                         onClick={handleClearCredentials}
-                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                       >
-                         <Trash2 className="w-4 h-4 mr-2" />
-                         Clear Saved Data
-                       </button>
-                     </div>
-                   </div>
-                 )}
-               </div>
-             </div>
+                                                  {/* Sidebar Footer */}
+           <div className="p-4 border-t border-gray-200">
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleSignOut} 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  <span>Sign Out</span>
+                </Button>
+                {user?.role === 'admin' && (
+                  <Button 
+                    onClick={handleClearCredentials}
+                    variant="destructive"
+                    className="w-full flex items-center justify-center space-x-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Clear Saved Data</span>
+                  </Button>
+                )}
+              </div>
+            </div>
            </div>
          </div>
 
                  {/* Main Content */}
          <main className="flex-1 transition-all duration-300">
-           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
 
         {/* Tab Content */}
         {activeTab === 'chores' && (
@@ -225,24 +242,28 @@ function AppContent() {
             {/* Chore List */}
             <ChoreList />
             
-            {/* Debug Controls */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Debug Controls</CardTitle>
-                <CardDescription>Development and testing tools</CardDescription>
-              </CardHeader>
-              <CardContent className="flex space-x-4">
-                <Button onClick={handleResetChores} variant="outline">
-                  Reset Chores
-                </Button>
-                <Button onClick={handleInspectStorage} variant="outline">
-                  Inspect Storage
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Debug Controls - Only show in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Debug Controls</CardTitle>
+                    <CardDescription>Development and testing tools</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex space-x-4">
+                    <Button onClick={handleResetChores} variant="outline">
+                      Reset Chores
+                    </Button>
+                    <Button onClick={handleInspectStorage} variant="outline">
+                      Inspect Storage
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            {/* Debug Points Component */}
-            <DebugPoints />
+                {/* Debug Points Component */}
+                <DebugPoints />
+              </>
+            )}
             
             {/* Add Chore Form - Moved to bottom */}
             <AddChoreForm />
@@ -308,8 +329,7 @@ function AppContent() {
   {/* Celebrations */}
   <ChoreCelebration />
   <LevelUpCelebration />
-</div>
-</ProtectedRoute>
+ </div>
 )
 }
 
@@ -327,11 +347,15 @@ function StatsWrapper({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <UserProvider>
-      <ChoreProviderWrapper>
-        <AppContent />
-      </ChoreProviderWrapper>
-    </UserProvider>
+    <ThemeProvider>
+      <UserProvider>
+        <ProtectedRoute>
+          <ChoreProviderWrapper>
+            <AppContent />
+          </ChoreProviderWrapper>
+        </ProtectedRoute>
+      </UserProvider>
+    </ThemeProvider>
   )
 }
 

@@ -193,7 +193,7 @@ export const DebugPoints: React.FC = () => {
             <h3 className="font-medium text-yellow-800 mb-2">Point Deductions Debug</h3>
             <div className="space-y-2 text-sm">
               <div><strong>LocalStorage pointDeductions:</strong></div>
-              <pre className="bg-white p-2 rounded border text-xs overflow-auto">
+              <pre className="bg-blue-50 p-2 rounded border text-xs overflow-auto">
                 {JSON.stringify(JSON.parse(localStorage.getItem('pointDeductions') || '{}'), null, 2)}
               </pre>
               <div><strong>Current User Deductions:</strong> {JSON.parse(localStorage.getItem('pointDeductions') || '{}')[userState.currentUser?.id || ''] || 0}</div>

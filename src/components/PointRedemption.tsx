@@ -219,7 +219,7 @@ export const PointRedemption: React.FC = () => {
                 </div>
               )}
               
-              <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-green-200">
                 <span className="text-lg font-medium text-gray-700">
                   Maximum Cash Value: ${((currentUserStats.earnedPoints / conversionRate)).toFixed(2)}
                 </span>
@@ -414,7 +414,7 @@ export const PointRedemption: React.FC = () => {
               
               {pendingRequests.length > 0 ? (
                 pendingRequests.map((request) => (
-                  <div key={request.id} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={request.id} className="p-4 bg-blue-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
@@ -478,7 +478,7 @@ export const PointRedemption: React.FC = () => {
             {/* Confirmation Dialog */}
             {showConfirmDialog.show && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div className="bg-blue-50 rounded-lg p-6 max-w-md w-full mx-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {showConfirmDialog.action === 'approve' ? 'Approve Redemption' : 'Reject Redemption'}
                   </h3>

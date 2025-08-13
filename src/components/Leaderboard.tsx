@@ -149,7 +149,7 @@ export const Leaderboard: React.FC = () => {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performers */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-blue-50 p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
             Top Performers
@@ -178,7 +178,7 @@ export const Leaderboard: React.FC = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-blue-50 p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Activity className="w-5 h-5 mr-2 text-blue-500" />
             Recent Activity
@@ -204,7 +204,7 @@ export const Leaderboard: React.FC = () => {
       </div>
 
       {/* Household Progress Overview */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-blue-50 p-6 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
           <BarChart3 className="w-5 h-5 mr-2 text-purple-500" />
           Household Progress
@@ -259,7 +259,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setRankingMode('efficiency')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               rankingMode === 'efficiency'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -270,7 +270,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setRankingMode('points')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               rankingMode === 'points'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -281,7 +281,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setRankingMode('lifetime')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               rankingMode === 'lifetime'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -308,7 +308,7 @@ export const Leaderboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 {/* Rank and Avatar */}
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white text-xl font-bold shadow-sm">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-xl font-bold shadow-sm">
                     {getRankIcon(index)}
                   </div>
                   <div className="flex items-center space-x-3">
@@ -603,7 +603,7 @@ export const Leaderboard: React.FC = () => {
       })()}
 
       {/* Level Journey */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-blue-50 p-6 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Level Journey</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {LEVELS.map((level) => {
@@ -640,7 +640,7 @@ export const Leaderboard: React.FC = () => {
     return (
       <div className="space-y-6">
         {/* Available Rewards */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-blue-50 p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
             <Sparkles className="w-5 h-5 mr-2 text-yellow-500" />
             Available Rewards
@@ -709,7 +709,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setActiveTab('overview')}
             className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
               activeTab === 'overview'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -720,7 +720,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setActiveTab('leaderboard')}
             className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
               activeTab === 'leaderboard'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -731,7 +731,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setActiveTab('progress')}
             className={`px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
               activeTab === 'progress'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -742,7 +742,7 @@ export const Leaderboard: React.FC = () => {
             onClick={() => setActiveTab('rewards')}
             className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
               activeTab === 'rewards'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-blue-50 text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >

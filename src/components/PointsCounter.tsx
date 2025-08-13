@@ -3,8 +3,62 @@ import React from 'react'
 import { useStats } from '../contexts/StatsContext'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
-import { Star, Crown, Target, Trophy, Clock } from 'lucide-react'
+import { Star, Crown, Target, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from 'lucide-react'
 import { useMemo } from 'react'
+
+// Function to get current season based on date
+const getCurrentSeason = () => {
+  const now = new Date()
+  const month = now.getMonth() + 1 // getMonth() returns 0-11, so add 1
+  const day = now.getDate()
+  
+  // Define season boundaries (Northern Hemisphere)
+  if ((month === 3 && day >= 20) || month === 4 || month === 5 || (month === 6 && day < 21)) {
+    return 'Spring'
+  } else if ((month === 6 && day >= 21) || month === 7 || month === 8 || (month === 9 && day < 22)) {
+    return 'Summer'
+  } else if ((month === 9 && day >= 22) || month === 10 || month === 11 || (month === 12 && day < 21)) {
+    return 'Fall'
+  } else {
+    return 'Winter'
+  }
+}
+
+// Function to get season icon and colors
+const getSeasonInfo = (season: string) => {
+  switch (season) {
+    case 'Spring':
+      return {
+        icon: <Flower className="w-3 h-3" />,
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-800'
+      }
+    case 'Summer':
+      return {
+        icon: <Sun className="w-3 h-3" />,
+        bgColor: 'bg-yellow-100',
+        textColor: 'text-yellow-800'
+      }
+    case 'Fall':
+      return {
+        icon: <Leaf className="w-3 h-3" />,
+        bgColor: 'bg-orange-100',
+        textColor: 'text-orange-800'
+      }
+    case 'Winter':
+      return {
+        icon: <Snowflake className="w-3 h-3" />,
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-800'
+      }
+    default:
+      return {
+        icon: <Clock className="w-3 h-3" />,
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-800'
+      }
+  }
+}
 
 export const PointsCounter: React.FC = () => {
 
@@ -57,12 +111,16 @@ export const PointsCounter: React.FC = () => {
             <span className="text-2xl font-bold text-gray-900">
               Level {stats.currentLevel}
             </span>
-            {hasLevelPersistence && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
-                <Clock className="w-3 h-3" />
-                <span>Level Protected</span>
-              </div>
-            )}
+            {(() => {
+              const currentSeason = getCurrentSeason()
+              const seasonInfo = getSeasonInfo(currentSeason)
+              return (
+                <div className={`flex items-center space-x-1 px-2 py-1 ${seasonInfo.bgColor} ${seasonInfo.textColor} rounded-full text-xs font-medium`}>
+                  {seasonInfo.icon}
+                  <span>{currentSeason}</span>
+                </div>
+              )
+            })()}
           </div>
           <p className="text-gray-600 mb-1">{currentLevelData?.name}</p>
           <div className="text-xs text-gray-500">{currentLevelData?.icon}</div>

@@ -16,16 +16,16 @@ import {
 
 const CustomizeProfile: React.FC = () => {
   const { state: { currentUser, household }, updateCurrentUser } = useUsers();
-  const { getCurrentUserStats } = useStats();
+  const { getUserStats } = useStats();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(currentUser?.name || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const userStats = getCurrentUserStats();
+  const userStats = currentUser ? getUserStats(currentUser.id) : undefined;
   const currentLevel = userStats?.currentLevel || 1;
-  const currentPoints = userStats?.totalPoints || 0;
+  const currentPoints = userStats?.earnedPoints || 0;
   const currentStreak = userStats?.currentStreak || 0;
 
   // Level-based customization options
@@ -165,7 +165,7 @@ const CustomizeProfile: React.FC = () => {
                       type="text"
                       value={editedName}
                       onChange={handleNameChange}
-                      className="text-xl font-semibold text-center bg-white border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="text-xl font-semibold text-center bg-blue-50 border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter name"
                       maxLength={20}
                     />

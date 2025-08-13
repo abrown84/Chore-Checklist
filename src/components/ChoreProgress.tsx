@@ -62,7 +62,7 @@ export const ChoreProgress: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white shadow rounded-lg">
+    <Card className="bg-blue-50 shadow rounded-lg">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium text-gray-900">Level System</CardTitle>

@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  chore-checklist-app:
+  daily-grind-app:
     build: .
     ports:
       - "8080:3000"

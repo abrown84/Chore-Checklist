@@ -104,7 +104,7 @@ export const LevelUpCelebration: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div 
         ref={modalRef}
-        className="relative bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl animate-bounce"
+        className="relative bg-blue-50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl animate-bounce"
       >
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl -z-10" />
