@@ -89,9 +89,6 @@ export const PointsCounter: React.FC = () => {
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
   const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
   
-  // Check if user has level persistence (recently redeemed points)
-  const hasLevelPersistence = stats.levelPersistenceInfo && stats.levelPersistenceInfo.expiresAt > Date.now()
-  
   // Get level icon based on level
   const getLevelIcon = (level: number) => {
     if (level >= 10) return <Crown className="w-5 h-5 text-amber-600" />
