@@ -36,12 +36,9 @@ export function useAuth() {
     }
 
     const storedUser = localStorage.getItem('choreAppUser')
-    console.log('useAuth: Raw stored user:', storedUser)
     if (storedUser) {
       try {
         const parsedUser: StoredUser = JSON.parse(storedUser)
-        console.log('useAuth: Parsed stored user:', parsedUser)
-        console.log('useAuth: Parsed user name:', parsedUser.name)
         // Convert stored dates back to Date objects
         const userWithDates: User = {
           id: parsedUser.id,
@@ -52,7 +49,7 @@ export function useAuth() {
           joinedAt: new Date(parsedUser.joinedAt),
           isActive: parsedUser.isActive
         }
-        console.log('useAuth: Final user object:', userWithDates)
+
         setUser(userWithDates)
         
         // Check if this user should be admin (first user in the system)
@@ -123,25 +120,18 @@ export function useAuth() {
     setIsLoading(true)
     
     try {
-      // Debug logging
-      console.log('Sign in attempt:', { email, password: '***', rememberMe })
-      
       // Check if user exists in localStorage
       const storedUsers = localStorage.getItem('choreAppUsers')
       let users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : []
-      
-      console.log('Stored users:', users.map(u => ({ email: u.email, name: u.name, role: u.role })))
       
       // Find existing user - compare email and password
       const existingUser = users.find(u => {
         const emailMatch = u.email.toLowerCase() === email.toLowerCase()
         const passwordMatch = u.password === password
-        console.log(`Checking user ${u.email}: email match: ${emailMatch}, password match: ${passwordMatch}`)
         return emailMatch && passwordMatch
       })
       
       if (existingUser) {
-        console.log('Login successful for user:', existingUser.email)
         // Convert stored dates back to Date objects
         const userWithDates: User = {
           id: existingUser.id,
@@ -164,7 +154,7 @@ export function useAuth() {
       }
       
       // If no user found, throw an error - authentication is required
-      console.log('No matching user found')
+
       throw new Error('Invalid email or password. Please check your credentials or create a new account.')
       
     } catch (error) {
@@ -179,14 +169,9 @@ export function useAuth() {
     setIsLoading(true)
     
     try {
-      // Debug logging
-      console.log('Sign up attempt:', { email, name, password: '***' })
-      
       // Check if user already exists
       const storedUsers = localStorage.getItem('choreAppUsers')
       let users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : []
-      
-      console.log('Existing users before signup:', users.map(u => ({ email: u.email, name: u.name })))
       
       if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
         throw new Error('User already exists with this email address')
@@ -213,7 +198,7 @@ export function useAuth() {
       // Store current user
       localStorage.setItem('choreAppUser', JSON.stringify(newUser))
       
-      console.log('Sign up successful for user:', newUser.email)
+
       
       // Convert to User type
       const userWithDates: User = {
@@ -239,12 +224,7 @@ export function useAuth() {
 
   const signOut = useCallback(() => {
     const currentStoredUser = localStorage.getItem('choreAppUser')
-    console.log('signOut called - stored user:', currentStoredUser ? 'found' : 'not found')
-    console.log('localStorage before removal:', currentStoredUser)
-    
-    const oldValue = currentStoredUser
     localStorage.removeItem('choreAppUser')
-    console.log('localStorage after removal:', localStorage.getItem('choreAppUser'))
     
     // Force immediate synchronous state update
     flushSync(() => {
@@ -252,12 +232,10 @@ export function useAuth() {
       setIsLoading(false)
     })
     
-    console.log('setUser(null) and setIsLoading(false) called - signOut completed')
-    
     // Force a re-render by triggering storage event manually for cross-tab sync
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'choreAppUser',
-      oldValue: oldValue,
+      oldValue: currentStoredUser,
       newValue: null,
       storageArea: localStorage
     }))

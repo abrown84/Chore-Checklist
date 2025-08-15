@@ -7,6 +7,16 @@ export default {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			// Primary brand font - industrial/coffee shop feel
+  			'brand': ['Roboto Slab', 'serif'],
+  			// Headers and emphasis - strong, industrial
+  			'heading': ['Oswald', 'sans-serif'],
+  			// Body text - clean, modern, readable
+  			'body': ['Work Sans', 'sans-serif'],
+  			// Alternative sans-serif - technical/modern
+  			'sans-alt': ['Barlow', 'sans-serif'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -52,6 +62,23 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning))',
+  				foreground: 'hsl(var(--warning-foreground))'
+  			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info))',
+  				foreground: 'hsl(var(--info-foreground))'
+  			},
+  			nav: {
+  				active: 'hsl(var(--nav-active))',
+  				inactive: 'hsl(var(--nav-inactive))',
+  				hover: 'hsl(var(--nav-hover))'
   			}
   		}
   	}

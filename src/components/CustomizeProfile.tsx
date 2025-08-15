@@ -14,7 +14,9 @@ import {
   Edit
 } from 'lucide-react'
 
-const CustomizeProfile: React.FC = () => {
+// DEPRECATED: This component has been merged into ProfileAndRewards.tsx
+// Keeping for reference only - can be deleted after testing
+const CustomizeProfile_DEPRECATED: React.FC = () => {
   const { state: { currentUser, household }, updateCurrentUser } = useUsers();
   const { getUserStats } = useStats();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -480,4 +482,4 @@ const CustomizeProfile: React.FC = () => {
   );
 };
 
-export default CustomizeProfile;
+export default CustomizeProfile_DEPRECATED;

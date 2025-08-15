@@ -20,7 +20,7 @@ interface RedemptionRequest {
 
 export const PointRedemption: React.FC = () => {
   const { state: userState } = useUsers()
-  const { getAllUserStats, updateUserPoints, setLevelPersistence } = useStats()
+  const { getAllUserStats, updateUserPoints, setLevelPersistence, forceRefresh } = useStats()
   const [conversionRate, setConversionRate] = useState(100) // points per dollar
   const [isAdmin, setIsAdmin] = useState(false)
   const [redemptionRequests, setRedemptionRequests] = useState<RedemptionRequest[]>([])
@@ -41,11 +41,6 @@ export const PointRedemption: React.FC = () => {
     const adminStatus = currentUser?.role === 'admin'
     setIsAdmin(adminStatus)
     
-    // Debug logging
-    console.log('PointRedemption - Current User:', currentUser)
-    console.log('PointRedemption - User Role:', currentUser?.role)
-    console.log('PointRedemption - Is Admin:', adminStatus)
-    
     // Load conversion rate from localStorage
     const savedRate = localStorage.getItem('pointRedemptionRate')
     if (savedRate) {
@@ -65,7 +60,6 @@ export const PointRedemption: React.FC = () => {
           processedAt: req.processedAt ? new Date(req.processedAt) : undefined
         }))
         setRedemptionRequests(parsedRequests)
-        console.log('PointRedemption - Loaded requests from localStorage:', parsedRequests)
       } catch (error) {
         console.error('PointRedemption - Error parsing redemption requests:', error)
       }
@@ -145,8 +139,12 @@ export const PointRedemption: React.FC = () => {
         if (userStats) {
           // Set level persistence for configurable days
           setLevelPersistence(request.userId, userStats.currentLevel, userStats.earnedPoints, levelPersistenceDays)
-          console.log(`Set level persistence for user ${request.userId}: level ${userStats.currentLevel} for ${levelPersistenceDays} days`)
         }
+        
+        // Force refresh the stats to ensure UI updates
+        setTimeout(() => {
+          forceRefresh()
+        }, 100)
       }
       
       setProcessingRequest(null)
@@ -176,10 +174,10 @@ export const PointRedemption: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">💰 Point Redemption</h1>
-        <p className="text-gray-600">Convert your hard-earned points into cash!</p>
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-center space-x-2 text-blue-800">
+        <h1 className="text-3xl font-bold text-foreground mb-2">💰 Point Redemption</h1>
+        <p className="text-muted-foreground">Convert your hard-earned points into cash!</p>
+        <div className="mt-4 p-4 rounded-lg border bg-card/80 backdrop-blur-sm">
+          <div className="flex items-center justify-center space-x-2 text-foreground">
             <Calculator className="w-5 h-5" />
             <span className="font-medium">
               Current Rate: {conversionRate} points = $1.00
@@ -190,37 +188,37 @@ export const PointRedemption: React.FC = () => {
 
       {/* Available Points Display */}
       {currentUserStats && (
-        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+        <Card className="bg-gradient-to-br from-success/10 via-primary/10 to-accent/10 border-success/20">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="flex items-center justify-center space-x-3 mb-3">
-                <Coins className="w-8 h-8 text-green-600" />
-                <h2 className="text-2xl font-bold text-gray-900">Your Available Points</h2>
+                <Coins className="w-8 h-8 text-success" />
+                <h2 className="text-2xl font-bold text-foreground">Your Available Points</h2>
               </div>
-              <div className="text-4xl font-bold text-green-600 mb-2">
+              <div className="text-4xl font-bold text-success mb-2">
                 {currentUserStats.earnedPoints.toLocaleString()}
               </div>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 You can redeem these points for cash at the current rate of {conversionRate} points = $1.00
               </p>
               
               {/* Level Persistence Indicator */}
               {currentUserStats.levelPersistenceInfo && currentUserStats.levelPersistenceInfo.expiresAt > Date.now() && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center justify-center space-x-2 text-amber-800">
+                <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                  <div className="flex items-center justify-center space-x-2 text-warning">
                     <Clock className="w-4 h-4" />
                     <span className="text-sm font-medium">
                       Level {currentUserStats.levelPersistenceInfo.persistedLevel} Protected
                     </span>
                   </div>
-                  <p className="text-xs text-amber-700 mt-1">
+                  <p className="text-xs text-warning mt-1">
                     Your level is protected until {new Date(currentUserStats.levelPersistenceInfo.expiresAt).toLocaleDateString()}
                   </p>
                 </div>
               )}
               
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-green-200">
-                <span className="text-lg font-medium text-gray-700">
+              <div className="mt-3 p-3 bg-primary/10 rounded-lg border border-success/20">
+                <span className="text-lg font-medium text-foreground">
                   Maximum Cash Value: ${((currentUserStats.earnedPoints / conversionRate)).toFixed(2)}
                 </span>
               </div>
@@ -266,10 +264,7 @@ export const PointRedemption: React.FC = () => {
             <Button 
               size="sm" 
               variant="outline" 
-              onClick={() => {
-                console.log('LocalStorage redemptionRequests:', localStorage.getItem('redemptionRequests'))
-                console.log('Current redemptionRequests state:', redemptionRequests)
-              }}
+              onClick={() => {}}
             >
               Log Requests
             </Button>
@@ -312,7 +307,7 @@ export const PointRedemption: React.FC = () => {
 
       {/* Admin Panel */}
       {isAdmin && (
-        <Card>
+        <Card className="bg-card/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Settings className="w-5 h-5" />
@@ -360,7 +355,7 @@ export const PointRedemption: React.FC = () => {
             {showAdminPanel && (
               <div className="space-y-4">
                 {/* Conversion Rate Settings */}
-                <div className="p-4 bg-gray-50 rounded-lg border">
+                <div className="p-4 bg-muted rounded-lg border">
                   <label htmlFor="conversionRate" className="text-sm font-medium block mb-2">
                     New Conversion Rate (points per dollar)
                   </label>
@@ -382,7 +377,7 @@ export const PointRedemption: React.FC = () => {
                 </div>
 
                 {/* Level Persistence Settings */}
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
                   <label htmlFor="levelPersistenceDays" className="text-sm font-medium block mb-2 text-amber-800">
                     Level Persistence Grace Period (days)
                   </label>

@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Chore, ChoreStats, LEVELS } from '../types/chore'
 import { resetChoresToDefaults } from '../utils/defaultChores'
 import { isMidnightResetTime, resetDailyChores } from '../utils/midnightReset'
-// Removed useStats import to fix circular dependency
 
 interface ChoreState {
   chores: Chore[]
@@ -16,7 +15,7 @@ type ChoreAction =
   | { type: 'UPDATE_CHORE'; payload: Chore }
   | { type: 'LOAD_CHORES'; payload: Chore[] }
   | { type: 'RESET_CHORES'; payload?: never }
-  // Removed APPROVE_CHORE and REJECT_CHORE actions - no longer needed
+  | { type: 'BATCH_UPDATE'; payload: { chores: Chore[]; stats: ChoreStats } }
 
 const initialState: ChoreState = {
   chores: [],
@@ -34,6 +33,72 @@ const initialState: ChoreState = {
   }
 }
 
+// Memoized stats calculation function
+const calculateStats = (chores: Chore[]): ChoreStats => {
+  const completedChores = chores.filter(chore => chore.completed)
+  const totalPoints = chores.reduce((sum, chore) => sum + chore.points, 0)
+  const earnedPoints = completedChores.reduce((sum, chore) => sum + chore.points, 0)
+  
+  // Calculate streak logic (simplified for performance)
+  let currentStreak = 0
+  let longestStreak = 0
+  let tempStreak = 0
+  
+  const sortedCompleted = completedChores
+    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+  
+  for (const chore of sortedCompleted) {
+    if (chore.completedAt) {
+      const completionDate = new Date(chore.completedAt)
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - completionDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays <= 1) {
+        tempStreak++
+        currentStreak = Math.max(currentStreak, tempStreak)
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak)
+        tempStreak = 0
+      }
+    }
+  }
+  
+  longestStreak = Math.max(longestStreak, tempStreak)
+  
+  // Calculate level based on earned points
+  let currentLevel = 1
+  let currentLevelPoints = earnedPoints
+  let pointsToNextLevel = 100
+  
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (earnedPoints >= LEVELS[i].pointsRequired) {
+      currentLevel = LEVELS[i].level
+      currentLevelPoints = earnedPoints - LEVELS[i].pointsRequired
+      if (i < LEVELS.length - 1) {
+        pointsToNextLevel = LEVELS[i + 1].pointsRequired - earnedPoints
+      } else {
+        pointsToNextLevel = 0
+      }
+    } else {
+      break
+    }
+  }
+  
+  return {
+    totalChores: chores.length,
+    completedChores: completedChores.length,
+    totalPoints,
+    earnedPoints,
+    currentStreak,
+    longestStreak,
+    currentLevel,
+    currentLevelPoints,
+    pointsToNextLevel,
+    totalLevels: LEVELS.length
+  }
+}
+
 function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
   switch (action.type) {
     case 'ADD_CHORE': {
@@ -42,11 +107,12 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date(),
         completed: false,
-        // Removed approval fields - no longer needed
       }
+      const newChores = [...state.chores, newChore]
       return {
         ...state,
-        chores: [...state.chores, newChore]
+        chores: newChores,
+        stats: calculateStats(newChores)
       }
     }
     
@@ -98,29 +164,33 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
       
       const updatedChores = state.chores.map(chore =>
         chore.id === action.payload.id
-          ? { 
-              ...chore, 
-              completed: true, 
+          ? {
+              ...chore,
+              completed: true,
               completedAt: new Date(),
               completedBy: action.payload.completedBy,
+              // Persist the final calculated points separately for lifetime tracking and resets
+              // Keep points updated for current display while also storing finalPoints
+              points: finalPoints,
               finalPoints: finalPoints,
-              bonusMessage: bonusMessage,
-              // Removed approval fields - no longer needed
+              bonusMessage
             }
           : chore
       )
       
       return {
         ...state,
-        chores: updatedChores
+        chores: updatedChores,
+        stats: calculateStats(updatedChores)
       }
     }
     
     case 'DELETE_CHORE': {
-      const updatedChores = state.chores.filter(chore => chore.id !== action.payload.id)
+      const filteredChores = state.chores.filter(chore => chore.id !== action.payload.id)
       return {
         ...state,
-        chores: updatedChores
+        chores: filteredChores,
+        stats: calculateStats(filteredChores)
       }
     }
     
@@ -130,171 +200,155 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
       )
       return {
         ...state,
-        chores: updatedChores
+        chores: updatedChores,
+        stats: calculateStats(updatedChores)
       }
     }
     
     case 'LOAD_CHORES': {
-      // Ensure all chores have the required fields (approval fields are no longer used)
-      const validatedChores = action.payload.map(chore => ({
-        ...chore,
-        // Removed approval fields - no longer needed
-      }))
-      
       return {
         ...state,
-        chores: validatedChores
+        chores: action.payload,
+        stats: calculateStats(action.payload)
       }
     }
     
     case 'RESET_CHORES': {
-      localStorage.removeItem('chores')
-      const freshDefaultChores = resetChoresToDefaults().map(chore => ({
+      const defaultChores = resetChoresToDefaults()
+      const choresWithIds = defaultChores.map(chore => ({
         ...chore,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date(),
-        completed: false,
-        // Removed approval fields - no longer needed
+        completed: false
       }))
-      
       return {
         ...state,
-        chores: freshDefaultChores
+        chores: choresWithIds,
+        stats: calculateStats(choresWithIds)
       }
     }
     
-    // Removed APPROVE_CHORE and REJECT_CHORE cases - no longer needed
+    case 'BATCH_UPDATE': {
+      return {
+        chores: action.payload.chores,
+        stats: action.payload.stats
+      }
+    }
     
     default:
       return state
   }
 }
 
-// Basic stats calculation - just counts and points
-function useChoreStats(chores: Chore[]) {
-  return useMemo(() => {
-    const totalChores = chores.length
-    const completedChores = chores.filter(chore => chore.completed).length
-    const totalPoints = chores.reduce((sum, chore) => sum + chore.points, 0)
-    const earnedPoints = chores
-      .filter(chore => chore.completed)
-      .reduce((sum, chore) => {
-        const earnedPoints = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
-        return sum + earnedPoints
-      }, 0)
-    
-    return {
-      totalChores,
-      completedChores,
-      totalPoints,
-      earnedPoints,
-      currentStreak: 0,
-      longestStreak: 0,
-      currentLevel: 1,
-      currentLevelPoints: 0,
-      pointsToNextLevel: 100,
-      totalLevels: LEVELS.length
-    }
-  }, [chores])
-}
+// Memoized context value to prevent unnecessary re-renders
+const createContextValue = (state: ChoreState, dispatch: React.Dispatch<ChoreAction>) => ({
+  state,
+  addChore: useCallback((choreData: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => {
+    dispatch({ type: 'ADD_CHORE', payload: choreData })
+  }, [dispatch]),
+  
+  completeChore: useCallback((id: string, completedBy: string) => {
+    dispatch({ type: 'COMPLETE_CHORE', payload: { id, completedBy } })
+  }, [dispatch]),
+  
+  deleteChore: useCallback((id: string) => {
+    dispatch({ type: 'DELETE_CHORE', payload: { id } })
+  }, [dispatch]),
+  
+  updateChore: useCallback((chore: Chore) => {
+    dispatch({ type: 'UPDATE_CHORE', payload: chore })
+  }, [dispatch]),
+  
+  resetChores: useCallback(() => {
+    dispatch({ type: 'RESET_CHORES' })
+  }, [dispatch]),
+  
+  clearChoreState: useCallback(() => {
+    dispatch({ type: 'LOAD_CHORES', payload: [] })
+  }, [dispatch]),
+  
+  repairDefaultUserChores: useCallback(() => {
+    // Implementation for repairing chores
+    const currentChores = state.chores
+    const repairedChores = currentChores.map(chore => 
+      chore.assignedTo === 'default-user' 
+        ? { ...chore, assignedTo: 'current-user-id' }
+        : chore
+    )
+    dispatch({ type: 'BATCH_UPDATE', payload: { 
+      chores: repairedChores, 
+      stats: calculateStats(repairedChores) 
+    }})
+  }, [state.chores, dispatch])
+})
 
-export const ChoreContext = createContext<{
-  state: ChoreState
-  dispatch: React.Dispatch<ChoreAction>
-  addChore: (chore: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => void
-  completeChore: (id: string) => void
-  deleteChore: (id: string) => void
-  updateChore: (chore: Chore) => void
-  resetChores: () => void
-  getCurrentChores: () => Chore[]
-  clearChoreState: () => void
-  // Removed approveChore and rejectChore from context
-} | null>(null)
+const ChoreContext = createContext<ReturnType<typeof createContextValue> | null>(null)
 
-export const ChoreProvider = ({ children, currentUserId }: { children: React.ReactNode; currentUserId?: string }) => {
+export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?: string }> = ({ 
+  children 
+}) => {
   const [state, dispatch] = useReducer(choreReducer, initialState)
+  const storageTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastStorageUpdate = useRef<number>(0)
   
-  // Calculate basic chore stats efficiently with memoization
-  const stats = useChoreStats(state.chores)
-  
-  // Load chores from localStorage on mount
-  useEffect(() => {
-    const savedChores = localStorage.getItem('chores')
-    
-    if (savedChores) {
-      try {
-        const parsedChores = JSON.parse(savedChores)
-        
-        if (Array.isArray(parsedChores)) {
-          // Check if chores array is effectively empty (no actual chore data)
-          const hasValidChores = parsedChores.some(chore => 
-            chore && 
-            chore.title && 
-            chore.title.trim() !== '' && 
-            chore.description !== undefined
-          )
-          
-          if (parsedChores.length === 0 || !hasValidChores) {
-            // Load default chores if empty or no valid chores
-            const defaultChores = resetChoresToDefaults().map(chore => ({
-              ...chore,
-              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              createdAt: new Date(),
-              completed: false
-            }))
-            dispatch({ type: 'LOAD_CHORES', payload: defaultChores })
-          } else {
-            const chores = parsedChores.map((chore: any) => ({
-              id: chore.id || Date.now().toString(),
-              title: chore.title || 'Untitled Chore',
-              description: chore.description || '',
-              difficulty: chore.difficulty || 'easy',
-              points: typeof chore.points === 'number' ? chore.points : 5,
-              category: chore.category || 'daily',
-              priority: chore.priority || 'medium',
-              completed: Boolean(chore.completed),
-              createdAt: chore.createdAt ? new Date(chore.createdAt) : new Date(),
-              completedAt: chore.completedAt && chore.completed ? new Date(chore.completedAt) : undefined,
-              completedBy: chore.completedBy || undefined,
-              dueDate: chore.dueDate ? new Date(chore.dueDate) : undefined,
-              assignedTo: chore.assignedTo || undefined,
-              // Removed approval fields - no longer needed
-            }))
-            dispatch({ type: 'LOAD_CHORES', payload: chores })
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load chores from localStorage:', error)
-        localStorage.removeItem('chores')
-        // Load default chores after clearing corrupted localStorage
-        const defaultChores = resetChoresToDefaults().map(chore => ({
-          ...chore,
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date(),
-          completed: false,
-          // Removed approval fields - no longer needed
-        }))
-        dispatch({ type: 'LOAD_CHORES', payload: defaultChores })
+  // Debounced storage update to prevent excessive localStorage writes
+  const updateStorage = useCallback((chores: Chore[]) => {
+    const now = Date.now()
+    if (now - lastStorageUpdate.current < 1000) { // Debounce to 1 second
+      if (storageTimeoutRef.current) {
+        clearTimeout(storageTimeoutRef.current)
       }
+      storageTimeoutRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem('chores', JSON.stringify(chores))
+          lastStorageUpdate.current = Date.now()
+        } catch (error) {
+          console.error('Error saving chores to storage:', error)
+        }
+      }, 1000)
     } else {
-      // Load default chores if none exist
-      const defaultChores = resetChoresToDefaults().map(chore => ({
-        ...chore,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date(),
-        completed: false,
-        // Removed approval fields - no longer needed
-      }))
-      dispatch({ type: 'LOAD_CHORES', payload: defaultChores })
+      try {
+        localStorage.setItem('chores', JSON.stringify(chores))
+        lastStorageUpdate.current = now
+      } catch (error) {
+        console.error('Error saving chores to storage:', error)
+      }
     }
   }, [])
-  
-  // Save chores to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('chores', JSON.stringify(state.chores))
-  }, [state.chores])
 
-  // Check for midnight reset
+  // Load chores from storage on mount
+  useEffect(() => {
+    try {
+      const storedChores = localStorage.getItem('chores')
+      if (storedChores) {
+        const parsedChores = JSON.parse(storedChores)
+        // Convert stored dates back to Date objects
+        const choresWithDates = parsedChores.map((chore: any) => ({
+          ...chore,
+          createdAt: new Date(chore.createdAt),
+          dueDate: chore.dueDate ? new Date(chore.dueDate) : null,
+          completedAt: chore.completedAt ? new Date(chore.completedAt) : null
+        }))
+        dispatch({ type: 'LOAD_CHORES', payload: choresWithDates })
+      } else {
+        // If no stored chores exist, create default chores for new users
+        dispatch({ type: 'RESET_CHORES' })
+      }
+    } catch (error) {
+      console.error('Error loading chores from storage:', error)
+      // On error, create default chores as fallback
+      dispatch({ type: 'RESET_CHORES' })
+    }
+  }, [])
+
+  // Save chores to storage when they change
+  useEffect(() => {
+    if (state.chores.length > 0) {
+      updateStorage(state.chores)
+    }
+  }, [state.chores, updateStorage])
+
+  // Midnight reset logic
   useEffect(() => {
     const checkMidnightReset = () => {
       if (isMidnightResetTime()) {
@@ -302,68 +356,29 @@ export const ChoreProvider = ({ children, currentUserId }: { children: React.Rea
         dispatch({ type: 'LOAD_CHORES', payload: resetChores })
       }
     }
-    
-    checkMidnightReset()
-    const interval = setInterval(checkMidnightReset, 60000)
-    
+
+    const interval = setInterval(checkMidnightReset, 60000) // Check every minute
     return () => clearInterval(interval)
   }, [state.chores])
-  
-  const addChore = useCallback((chore: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => {
-    dispatch({ type: 'ADD_CHORE', payload: chore })
-  }, [])
-  
-  const completeChore = useCallback((id: string) => {
-    if (!currentUserId) {
-      // Silently ignore when no current user ID
-      return
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (storageTimeoutRef.current) {
+        clearTimeout(storageTimeoutRef.current)
+      }
     }
-    dispatch({ type: 'COMPLETE_CHORE', payload: { id, completedBy: currentUserId } })
-  }, [currentUserId])
-  
-  const deleteChore = useCallback((id: string) => {
-    dispatch({ type: 'DELETE_CHORE', payload: { id } })
-  }, [])
-  
-  const updateChore = useCallback((chore: Chore) => {
-    dispatch({ type: 'UPDATE_CHORE', payload: chore })
-  }, [])
-  
-  const resetChores = useCallback(() => {
-    dispatch({ type: 'RESET_CHORES' })
   }, [])
 
-  const getCurrentChores = useCallback(() => {
-    return state.chores
-  }, [state.chores])
-  
-  const clearChoreState = useCallback(() => {
-    // Clear chores from localStorage and reset to initial state
-    localStorage.removeItem('chores')
-    dispatch({ type: 'LOAD_CHORES', payload: [] })
-  }, [])
-  
-  // Removed approveChore and rejectChore functions - no longer needed
-  
+  const contextValue = useMemo(() => createContextValue(state, dispatch), [state, dispatch])
+
   return (
-    <ChoreContext.Provider value={{
-      state: { ...state, stats },
-      dispatch,
-      addChore,
-      completeChore,
-      deleteChore,
-      updateChore,
-      resetChores,
-      getCurrentChores,
-      clearChoreState
-      // Removed approveChore and rejectChore from provider
-    }}>
+    <ChoreContext.Provider value={contextValue}>
       {children}
     </ChoreContext.Provider>
   )
 }
 
-// Export the hook with a consistent name for Fast Refresh compatibility
 export const useChores = () => {
   const context = useContext(ChoreContext)
   if (!context) {

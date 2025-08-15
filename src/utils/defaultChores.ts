@@ -4,8 +4,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
   // ===== DAILY CHORES =====
   // Daily Chores - Easy (5 points)
   {
-    title: 'Make the bed',
-    description: 'Straighten sheets, fluff pillows, and arrange blankets neatly',
+    title: 'Morning Setup Routine',
+    description: 'Execute bedroom optimization: straighten linens, arrange pillows, and organize space for peak daily performance',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -18,8 +18,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Take out trash',
-    description: 'Empty all trash bins and take to the curb',
+    title: 'Waste Management Protocol',
+    description: 'Complete household waste elimination cycle: collect, process, and dispatch to designated collection point',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -32,8 +32,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Wipe kitchen counters',
-    description: 'Clean and sanitize kitchen countertops and surfaces',
+    title: 'Kitchen Surface Optimization',
+    description: 'Maintain food prep zone efficiency: sanitize work surfaces and optimize counter space for productivity',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -46,8 +46,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Load/unload dishwasher',
-    description: 'Empty clean dishes and load dirty ones',
+    title: 'Dishware Cycle Management',
+    description: 'Execute kitchen automation cycle: process clean inventory and queue next cleaning batch',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -60,8 +60,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Quick bathroom tidy',
-    description: 'Wipe down sink, mirror, and organize toiletries',
+    title: 'Bathroom Efficiency Check',
+    description: 'Optimize personal care station: refresh surfaces, organize essentials, and maintain functional layout',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -74,8 +74,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Feed pets',
-    description: 'Give fresh food and water to household pets',
+    title: 'Pet Care Protocol',
+    description: 'Execute daily pet wellness routine: provide nutrition and hydration for optimal household harmony',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -88,8 +88,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Pick up clutter',
-    description: 'Quick 5-minute tidy of common areas',
+    title: '5-Minute Reset Sprint',
+    description: 'Execute rapid declutter protocol: restore common areas to baseline organization standards',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'daily',
@@ -104,8 +104,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Daily Chores - Medium (10 points)
   {
-    title: 'Clean the kitchen',
-    description: 'Wash dishes, wipe counters, and organize the sink area',
+    title: 'Kitchen Command Center Reset',
+    description: 'Complete kitchen ecosystem restoration: process dishware, optimize surfaces, and organize workflow zones',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'daily',
@@ -118,8 +118,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Sweep/mop floors',
-    description: 'Clean high-traffic areas and kitchen floors',
+    title: 'Floor Maintenance Protocol',
+    description: 'Execute surface restoration for high-traffic zones: sweep debris and optimize floor condition',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'daily',
@@ -132,8 +132,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Organize living room',
-    description: 'Pick up items, fluff cushions, and straighten furniture',
+    title: 'Living Space Optimization',
+    description: 'Restore social zone to peak functionality: organize items, refresh seating, and align furniture for maximum comfort',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'daily',
@@ -146,8 +146,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Water indoor plants',
-    description: 'Check soil moisture and water plants as needed',
+    title: 'Plant Wellness Check',
+    description: 'Execute indoor ecosystem maintenance: assess hydration needs and optimize plant health for enhanced air quality',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'daily',
@@ -163,8 +163,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
   // ===== WEEKLY CHORES =====
   // Weekly Chores - Easy (5 points)
   {
-    title: 'Change bed sheets',
-    description: 'Remove old sheets and put on fresh ones',
+    title: 'Sleep Environment Upgrade',
+    description: 'Complete bedding refresh cycle: deploy fresh linens for optimal rest and recovery performance',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'weekly',
@@ -177,8 +177,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Empty all trash bins',
-    description: 'Collect trash from all rooms and take to curb',
+    title: 'Complete Waste Audit',
+    description: 'Execute full-scale waste elimination: collect from all zones and complete disposal protocol',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'weekly',
@@ -191,8 +191,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Clean mirrors and windows',
-    description: 'Wipe down all mirrors and clean window surfaces',
+    title: 'Visual Clarity Enhancement',
+    description: 'Optimize light transmission and reflection: restore mirrors and windows to crystal-clear performance standards',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'weekly',
@@ -205,8 +205,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Organize mail and papers',
-    description: 'Sort through mail, file important documents, and recycle junk',
+    title: 'Information Management Sprint',
+    description: 'Process incoming data streams: sort correspondence, archive critical documents, and eliminate clutter',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'weekly',
@@ -221,8 +221,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Weekly Chores - Medium (10 points)
   {
-    title: 'Do laundry',
-    description: 'Sort clothes, wash, dry, and fold everything',
+    title: 'Textile Care Cycle',
+    description: 'Execute complete garment processing: sort, clean, dry, and organize wardrobe inventory for optimal accessibility',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -235,8 +235,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Vacuum living room',
-    description: 'Vacuum carpets, move furniture, and clean under cushions',
+    title: 'Deep Surface Restoration',
+    description: 'Execute comprehensive carpet maintenance: extract debris, optimize furniture placement, and refresh hidden zones',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -249,8 +249,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Deep clean bathroom',
-    description: 'Scrub tiles, clean grout, polish fixtures, and organize toiletries',
+    title: 'Bathroom System Overhaul',
+    description: 'Complete sanitation protocol: restore tile integrity, optimize fixture performance, and organize care products',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -263,8 +263,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Garden maintenance',
-    description: 'Weed, prune, water plants, and maintain outdoor spaces',
+    title: 'Outdoor Ecosystem Management',
+    description: 'Execute landscape optimization: eliminate invasive growth, trim for health, and maintain irrigation systems',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -277,8 +277,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Meal prep for the week',
-    description: 'Plan meals, grocery shop, and prepare ingredients for the week ahead',
+    title: 'Weekly Nutrition Strategy',
+    description: 'Execute meal optimization protocol: plan nutrition goals, acquire resources, and prep ingredients for peak efficiency',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -291,8 +291,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Clean refrigerator',
-    description: 'Remove expired items, clean shelves, and organize contents',
+    title: 'Food Storage Audit',
+    description: 'Optimize cold storage efficiency: eliminate expired inventory, sanitize compartments, and organize for accessibility',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'weekly',
@@ -307,8 +307,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Weekly Chores - Hard (15 points)
   {
-    title: 'Deep clean kitchen',
-    description: 'Clean inside appliances, organize cabinets, and deep clean surfaces',
+    title: 'Kitchen System Optimization',
+    description: 'Execute comprehensive culinary zone upgrade: restore appliance performance, optimize storage, and deep-clean all surfaces',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'weekly',
@@ -321,8 +321,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Organize and declutter',
-    description: 'Go through items, donate unused things, and organize spaces',
+    title: 'Strategic Declutter Mission',
+    description: 'Execute comprehensive space optimization: audit possessions, redistribute unused items, and maximize functional storage',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'weekly',
@@ -338,8 +338,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
   // ===== MONTHLY CHORES =====
   // Monthly Chores - Easy (5 points)
   {
-    title: 'Clean light fixtures',
-    description: 'Dust and clean light bulbs, lampshades, and fixtures',
+    title: 'Illumination System Maintenance',
+    description: 'Optimize lighting performance: clear debris from fixtures, refresh bulbs, and restore maximum brightness output',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'monthly',
@@ -352,8 +352,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Wash throw blankets',
-    description: 'Clean decorative blankets and throws',
+    title: 'Comfort Textile Refresh',
+    description: 'Execute decorative textile maintenance: restore softness and cleanliness of comfort accessories',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'monthly',
@@ -366,8 +366,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Clean air vents',
-    description: 'Remove dust and debris from air conditioning and heating vents',
+    title: 'Airflow Optimization Protocol',
+    description: 'Enhance HVAC efficiency: clear obstructions from ventilation systems for optimal air circulation',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'monthly',
@@ -382,8 +382,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Monthly Chores - Medium (10 points)
   {
-    title: 'Clean oven and stove',
-    description: 'Deep clean oven interior, stovetop, and range hood',
+    title: 'Cooking System Deep Clean',
+    description: 'Restore culinary equipment to peak performance: eliminate buildup from cooking surfaces and ventilation',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'monthly',
@@ -396,8 +396,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Wash windows thoroughly',
-    description: 'Clean window frames, sills, and glass inside and out',
+    title: 'Complete Window System Overhaul',
+    description: 'Maximize natural light transmission: restore all window components to crystal clarity inside and out',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'monthly',
@@ -410,8 +410,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Deep clean carpets',
-    description: 'Vacuum thoroughly and spot clean any stains',
+    title: 'Carpet Restoration Protocol',
+    description: 'Execute comprehensive floor covering maintenance: eliminate embedded debris and restore surface integrity',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'monthly',
@@ -424,8 +424,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Organize pantry',
-    description: 'Sort through food items, check expiration dates, and reorganize shelves',
+    title: 'Food Inventory Optimization',
+    description: 'Execute pantry efficiency audit: organize provisions, validate freshness, and maximize storage accessibility',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'monthly',
@@ -440,8 +440,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Monthly Chores - Hard (15 points)
   {
-    title: 'Organize closet',
-    description: 'Sort clothes by season, donate unused items, and arrange neatly',
+    title: 'Wardrobe Management System',
+    description: 'Execute seasonal clothing optimization: categorize by usage, redistribute excess inventory, and organize for accessibility',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'monthly',
@@ -454,8 +454,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Spring cleaning',
-    description: 'Deep clean entire house, declutter, and organize all rooms',
+    title: 'Comprehensive Home Reset',
+    description: 'Execute full-scale household optimization: deep clean all zones, eliminate clutter, and restore organization standards',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'monthly',
@@ -468,8 +468,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Clean garage/shed',
-    description: 'Organize tools, clean floors, and declutter storage areas',
+    title: 'Storage Facility Optimization',
+    description: 'Execute workshop/storage zone overhaul: organize equipment, restore floor condition, and maximize storage efficiency',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'monthly',
@@ -485,8 +485,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
   // ===== SEASONAL CHORES =====
   // Seasonal Chores - Easy (5 points)
   {
-    title: 'Change seasonal decorations',
-    description: 'Update home decor for the current season or upcoming holiday',
+    title: 'Seasonal Aesthetic Update',
+    description: 'Execute environmental refresh protocol: transition decorative elements to match current season and optimize ambiance',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'seasonal',
@@ -499,8 +499,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'Seasonal wardrobe rotation',
-    description: 'Pack away out-of-season clothes and bring out current season items',
+    title: 'Clothing Inventory Transition',
+    description: 'Execute seasonal wardrobe optimization: archive off-season items and deploy current climate-appropriate clothing',
     difficulty: 'easy',
     points: DIFFICULTY_POINTS.easy,
     category: 'seasonal',
@@ -515,8 +515,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Seasonal Chores - Medium (10 points)
   {
-    title: 'Garden seasonal prep',
-    description: 'Prepare garden for new season - plant seasonal flowers, adjust irrigation',
+    title: 'Landscape Seasonal Strategy',
+    description: 'Execute outdoor ecosystem transition: deploy seasonal plantings and optimize irrigation for changing climate conditions',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'seasonal',
@@ -529,8 +529,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
     // Removed approval fields - no longer needed
   },
   {
-    title: 'HVAC filter replacement',
-    description: 'Replace air filters and check HVAC system for seasonal maintenance',
+    title: 'Climate Control System Service',
+    description: 'Execute HVAC performance optimization: install fresh filtration and conduct seasonal system diagnostic',
     difficulty: 'medium',
     points: DIFFICULTY_POINTS.medium,
     category: 'seasonal',
@@ -545,8 +545,8 @@ export const defaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[] = [
 
   // Seasonal Chores - Hard (15 points)
   {
-    title: 'Deep seasonal cleaning',
-    description: 'Comprehensive cleaning including areas not cleaned regularly',
+    title: 'Comprehensive System Refresh',
+    description: 'Execute full-scale seasonal maintenance: deep clean neglected zones and restore all systems to peak performance',
     difficulty: 'hard',
     points: DIFFICULTY_POINTS.hard,
     category: 'seasonal',

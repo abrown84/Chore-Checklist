@@ -1,48 +1,205 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
-import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, LEVELS } from '../types/chore'
-import { CheckCircle, Circle, Trash2, Calendar, Clock, Target, Zap, RotateCcw, Filter, Crown, Star, Trophy } from 'lucide-react'
-import { isOverdue as checkIsOverdue, getCompletionStatus, getCurrentDueStatus, normalizeDueDate } from '../utils/dateHelpers'
+import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, CATEGORY_COLORS, LEVELS } from '../types/chore'
+import { CheckCircle, Trash2, Calendar, Clock, Target, Filter, Crown, Star, Trophy } from 'lucide-react'
+import { isOverdue as checkIsOverdue, getCurrentDueStatus, normalizeDueDate } from '../utils/dateHelpers'
+import { ChorePopupCelebration, usePopupCelebrations } from './ChorePopupCelebration'
 
-export const ChoreList: React.FC = () => {
-  const { state, completeChore, deleteChore, resetChores } = useChores()
-  const { recalculateStats, getCurrentUserStats } = useUsers()
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
+// Memoized chore item component to prevent unnecessary re-renders
+const ChoreItem = memo<{
+  chore: Chore
+  onComplete: (id: string, event?: React.MouseEvent) => void
+  onDelete: (id: string) => void
+  isAnimating: boolean
+}>(({ chore, onComplete, onDelete, isAnimating }) => {
+  const isOverdue = chore.dueDate ? checkIsOverdue(chore.dueDate) : false
+  const dueStatus = chore.dueDate ? getCurrentDueStatus(chore.dueDate) : null
+  
+  return (
+    <Card 
+      key={chore.id} 
+      className={`transition-all duration-300 bg-card/80 backdrop-blur-sm border ${
+        isAnimating ? 'scale-105 shadow-lg' : 'hover:shadow-md'
+      } ${
+        chore.completed 
+          ? 'bg-success/10 border-success/30 dark:bg-success/10 dark:border-success/30' 
+          : isOverdue 
+            ? 'bg-destructive/10 border-destructive/30 dark:bg-destructive/10 dark:border-destructive/30' 
+            : `${CATEGORY_COLORS[chore.category]} hover:shadow-lg`
+      } ${
+        !chore.completed ? 'cursor-pointer' : 'cursor-default'
+      }`}
+      onClick={(e) => !chore.completed && onComplete(chore.id, e)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-2">
+              <h3 className={`font-semibold text-lg ${
+                chore.completed ? 'line-through text-gray-500' : 'text-gray-900'
+              }`}>
+                {chore.title}
+              </h3>
+              {chore.completed && chore.bonusMessage && (
+                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  {chore.bonusMessage}
+                </span>
+              )}
+            </div>
+            
+            <p className={`text-sm mb-3 ${
+              chore.completed ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {chore.description}
+            </p>
+            
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                DIFFICULTY_COLORS[chore.difficulty]
+              }`}>
+                {chore.difficulty}
+              </span>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                PRIORITY_COLORS[chore.priority]
+              }`}>
+                {chore.priority}
+              </span>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                chore.category === 'daily' ? 'bg-emerald-100 text-emerald-800' :
+                chore.category === 'weekly' ? 'bg-blue-100 text-blue-800' :
+                chore.category === 'monthly' ? 'bg-purple-100 text-purple-800' :
+                'bg-amber-100 text-amber-800'
+              }`}>
+                {chore.category}
+              </span>
+              <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                {chore.points} pts
+              </span>
+            </div>
+            
+            {chore.dueDate && (
+              <div className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
+                <Calendar className="w-4 h-4" />
+                <span>Due: {normalizeDueDate(chore.dueDate).toLocaleDateString()}</span>
+                {dueStatus && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    dueStatus.type === 'overdue' ? 'bg-red-100 text-red-800' :
+                    dueStatus.type === 'due-soon' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {dueStatus.type === 'overdue' ? 'Overdue' :
+                     dueStatus.type === 'due-soon' ? 'Due Soon' : 'On Time'}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {chore.completed && (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <Clock className="w-4 h-4" />
+                <span>Completed: {chore.completedAt?.toLocaleDateString()}</span>
+                {chore.completedBy && (
+                  <span>by {chore.completedBy}</span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col items-end space-y-2 ml-4">
+            {!chore.completed ? (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onComplete(chore.id, e)
+                }}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+                title="Mark as complete"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <span className="text-sm text-green-600 font-medium">Completed!</span>
+              </div>
+            )}
+            
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(chore.id)
+              }}
+              size="sm"
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              title="Delete chore"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
+ChoreItem.displayName = 'ChoreItem'
+
+export const ChoreList: React.FC = memo(() => {
+  const { state, completeChore, deleteChore } = useChores()
+  const { state: userState } = useUsers()
+  
+  // Get current user stats from the user state
+  const currentUserStats = useMemo(() => {
+    if (!userState.currentUser) return null
+    return userState.memberStats.find(stats => stats.userId === userState.currentUser?.id) || null
+  }, [userState.currentUser, userState.memberStats])
+  
+  // Stats are automatically recalculated in the context
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'priority' | 'difficulty' | 'dueDate'>('priority')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [groupByCategory, setGroupByCategory] = useState<boolean>(true)
   const [animatingChores, setAnimatingChores] = useState<Set<string>>(new Set())
 
-  // Get current user stats for level display
-  const currentUserStats = getCurrentUserStats()
-  const currentLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1))
-  const nextLevelData = LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1) + 1)
+  // Popup celebration hook
+  const { celebrations, addCelebration, removeCelebration } = usePopupCelebrations()
+
+
+
+  // Get next level data for progress display
+  const nextLevelData = useMemo(() => 
+    LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1) + 1), 
+    [currentUserStats?.currentLevel]
+  )
   
   // Get level icon based on level
-  const getLevelIcon = (level: number) => {
+  const getLevelIcon = useCallback((level: number) => {
     if (level >= 10) return <Crown className="w-6 h-6 text-amber-600" />
     if (level >= 8) return <Crown className="w-6 h-6 text-pink-600" />
     if (level >= 6) return <Trophy className="w-6 h-6 text-red-600" />
     if (level >= 4) return <Star className="w-6 h-6 text-purple-600" />
     return <Target className="w-6 h-6 text-blue-600" />
-  }
+  }, [])
 
   // Trigger stats recalculation when chores change
   useEffect(() => {
-    if (state.chores.length > 0) {
-      recalculateStats(state.chores)
-    }
-  }, [state.chores, recalculateStats])
+    // Stats are automatically recalculated in the context
+  }, [state.chores])
 
   // Get unique categories for filtering
-  const categories = ['all', ...Array.from(new Set(state.chores.map(chore => chore.category)))]
+  const categories = useMemo(() => 
+    ['all', ...Array.from(new Set(state.chores.map(chore => chore.category)))], 
+    [state.chores]
+  )
 
   // Get category stats
-  const getCategoryStats = (category: string) => {
+  const getCategoryStats = useCallback((category: string) => {
     if (category === 'all') {
       return {
         total: state.chores.length,
@@ -57,10 +214,10 @@ export const ChoreList: React.FC = () => {
       completed: categoryChores.filter(c => c.completed).length,
       pending: categoryChores.filter(c => !c.completed).length
     }
-  }
+  }, [state.chores])
 
   // Group chores by category for better organization
-  const getChoresByCategory = () => {
+  const getChoresByCategory = useCallback(() => {
     const grouped: { [key: string]: Chore[] } = {}
     
     state.chores.forEach(chore => {
@@ -71,695 +228,283 @@ export const ChoreList: React.FC = () => {
     })
     
     return grouped
-  }
+  }, [state.chores])
 
-  const filteredChores = state.chores.filter(chore => {
-    // Category filter
-    if (categoryFilter !== 'all' && chore.category !== categoryFilter) return false
+  const filteredChores = useMemo(() => {
+    return state.chores.filter(chore => {
+      // Category filter
+      if (categoryFilter !== 'all' && chore.category !== categoryFilter) return false
+      
+      // Show animating chores regardless of completion status
+      if (animatingChores.has(chore.id)) return true
+      
+      // Status filter
+      switch (filter) {
+        case 'pending':
+          return !chore.completed
+        case 'completed':
+          return chore.completed
+        case 'all':
+        default:
+          return true // Show all chores when filter is 'all'
+      }
+    })
+  }, [state.chores, categoryFilter, filter, animatingChores])
+
+  const sortedChores = useMemo(() => {
+    return [...filteredChores].sort((a, b) => {
+      switch (sortBy) {
+        case 'priority':
+          const priorityOrder = { high: 3, medium: 2, low: 1 }
+          return priorityOrder[b.priority] - priorityOrder[a.priority]
+        case 'difficulty':
+          const difficultyOrder = { hard: 3, medium: 2, easy: 1 }
+          return difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty]
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) return 0
+          if (!a.dueDate) return 1
+          if (!b.dueDate) return -1
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        default:
+          return 0
+      }
+    })
+  }, [filteredChores, sortBy])
+
+  const handleCompleteChore = useCallback((choreId: string, event?: React.MouseEvent) => {
+    // Find the chore to get points
+    const chore = state.chores.find(c => c.id === choreId)
+    if (!chore) return
+
+    // Add animation state
+    setAnimatingChores(prev => new Set(prev).add(choreId))
     
-    // Show animating chores regardless of completion status
-    if (animatingChores.has(chore.id)) return true
-    
-    // Status filter
-    switch (filter) {
-      case 'pending':
-        return !chore.completed
-      case 'completed':
-        return chore.completed
-      case 'all':
-      default:
-        return !chore.completed // Hide completed chores in 'all' view
-    }
-  })
-
-  const sortedChores = [...filteredChores].sort((a, b) => {
-    switch (sortBy) {
-      case 'priority':
-        const priorityOrder = { high: 3, medium: 2, low: 1 }
-        return priorityOrder[b.priority] - priorityOrder[a.priority]
-      case 'difficulty':
-        const difficultyOrder = { hard: 3, medium: 2, easy: 1 }
-        return difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty]
-      case 'dueDate':
-        if (!a.dueDate && !b.dueDate) return 0
-        if (!a.dueDate) return 1
-        if (!b.dueDate) return -1
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-      default:
-        return 0
-    }
-  })
-
-  const handleCompleteChore = (chore: Chore) => {
-    // Prevent completing already completed chores or chores already animating
-    if (chore.completed || animatingChores.has(chore.id)) {
+    // Complete the chore with actual current user ID
+    const currentUserId = userState.currentUser?.id
+    if (!currentUserId) {
+      console.warn('Chore completion attempted without a valid current user id. Aborting to preserve correct attribution.')
       return
     }
-    
-    // Add chore to animating set to show the animation
-    setAnimatingChores(prev => new Set(prev).add(chore.id))
-    
-    // Start animation, then complete chore after animation duration
-    setTimeout(() => {
-      // Complete the chore in the context
-      completeChore(chore.id)
+    completeChore(choreId, currentUserId)
+
+    // Get click position and trigger multiple popup celebrations (like damage popups in games)
+    if (event) {
+      const points = chore.finalPoints || chore.points
+      const clickX = event.clientX
+      const clickY = event.clientY
       
-      // Remove from animating set immediately after completion
-      // This will cause the chore to be filtered out and trigger the collapse
+      // Determine celebration type based on various factors
+      let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
+      
+      // Check if this is a streak or special completion
+      if (chore.bonusMessage) {
+        celebrationType = 'bonus'
+      }
+      
+      // Check if user leveled up (you might want to add level tracking logic here)
+      const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
+      if (userStats && points >= 30) { // High value chores might indicate level potential
+        celebrationType = 'streak'
+      }
+      
+      // Trigger the damage popup style celebration
+      addCelebration(points, chore.title, clickX, clickY, celebrationType)
+      
+      // For extra special chores, add some additional celebration popups
+      if (points >= 25) {
+        // Add some extra "critical hit" style popups around the main one
+        setTimeout(() => {
+          addCelebration(
+            Math.floor(points * 0.4), 
+            'BONUS!', 
+            clickX + (Math.random() - 0.5) * 100,
+            clickY + (Math.random() - 0.5) * 80,
+            'bonus'
+          )
+        }, 150)
+      }
+    }
+    
+    // Remove animation state after a delay
+    setTimeout(() => {
       setAnimatingChores(prev => {
         const newSet = new Set(prev)
-        newSet.delete(chore.id)
+        newSet.delete(choreId)
         return newSet
       })
-    }, 800) // Match the animation duration (0.8s)
-  }
+    }, 1000)
+  }, [completeChore, userState.currentUser, state.chores, userState.memberStats, addCelebration])
 
-  const handleDeleteChore = (chore: Chore) => {
-    if (window.confirm(`Are you sure you want to delete "${chore.title}"?`)) {
-      deleteChore(chore.id)
-    }
-  }
-
-  const handleResetChores = () => {
-    if (window.confirm('Are you sure you want to reset all chores to defaults? This will clear all progress and reload the default chore list with fresh dates.')) {
-      resetChores()
-    }
-  }
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return <Target className="w-4 h-4 text-red-500" />
-      case 'medium': return <Zap className="w-4 h-4 text-yellow-500" />
-      case 'low': return <Circle className="w-4 h-4 text-green-500" />
-      default: return <Circle className="w-4 h-4 text-gray-500" />
-    }
-  }
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'daily': return '📅'
-      case 'weekly': return '📆'
-      case 'monthly': return '🗓️'
-      case 'seasonal': return '🌸'
-      default: return '📋'
-    }
-  }
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'daily': return 'bg-slate-100 text-slate-800 border-slate-200'
-      case 'weekly': return 'bg-green-100 text-green-800 border-green-200'
-      case 'monthly': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'seasonal': return 'bg-pink-100 text-pink-800 border-pink-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getDifficultyIcon = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return '🌱'
-      case 'medium': return '⭐'
-      case 'hard': return '🏆'
-      default: return '📋'
-    }
-  }
-
-  const isOverdue = (chore: Chore) => {
-    if (!chore.dueDate || chore.completed) return false
-    return checkIsOverdue(new Date(chore.dueDate))
-  }
+  const handleDeleteChore = useCallback((choreId: string) => {
+    deleteChore(choreId)
+  }, [deleteChore])
 
 
 
-  const getDueDateStatus = (chore: Chore) => {
-    if (!chore.dueDate) return null
-    
-    if (chore.completed && chore.completedAt) {
-      return getCompletionStatus(new Date(chore.completedAt), new Date(chore.dueDate))
-    }
-    
-    return getCurrentDueStatus(new Date(chore.dueDate))
-  }
-
-  const getDueDateDisplay = (chore: Chore) => {
-    if (!chore.dueDate) return null
-    
-    const status = getDueDateStatus(chore)
-    if (!status) return null
-    
-    const dueDate = normalizeDueDate(new Date(chore.dueDate))
-    const formattedDate = dueDate.getHours() === 18 && dueDate.getMinutes() === 0
-      ? `${dueDate.toLocaleDateString()} at 6:00 PM`
-      : dueDate.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        })
-    
-    return { status, message: status.message, formattedDate }
-  }
-
-  if (state.chores.length === 0) {
-    return (
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 shadow-lg rounded-xl">
-        <CardContent className="p-12 text-center">
-          <div className="text-8xl mb-6">🏠</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">No chores yet!</h3>
-          <p className="text-gray-600 mb-6 text-lg">Add your first chore to start earning points and building good habits.</p>
-          <div className="bg-blue-50 rounded-lg p-6 shadow-sm max-w-md mx-auto">
-            <div className="text-sm text-gray-600 space-y-2">
-              <div className="flex items-center justify-between">
-                <span>Easy chores</span>
-                <span className="font-semibold text-green-600">5 points</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Medium chores</span>
-                <span className="font-semibold text-blue-600">10 points</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Hard chores</span>
-                <span className="font-semibold text-purple-600">15 points</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Render chores grouped by category if enabled
-  const renderGroupedChores = () => {
-    if (!groupByCategory) {
-      return (
-        <div className={viewMode === 'grid' ? 'chore-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300' : 'chore-container space-y-4 transition-all duration-300'}>
-          {sortedChores.map((chore) => renderChoreCard(chore))}
-        </div>
-      )
-    }
-
-    const groupedChores = getChoresByCategory()
-    const categoryOrder = ['daily', 'weekly', 'monthly', 'seasonal']
-    
-    return (
-      <div className="space-y-8">
-        {categoryOrder.map(category => {
-          const categoryChores = groupedChores[category]
-          if (!categoryChores || categoryChores.length === 0) return null
-          
-          const filteredCategoryChores = categoryChores.filter(chore => {
-            // Show animating chores regardless of completion status
-            if (animatingChores.has(chore.id)) return true
-            
-            // Status filter
-            switch (filter) {
-              case 'pending':
-                return !chore.completed
-              case 'completed':
-                return chore.completed
-              case 'all':
-              default:
-                return !chore.completed // Hide completed chores in 'all' view
-            }
-          })
-          
-          if (filteredCategoryChores.length === 0) return null
-          
-          return (
-            <div key={category} className="space-y-4">
-              {/* Category Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{getCategoryIcon(category)}</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 capitalize">{category} Chores</h3>
-                    <p className="text-sm text-gray-600">
-                      {filteredCategoryChores.filter(c => !c.completed).length} pending, {filteredCategoryChores.filter(c => c.completed).length} completed
-                    </p>
-                  </div>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
-                  {filteredCategoryChores.length} total
-                </div>
-              </div>
-              
-              {/* Chores Grid */}
-              <div className={viewMode === 'grid' ? 'chore-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300' : 'chore-container space-y-4 transition-all duration-300'}>
-                {filteredCategoryChores.map((chore) => renderChoreCard(chore))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const renderChoreCard = (chore: Chore) => {
-    const isAnimating = animatingChores.has(chore.id)
-    const accentBorder = chore.completed
-      ? 'border-l-4 border-l-green-500/60'
-      : isOverdue(chore)
-      ? 'border-l-4 border-l-red-500/60'
-      : chore.category === 'daily'
-      ? 'border-l-4 border-l-slate-400/50'
-      : chore.category === 'weekly'
-      ? 'border-l-4 border-l-green-500/50'
-      : chore.category === 'monthly'
-      ? 'border-l-4 border-l-purple-500/50'
-      : chore.category === 'seasonal'
-      ? 'border-l-4 border-l-pink-500/50'
-      : 'border-l-4 border-l-gray-400/50'
-    const toneClasses = chore.completed
-      ? 'dark:bg-green-900/20 dark:border-green-700/30'
-      : isOverdue(chore)
-      ? 'dark:bg-red-900/20 dark:border-red-700/30'
-      : chore.category === 'daily'
-      ? 'dark:bg-slate-900/20 dark:border-slate-700/30'
-      : chore.category === 'weekly'
-      ? 'dark:bg-emerald-900/20 dark:border-emerald-700/30'
-      : chore.category === 'monthly'
-      ? 'dark:bg-purple-900/20 dark:border-purple-700/30'
-      : chore.category === 'seasonal'
-      ? 'dark:bg-pink-900/20 dark:border-pink-700/30'
-      : 'dark:bg-gray-900/20 dark:border-gray-700/30'
-    
-    return (
-      <div 
-        key={`${chore.id}-${chore.completed ? 'completed' : 'pending'}`}
-        className={`chore-container ${isAnimating ? 'animate-chore-disappear' : ''} transition-all duration-300`}
-      >
-        <Card 
-          className={`transition-all duration-300 bg-card border border-border ${toneClasses} ${accentBorder} ${viewMode === 'list' ? 'flex-row' : ''} ${!chore.completed && !isAnimating ? 'cursor-pointer' : ''}`}
-          onClick={(e) => {
-            // Only trigger completion if not clicking on a button, chore is not completed, and not animating
-            if (!(e.target as HTMLElement).closest('button') && !chore.completed && !isAnimating) {
-              handleCompleteChore(chore)
-            }
-          }}
-        >
-      <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''} card-content-clickable`}>
-        <div className={`${viewMode === 'list' ? 'flex items-center space-x-4' : ''}`}>
-          {/* Completion Button */}
-          <div className={`${viewMode === 'list' ? 'flex-shrink-0' : 'mb-4'}`}>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleCompleteChore(chore)
-              }}
-              disabled={chore.completed || isAnimating}
-              className={`text-3xl transition-transform ${
-                chore.completed 
-                  ? 'text-green-600 cursor-not-allowed' 
-                  : isAnimating
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-400 hover:text-indigo-500 hover:scale-110 cursor-pointer'
-              }`}
-            >
-              {chore.completed ? (
-                <CheckCircle className="text-green-600" />
-              ) : (
-                <Circle className="text-gray-400 hover:text-indigo-500" />
-              )}
-            </button>
-          </div>
-          
-          {/* Chore Content */}
-          <div className={`flex-1 ${viewMode === 'list' ? 'min-w-0' : ''}`}>
-            <div className="mb-3">
-              <h3 className={`text-lg font-semibold ${
-                chore.completed ? 'text-green-800 line-through' : 'text-gray-900'
-              }`}>
-                {chore.title}
-              </h3>
-              {chore.description && (
-                <p className={`text-sm ${
-                  chore.completed ? 'text-green-600' : 'text-gray-600'
-                } mt-1`}>
-                  {chore.description}
-                </p>
-              )}
-            </div>
-
-            {/* Badges Row */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              {/* Difficulty Badge */}
-              <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${DIFFICULTY_COLORS[chore.difficulty]}`}>
-                <span>{getDifficultyIcon(chore.difficulty)}</span>
-                <span>{chore.difficulty.charAt(0).toUpperCase() + chore.difficulty.slice(1)}</span>
-              </span>
-
-              {/* Priority Badge */}
-              <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${PRIORITY_COLORS[chore.priority]}`}>
-                {getPriorityIcon(chore.priority)}
-                <span>{chore.priority.charAt(0).toUpperCase() + chore.priority.slice(1)}</span>
-              </span>
-
-              {/* Category */}
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(chore.category)}`}>
-                <span>{getCategoryIcon(chore.category)}</span>
-                <span>{chore.category}</span>
-              </span>
-
-              {/* Overdue Warning */}
-              {isOverdue(chore) && (
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center space-x-1">
-                  <Clock className="w-3 h-3" />
-                  <span>Overdue</span>
-                </span>
-              )}
-            </div>
-
-            {/* Due Date with Enhanced Status */}
-            {chore.dueDate && (
-              <div className="mb-3">
-                {(() => {
-                  const dueDateInfo = getDueDateDisplay(chore)
-                  if (!dueDateInfo) return null
-                  
-                  return (
-                    <div className={`flex items-center justify-between p-2 rounded-lg ${dueDateInfo.status.bg}`}>
-                      <div className="flex items-center text-sm">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        <span className={`font-medium ${dueDateInfo.status.color}`}>
-                          {dueDateInfo.message}
-                        </span>
-                      </div>
-                      <div className={`text-xs font-medium ${dueDateInfo.status.color}`}>
-                        {dueDateInfo.formattedDate}
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-            )}
-
-            {/* Enhanced Completion Info */}
-            {chore.completed && chore.completedAt && (
-              <div className="mt-3 pt-3 border-t border-green-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm text-green-600">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    <span>Completed on {new Date(chore.completedAt).toLocaleDateString()}</span>
-                  </div>
-                  {chore.dueDate && (() => {
-                    const dueDateInfo = getDueDateDisplay(chore)
-                    if (!dueDateInfo || dueDateInfo.status.type === 'overdue') return null
-                    
-                    return (
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${dueDateInfo.status.bg} ${dueDateInfo.status.color}`}>
-                        {dueDateInfo.status.icon} {dueDateInfo.message}
-                      </span>
-                    )
-                  })()}
-                </div>
-                
-                {/* Bonus/Penalty Points Display */}
-                {chore.finalPoints && chore.finalPoints !== chore.points && (
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">Base points:</span>
-                      <span className="text-sm font-medium text-gray-700">{chore.points}</span>
-                      <span className="text-xs text-gray-500">→</span>
-                      <span className="text-sm font-bold text-green-600">{chore.finalPoints}</span>
-                    </div>
-                    {chore.bonusMessage && (
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        chore.finalPoints > chore.points 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {chore.bonusMessage}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right Side - Points and Actions */}
-          <div className={`flex flex-col items-end space-y-3 ${viewMode === 'list' ? 'flex-shrink-0 ml-4' : 'mt-4'}`}>
-            {/* Points Display */}
-            <div className="text-center">
-              <div className="text-3xl font-semibold text-muted-foreground">
-                {chore.points}
-              </div>
-              <div className="text-xs text-gray-500 font-medium">POINTS</div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDeleteChore(chore)
-                }}
-                className="text-red-600 border-red-300 hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-      </div>
-    )
-  }
+  const groupedChores = useMemo(() => {
+    if (!groupByCategory) return { 'All Chores': sortedChores }
+    return getChoresByCategory()
+  }, [groupByCategory, sortedChores, getChoresByCategory])
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Header with Stats and Controls */}
-      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 shadow-lg rounded-xl border-0">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
-            {/* Stats Display */}
-            <div className="flex items-center space-x-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">{state.stats.completedChores}</div>
-                <div className="text-sm text-gray-600">Completed</div>
+      {/* Popup Celebrations */}
+      <ChorePopupCelebration
+        celebrations={celebrations}
+        onRemove={removeCelebration}
+      />
+      {/* Header with stats and controls */}
+      <div className="bg-gradient-to-br from-primary/10 via-chart-4/10 to-accent/10 rounded-lg shadow-sm border border-primary/20 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              {getLevelIcon(currentUserStats?.currentLevel || 1)}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Level {currentUserStats?.currentLevel || 1}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {currentUserStats?.currentLevelPoints || 0} / {nextLevelData?.pointsRequired || 100} points to next level
+                </p>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{state.stats.totalChores}</div>
-                <div className="text-sm text-gray-600">Total</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{state.stats.earnedPoints}</div>
-                <div className="text-sm text-gray-600">Points</div>
-              </div>
-            </div>
-            
-            {/* Controls */}
-            <div className="flex items-center space-x-3">
-              {/* Reset Button */}
-              <Button
-                onClick={handleResetChores}
-                variant="outline"
-                size="sm"
-                className="border-orange-300 text-orange-600 hover:bg-orange-50 flex items-center space-x-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset to Defaults</span>
-              </Button>
-
-              {/* Group by Category Toggle */}
-              <Button
-                onClick={() => setGroupByCategory(!groupByCategory)}
-                variant={groupByCategory ? "default" : "outline"}
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <Filter className="w-4 h-4" />
-                <span>{groupByCategory ? 'Grouped' : 'Flat'}</span>
-              </Button>
-
-              {/* View Mode Toggle */}
-              <div className="flex border border-gray-300 rounded-lg bg-blue-50">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  } rounded-l-lg`}
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  } rounded-r-lg`}
-                >
-                  List
-                </button>
-              </div>
-
-              {/* Filter Buttons */}
-              <div className="flex border border-gray-300 rounded-lg bg-blue-50">
-                {(['all', 'pending', 'completed'] as const).map((filterOption) => (
-                  <button
-                    key={filterOption}
-                    onClick={() => setFilter(filterOption)}
-                    className={`px-3 py-2 text-sm font-medium transition-colors ${
-                      filter === filterOption
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    } ${filterOption === 'all' ? 'rounded-l-lg' : ''} ${
-                      filterOption === 'completed' ? 'rounded-r-lg' : ''
-                    }`}
-                  >
-                    {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sort Dropdown */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-blue-50"
-              >
-                <option value="priority">Sort by Priority</option>
-                <option value="difficulty">Sort by Difficulty</option>
-                <option value="dueDate">Sort by Due Date</option>
-              </select>
-
-              {/* Category Filter */}
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-blue-50"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'All Categories' : category}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              variant="outline"
+              size="sm"
+              title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+            >
+              {viewMode === 'grid' ? '📋' : '🔲'}
+            </Button>
+            <Button
+              onClick={() => setGroupByCategory(!groupByCategory)}
+              variant="outline"
+              size="sm"
+              title={groupByCategory ? 'Ungroup chores' : 'Group by category'}
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Level Display Section */}
-      {currentUserStats ? (
-        <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 shadow-md rounded-xl border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="flex justify-center">
-                  {getLevelIcon(currentUserStats.currentLevel)}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Level {currentUserStats.currentLevel}
-                  </h3>
-                  <p className={`text-lg font-medium mb-1 ${currentLevelData?.color || 'text-gray-600'}`}>
-                    {currentLevelData?.icon} {currentLevelData?.name || 'Beginner'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {currentUserStats.earnedPoints} total points earned
-                  </p>
+      {/* Filters */}
+      <div className="bg-card/80 backdrop-blur-sm rounded-lg shadow-sm border p-4">
+        <div className="flex flex-wrap gap-4">
+          {/* Status Filter */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <div className="flex space-x-1">
+              {(['all', 'pending', 'completed'] as const).map((status) => (
+                <Button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  variant={filter === status ? 'default' : 'outline'}
+                  size="sm"
+                  className="capitalize"
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Category:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((category) => (
+                <option key={category} value={category} className="capitalize">
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'priority' | 'difficulty' | 'dueDate')}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="priority">Priority</option>
+              <option value="difficulty">Difficulty</option>
+              <option value="dueDate">Due Date</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Chores Display */}
+      <div className="space-y-6">
+        {Object.entries(groupedChores).map(([category, chores]) => (
+          <div key={category} className="space-y-4">
+            {groupByCategory && (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                  {category} Chores
+                </h3>
+                <div className="text-sm text-gray-600">
+                  {getCategoryStats(category).completed} / {getCategoryStats(category).total} completed
                 </div>
               </div>
-              
-              {/* Progress to Next Level */}
-              {nextLevelData && (
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-700 mb-2">
-                    Progress to Level {nextLevelData.level}
-                  </div>
-                  <div className="w-32 bg-gray-200 rounded-full h-2 mb-2">
-                    <div 
-                      className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${(() => {
-                          const pointsForCurrentLevel = currentLevelData?.pointsRequired || 0
-                          const pointsForNextLevel = nextLevelData?.pointsRequired || 0
-                          const pointsNeeded = pointsForNextLevel - pointsForCurrentLevel
-                          
-                          if (pointsNeeded <= 0) return 100 // Max level reached
-                          
-                          const progress = (currentUserStats.currentLevelPoints || 0) / pointsNeeded
-                          return Math.min(100, Math.max(0, progress * 100))
-                        })()}%` 
-                      }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {(() => {
-                      const pointsForCurrentLevel = currentLevelData?.pointsRequired || 0
-                      const pointsForNextLevel = nextLevelData?.pointsRequired || 0
-                      const pointsNeeded = pointsForNextLevel - pointsForCurrentLevel
-                      
-                      if (pointsNeeded <= 0) return 'Max Level!'
-                      
-                      return `${currentUserStats.currentLevelPoints || 0} / ${pointsNeeded} points`
-                    })()}
-                  </div>
-                </div>
-              )}
+            )}
+            
+            <div className={`grid gap-4 ${
+              viewMode === 'grid' 
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                : 'grid-cols-1'
+            }`}>
+              {chores.map((chore) => (
+                <ChoreItem
+                  key={chore.id}
+                  chore={chore}
+                  onComplete={handleCompleteChore}
+                  onDelete={handleDeleteChore}
+                  isAnimating={animatingChores.has(chore.id)}
+                />
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-gradient-to-r from-gray-50 to-gray-100 shadow-md rounded-xl border-0">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-4xl mb-2">👤</div>
-              <h3 className="text-lg font-medium text-gray-700 mb-1">No User Stats Available</h3>
-              <p className="text-sm text-gray-500">Complete some chores to see your level progress!</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Category Stats Bar */}
-      {categoryFilter !== 'all' && (
-        <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 shadow-md rounded-xl border-0">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <span className="text-lg">{getCategoryIcon(categoryFilter)}</span>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{categoryFilter} Progress</h3>
-                  <p className="text-sm text-gray-600">
-                    {getCategoryStats(categoryFilter).completed} of {getCategoryStats(categoryFilter).total} completed
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">
-                  {getCategoryStats(categoryFilter).total > 0 
-                    ? Math.round((getCategoryStats(categoryFilter).completed / getCategoryStats(categoryFilter).total) * 100)
-                    : 0}%
-                </div>
-                <div className="text-sm text-gray-600">Completion Rate</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Chore Cards - Now using the grouped render function */}
-      {renderGroupedChores()}
-
-      {/* Empty State for Filtered Results */}
-      {sortedChores.length === 0 && state.chores.length > 0 && (
-        <Card className="bg-gray-50 shadow rounded-lg">
-          <CardContent className="p-8 text-center">
-            <div className="text-4xl mb-4">🔍</div>
+          </div>
+        ))}
+        
+        {sortedChores.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-6xl mb-4">📝</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No chores found</h3>
-            <p className="text-gray-500">Try adjusting your filters or sorting options.</p>
-          </CardContent>
-        </Card>
-      )}
+            <p className="text-gray-600 mb-4">
+              {filter === 'completed' 
+                ? "You haven't completed any chores yet. Keep up the good work!"
+                : filter === 'pending'
+                ? "All chores are completed! Great job!"
+                : "No chores match your current filters. Try adjusting your search criteria."
+              }
+            </p>
+            {filter !== 'all' && (
+              <Button
+                onClick={() => setFilter('all')}
+                variant="outline"
+                size="sm"
+              >
+                Show all chores
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      
     </div>
   )
-}
+})
+
+ChoreList.displayName = 'ChoreList'

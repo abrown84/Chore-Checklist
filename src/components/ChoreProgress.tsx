@@ -37,21 +37,7 @@ export const ChoreProgress: React.FC = () => {
     ? Math.max(0, Math.min(100, (stats.currentLevelPoints / Math.max(1, nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) * 100))
     : 100
 
-  const handleInspectStorage = () => {
-    const savedChores = localStorage.getItem('chores')
-    console.log('localStorage chores:', savedChores)
-    if (savedChores) {
-      try {
-        const parsed = JSON.parse(savedChores)
-        console.log('Parsed chores:', parsed)
-        console.log('Chores array length:', parsed.length)
-        console.log('First chore:', parsed[0])
-        console.log('All chores completed status:', parsed.map((c: any) => ({ id: c.id, title: c.title, completed: c.completed })))
-      } catch (error) {
-        console.error('Failed to parse localStorage:', error)
-      }
-    }
-  }
+  const handleInspectStorage = () => {}
 
   const getLevelIcon = (level: number) => {
     if (level >= 10) return <Crown className="w-6 h-6 text-amber-600" />
@@ -62,86 +48,80 @@ export const ChoreProgress: React.FC = () => {
   }
 
   return (
-    <Card className="bg-blue-50 shadow rounded-lg">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-medium text-gray-900">Level System</CardTitle>
-          <div className="flex space-x-2">
+    <Card className="bg-gradient-to-br from-primary/10 via-chart-4/10 to-accent/10 rounded-2xl border border-primary/20 shadow-lg animate-fade-in">
+      <CardHeader className="pb-3 sm:pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <CardTitle className="text-base sm:text-lg font-medium text-foreground">Level System</CardTitle>
+          <div className="flex flex-wrap gap-2">
             {state.chores.length > 0 && (
               <>
-                <Button
-                  onClick={handleInspectStorage}
-                  size="sm"
-                  variant="outline"
-                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                >
-                  Inspect Storage
-                </Button>
+                
                 <Button
                   onClick={resetChores}
                   size="sm"
                   variant="outline"
-                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm"
                 >
-                  Reset All Chores
+                  <span className="hidden sm:inline">Reset All Chores</span>
+                  <span className="sm:hidden">Reset</span>
                 </Button>
               </>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Current Level Display */}
         <div className="text-center">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-3 sm:mb-4">
             {getLevelIcon(stats.currentLevel)}
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Level {stats.currentLevel}
           </h2>
-          <p className={`text-xl font-medium mb-1 ${currentLevelData?.color}`}>
+          <p className={`text-lg sm:text-xl font-medium mb-1 ${currentLevelData?.color}`}>
             {currentLevelData?.icon} {currentLevelData?.name}
           </p>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
             {stats.earnedPoints} total points earned
           </p>
         </div>
 
         {/* Progress to Next Level */}
         <div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
               {nextLevelData ? `Progress to Level ${nextLevelData.level}` : 'Current Level Progress'}
             </span>
-            <span className="text-sm font-medium text-indigo-600">
+            <span className="text-xs sm:text-sm font-medium text-primary">
               {stats.currentLevelPoints} / {nextLevelData ? (nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0)) : '100'} points
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3" style={{ border: '1px solid #ccc' }}>
+          <div className="w-full bg-muted rounded-full h-2 sm:h-3 mb-2 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-primary to-chart-4 h-2 sm:h-3 rounded-full transition-all duration-1000 ease-out animate-scale-in"
               style={{ 
                 width: `${Math.min(progressToNextLevel, 100)}%`,
                 minWidth: '1px'
               }}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-1 text-center">
+          <p className="text-xs text-muted-foreground mt-1 text-center">
             {stats.pointsToNextLevel} points to next level
           </p>
         </div>
 
         {/* Current Level Rewards */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-3 flex items-center">
-            <Award className="w-4 h-4 mr-2 text-blue-600" />
+        <div className="bg-card/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl border border-primary/10">
+          <h3 className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 flex items-center">
+            <Award className="w-4 h-4 mr-2 text-primary" />
             Current Level Rewards
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-1 sm:space-y-2">
             {currentLevelData?.rewards.map((reward, index) => (
-              <div key={index} className="flex items-center text-sm text-gray-700">
-                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                {reward}
+              <div key={index} className="flex items-start text-xs sm:text-sm text-muted-foreground">
+                <CheckCircle className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+                <span>{reward}</span>
               </div>
             ))}
           </div>
@@ -149,15 +129,15 @@ export const ChoreProgress: React.FC = () => {
 
         {/* Next Level Preview */}
         {nextLevelData && (
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3 flex items-center">
-              <Target className="w-4 h-4 mr-2 text-purple-600" />
+          <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl border border-primary/10">
+            <h3 className="font-medium text-foreground mb-3 flex items-center">
+              <Target className="w-4 h-4 mr-2 text-chart-4" />
               Next Level: {nextLevelData.name}
             </h3>
             <div className="space-y-2">
               {nextLevelData.rewards.map((reward, index) => (
-                <div key={index} className="flex items-center text-sm text-gray-600">
-                  <Star className="w-4 h-4 mr-2 text-purple-500" />
+                <div key={index} className="flex items-center text-sm text-muted-foreground">
+                  <Star className="w-4 h-4 mr-2 text-chart-4" />
                   {reward}
                 </div>
               ))}
@@ -167,30 +147,30 @@ export const ChoreProgress: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-indigo-600">{stats.totalChores}</div>
-            <div className="text-xs text-gray-500">Total Chores</div>
+          <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-primary">{stats.totalChores}</div>
+            <div className="text-xs text-muted-foreground">Total Chores</div>
           </div>
           
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.completedChores}</div>
-            <div className="text-xs text-gray-500">Completed</div>
+          <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-success">{stats.completedChores}</div>
+            <div className="text-xs text-muted-foreground">Completed</div>
           </div>
           
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.earnedPoints}</div>
-            <div className="text-xs text-gray-500">Points Earned</div>
+          <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-chart-4">{stats.earnedPoints}</div>
+            <div className="text-xs text-muted-foreground">Points Earned</div>
           </div>
           
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.currentStreak}</div>
-            <div className="text-xs text-gray-500">Day Streak</div>
+          <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-warning">{stats.currentStreak}</div>
+            <div className="text-xs text-muted-foreground">Day Streak</div>
           </div>
         </div>
 
         {/* Level Journey */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-3">Level Journey</h3>
+          <h3 className="font-medium text-foreground mb-3">Level Journey</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {LEVELS.map((level) => (
               <div 

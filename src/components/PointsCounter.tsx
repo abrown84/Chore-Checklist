@@ -30,43 +30,44 @@ const getSeasonInfo = (season: string) => {
     case 'Spring':
       return {
         icon: <Flower className="w-3 h-3" />,
-        bgColor: 'bg-green-100',
-        textColor: 'text-green-800'
+        bgColor: 'bg-success/10',
+        textColor: 'text-success'
       }
     case 'Summer':
       return {
         icon: <Sun className="w-3 h-3" />,
-        bgColor: 'bg-yellow-100',
-        textColor: 'text-yellow-800'
+        bgColor: 'bg-warning/10',
+        textColor: 'text-warning'
       }
     case 'Fall':
       return {
         icon: <Leaf className="w-3 h-3" />,
-        bgColor: 'bg-orange-100',
-        textColor: 'text-orange-800'
+        bgColor: 'bg-chart-3/10',
+        textColor: 'text-chart-3'
       }
     case 'Winter':
       return {
         icon: <Snowflake className="w-3 h-3" />,
-        bgColor: 'bg-blue-100',
-        textColor: 'text-blue-800'
+        bgColor: 'bg-primary/10',
+        textColor: 'text-primary'
       }
     default:
       return {
         icon: <Clock className="w-3 h-3" />,
-        bgColor: 'bg-gray-100',
-        textColor: 'text-gray-800'
+        bgColor: 'bg-muted',
+        textColor: 'text-muted-foreground'
       }
   }
 }
 
 export const PointsCounter: React.FC = () => {
-
   const { getUserStats } = useStats()
   const { user } = useAuth()
   
   // Get current user's stats from StatsContext
   const userStats = user ? getUserStats(user.id) : null
+  
+  
   
   // Use userStats if available, otherwise fall back to default values
   const stats = userStats || {
@@ -77,13 +78,16 @@ export const PointsCounter: React.FC = () => {
     levelPersistenceInfo: undefined
   }
   
-  // Calculate progress percentage
+  // Calculate progress percentage correctly based on current level band
   const progressPercentage = useMemo(() => {
-    if (stats.pointsToNextLevel <= 0) return 100
+    const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
+    const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
+    if (!nextLevelData || !currentLevelData) return 100
     
-    const progress = (stats.currentLevelPoints || 0) / stats.pointsToNextLevel
-    return Math.min(100, Math.max(0, progress * 100))
-  }, [stats.currentLevelPoints, stats.pointsToNextLevel])
+    const bandTotal = Math.max(1, nextLevelData.pointsRequired - currentLevelData.pointsRequired)
+    const progress = Math.min(bandTotal, Math.max(0, stats.currentLevelPoints || 0)) / bandTotal
+    return Math.round(progress * 100)
+  }, [stats.currentLevel, stats.currentLevelPoints])
   
   // Get level data
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
@@ -99,50 +103,52 @@ export const PointsCounter: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="bg-gradient-to-br from-primary/10 via-chart-4/10 to-accent/10 rounded-2xl p-3 sm:p-4 border border-primary/20 shadow-lg animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Level Display */}
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            {getLevelIcon(stats.currentLevel)}
-            <span className="text-2xl font-bold text-gray-900">
-              Level {stats.currentLevel}
-            </span>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2 mb-2">
+            <div className="flex items-center space-x-2">
+              {getLevelIcon(stats.currentLevel)}
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                Level {stats.currentLevel}
+              </span>
+            </div>
             {(() => {
               const currentSeason = getCurrentSeason()
               const seasonInfo = getSeasonInfo(currentSeason)
               return (
                 <div className={`flex items-center space-x-1 px-2 py-1 ${seasonInfo.bgColor} ${seasonInfo.textColor} rounded-full text-xs font-medium`}>
                   {seasonInfo.icon}
-                  <span>{currentSeason}</span>
+                  <span className="hidden sm:inline">{currentSeason}</span>
                 </div>
               )
             })()}
           </div>
-          <p className="text-gray-600 mb-1">{currentLevelData?.name}</p>
-          <div className="text-xs text-gray-500">{currentLevelData?.icon}</div>
+          <p className="text-sm sm:text-base text-muted-foreground mb-1">{currentLevelData?.name}</p>
+          <div className="text-xs text-muted-foreground">{currentLevelData?.icon}</div>
         </div>
 
         {/* Points Display */}
         <div className="text-center">
-          <div className="text-sm text-gray-600 mb-1">Total Points</div>
-          <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Points</div>
+          <div className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm">
             {stats.earnedPoints}
           </div>
         </div>
 
         {/* Progress to Next Level */}
         {nextLevelData && (
-          <div className="text-center min-w-[120px]">
-            <div className="text-sm text-gray-600">Next Level</div>
-            <div className="text-lg font-semibold text-purple-600">Lv {nextLevelData.level}</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+          <div className="text-center w-full sm:min-w-[120px] sm:w-auto">
+            <div className="text-xs sm:text-sm text-muted-foreground">Next Level</div>
+            <div className="text-base sm:text-lg font-semibold text-chart-4">Lv {nextLevelData.level}</div>
+            <div className="w-full bg-muted rounded-full h-2 mt-1">
               <div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-primary to-chart-4 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               />
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-muted-foreground mt-1">
               {stats.pointsToNextLevel} pts needed
             </div>
           </div>

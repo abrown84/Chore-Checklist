@@ -2,6 +2,60 @@ import React, { createContext, useContext, useMemo, useState, useEffect, useCall
 import { Chore, LEVELS } from '../types/chore'
 import { User, UserStats } from '../types/user'
 
+// Custom hook for persistent user stats storage
+const usePersistentUserStats = () => {
+  const [persistentStats, setPersistentStats] = useState<Record<string, UserStats>>(() => {
+    // Initialize from localStorage immediately to prevent loss on refresh
+    try {
+      const savedStats = localStorage.getItem('userStats')
+      if (savedStats) {
+        const parsed = JSON.parse(savedStats)
+        // Convert date strings back to Date objects
+        const converted = Object.fromEntries(
+          Object.entries(parsed).map(([userId, stats]: [string, any]) => [
+            userId,
+            {
+              ...stats,
+              lastActive: new Date(stats.lastActive)
+            }
+          ])
+        )
+        return converted
+      }
+    } catch (error) {
+      console.error('Failed to load user stats:', error)
+    }
+    return {}
+  })
+
+  const updateStats = useCallback((userId: string, stats: UserStats) => {
+    setPersistentStats(prev => {
+      const newStats = {
+        ...prev,
+        [userId]: stats
+      }
+      // Immediately save to localStorage to ensure persistence
+      localStorage.setItem('userStats', JSON.stringify(newStats))
+      return newStats
+    })
+  }, [])
+
+  const getStats = useCallback((userId: string): UserStats | undefined => {
+    return persistentStats[userId]
+  }, [persistentStats])
+
+  const getAllStats = useCallback((): Record<string, UserStats> => {
+    return persistentStats
+  }, [persistentStats])
+
+  // Save user stats to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('userStats', JSON.stringify(persistentStats))
+  }, [persistentStats])
+
+  return { persistentStats, updateStats, getStats, getAllStats }
+}
+
 // Custom hook for persistent point deductions
 const usePersistentPointDeductions = () => {
   const [pointDeductions, setPointDeductions] = useState<Record<string, number>>(() => {
@@ -19,9 +73,10 @@ const usePersistentPointDeductions = () => {
 
   const updateDeductions = useCallback((userId: string, pointsToDeduct: number) => {
     setPointDeductions(prev => {
+      const prevDeductions = prev[userId] || 0
       const newDeductions = {
         ...prev,
-        [userId]: (prev[userId] || 0) + pointsToDeduct
+        [userId]: prevDeductions + pointsToDeduct
       }
       // Immediately save to localStorage to ensure persistence
       localStorage.setItem('pointDeductions', JSON.stringify(newDeductions))
@@ -109,6 +164,8 @@ interface StatsContextType {
   setLevelPersistence: (userId: string, level: number, pointsAtRedemption: number, gracePeriodDays?: number) => void
   clearLevelPersistence: (userId: string) => void
   getLevelPersistence: (userId: string) => { level: number; expiresAt: number; pointsAtRedemption: number } | undefined
+  // New method to persist user stats
+  persistUserStats: (userId: string, stats: UserStats) => void
 }
 
 const StatsContext = createContext<StatsContextType | null>(null)
@@ -120,11 +177,17 @@ interface StatsProviderProps {
 }
 
 export const StatsProvider = ({ children, chores, members }: StatsProviderProps) => {
+  // Use the persistent user stats hook
+  const { updateStats, getStats } = usePersistentUserStats()
+  
   // Use the persistent point deductions hook
   const { pointDeductions, updateDeductions } = usePersistentPointDeductions()
   
   // Use the level persistence hook
   const { levelPersistence, setLevelPersistenceForUser, clearLevelPersistence } = useLevelPersistence()
+  
+  // Add a refresh trigger for force refreshes
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   
   // Efficient chore distribution calculation with memoization
   const choreDistribution = useMemo(() => {
@@ -135,22 +198,52 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       distribution[member.id] = []
     })
     
+    // CRITICAL FIX: Also initialize arrays for any user IDs found in completed chores
+    // This ensures that users who completed chores are always represented in the distribution
+    const completedByUserIds = new Set(
+      chores
+        .filter(chore => chore.completed && chore.completedBy)
+        .map(chore => chore.completedBy!)
+    )
+    
+    completedByUserIds.forEach(userId => {
+      if (!distribution[userId]) {
+        distribution[userId] = []
+      }
+    })
+    
+    // If there's only one member, assign all chores to them
+    if (members.length === 1) {
+      const singleMember = members[0]
+      distribution[singleMember.id] = [...chores]
+      return distribution
+    }
+    
     // Distribute chores based on who actually completed them or who they're assigned to
     chores.forEach((chore) => {
       if (chore.completed && chore.completedBy) {
         // If chore is completed, assign it to whoever completed it
-        if (distribution[chore.completedBy]) {
-          distribution[chore.completedBy].push(chore)
+        // FIXED: Always create the array if it doesn't exist (critical for level persistence)
+        if (!distribution[chore.completedBy]) {
+          distribution[chore.completedBy] = []
         }
+        distribution[chore.completedBy].push(chore)
       } else if (chore.assignedTo && distribution[chore.assignedTo]) {
         // If chore is explicitly assigned but not completed, assign it to the assigned person
         distribution[chore.assignedTo].push(chore)
+      } else if (members.length > 0) {
+        // For unassigned chores, distribute evenly among members
+        const memberIds = members.map(m => m.id)
+        const choreIndex = chores.indexOf(chore)
+        const assignedMemberId = memberIds[choreIndex % memberIds.length]
+        if (distribution[assignedMemberId]) {
+          distribution[assignedMemberId].push(chore)
+        }
       }
-      // For unassigned, uncompleted chores, don't assign them to anyone
     })
     
     return distribution
-  }, [chores, members])
+  }, [chores, members, refreshTrigger])
 
   // Unified level calculation function
   const calculateUserLevel = useCallback((earnedPoints: number): number => {
@@ -269,9 +362,28 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
   // Efficient user stats calculation with memoization - SINGLE SOURCE OF TRUTH
   const userStats = useMemo(() => {
     
-    return members.map(member => {
-      const userChores = choreDistribution[member.id] || []
+    // CRITICAL FIX: Calculate stats for ALL users who have chores (members + completed chore users)
+    const allUserIds = new Set([
+      ...members.map(m => m.id),
+      ...Object.keys(choreDistribution)
+    ])
+    
+    return Array.from(allUserIds).map(userId => {
+      // Get member info if available, otherwise create a minimal user representation
+      const member = members.find(m => m.id === userId) || {
+        id: userId,
+        name: `User ${userId}`,
+        email: '',
+        role: 'member' as const,
+        avatar: '👤',
+        joinedAt: new Date(),
+        isActive: true
+      }
+      const userChores = choreDistribution[userId] || []
       const completedChores = userChores.filter(c => c.completed)
+      
+      // Check if we have persistent stats for this user
+      const persistentUserStats = getStats(userId)
       
       // Calculate total points from completed chores
       // Use finalPoints if available (includes bonuses/penalties), otherwise fall back to base points
@@ -296,7 +408,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       const totalLifetimePoints = baseEarnedPoints + resetChoresPoints
       
       // Subtract any redeemed points from our state
-      const userDeductions = pointDeductions[member.id] || 0
+      const userDeductions = pointDeductions[userId] || 0
       const earnedPoints = Math.max(0, totalLifetimePoints - userDeductions)
       
 
@@ -347,8 +459,10 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       // Calculate level using unified function
       const currentLevel = calculateUserLevel(earnedPoints)
       
+
+      
       // Check if user has level persistence (recently redeemed points)
-      const userLevelPersistence = levelPersistence[member.id]
+      const userLevelPersistence = levelPersistence[userId]
       let finalLevel = currentLevel
       let levelPersistenceInfo: { originalLevel: number; persistedLevel: number; expiresAt: number; pointsAtRedemption: number } | undefined = undefined
       
@@ -364,8 +478,6 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
 
       }
       
-
-      
       const currentLevelData = LEVELS.find(level => level.level === finalLevel)
       const nextLevelData = LEVELS.find(level => level.level === finalLevel + 1)
       
@@ -377,8 +489,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         ? Math.max(0, nextLevelData.pointsRequired - earnedPoints)
         : 0
       
-      return {
-        userId: member.id,
+      const calculatedStats: UserStats = {
+        userId: userId,
         totalChores: userChores.length,
         completedChores: completedChores.length,
         totalPoints,
@@ -391,8 +503,36 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         lastActive: new Date(),
         levelPersistenceInfo
       }
+      
+      // Previously, we merged with persistent stats by taking maximum values for
+      // points and level. That prevented point deductions (redemptions) from
+      // reducing totals and could keep users at higher levels incorrectly.
+      // We now trust the freshly calculated stats (which already account for
+      // deductions and level persistence) to be the single source of truth.
+      if (persistentUserStats) {
+
+        return calculatedStats
+      }
+      
+      // Note: We'll save the calculated stats after the calculation is complete
+      // to avoid circular dependencies in useMemo
+      
+      return calculatedStats
     })
-  }, [members, choreDistribution, pointDeductions, calculateUserLevel, levelPersistence])
+  }, [members, choreDistribution, pointDeductions, calculateUserLevel, levelPersistence, getStats, refreshTrigger])
+
+  // Update persistent storage after stats are calculated (avoid circular dependency)
+  useEffect(() => {
+    userStats.forEach(stats => {
+      updateStats(stats.userId, stats)
+    })
+  }, [userStats, updateStats])
+
+  // Force refresh stats when members change (e.g., user logs back in)
+  useEffect(() => {
+    // The useMemo dependencies will automatically trigger recalculation
+    // when members, chores, or other dependencies change
+  }, [members])
 
   // Calculate efficiency leaderboard
   const efficiencyLeaderboard = useMemo(() => {
@@ -447,10 +587,14 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
 
   // Add a force refresh mechanism that can be triggered externally
   const forceRefresh = useCallback(() => {
-    // Force recalculation by updating dependencies
-    // But preserve point deductions
-    // setPointDeductions(prev => ({ ...prev })) // This line is removed as per the new_code
+    // Force recalculation by updating the refresh trigger
+    setRefreshTrigger(prev => prev + 1)
   }, [])
+
+  // New method to persist user stats
+  const persistUserStats = useCallback((userId: string, stats: UserStats) => {
+    updateStats(userId, stats)
+  }, [updateStats])
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
@@ -465,7 +609,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     forceRefresh,
     setLevelPersistence: setLevelPersistenceForUser,
     clearLevelPersistence,
-    getLevelPersistence: (userId: string) => levelPersistence[userId]
+    getLevelPersistence: (userId: string) => levelPersistence[userId],
+    persistUserStats
   }), [
     getUserStats,
     getAllUserStats,
@@ -478,7 +623,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     forceRefresh,
     setLevelPersistenceForUser,
     clearLevelPersistence,
-    levelPersistence
+    levelPersistence,
+    persistUserStats
   ])
 
   return (

@@ -18,7 +18,9 @@ interface ProfileCustomization {
   effect: string
 }
 
-export const RewardSystem: React.FC = () => {
+// DEPRECATED: This component has been merged into ProfileAndRewards.tsx
+// Keeping for reference only - can be deleted after testing
+export const RewardSystem_DEPRECATED: React.FC = () => {
   const context = useContext(ChoreContext)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedCustomizations, setSelectedCustomizations] = useState<ProfileCustomization>({

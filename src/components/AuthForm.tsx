@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { AlertCircle, UserPlus, LogIn } from 'lucide-react'
+import { AlertCircle, UserPlus, LogIn, Mail, Lock, User as UserIcon } from 'lucide-react'
+ 
 
 interface AuthFormProps {
   onSignIn: (email: string, password: string, rememberMe: boolean) => Promise<any>
@@ -66,109 +67,150 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   }
 
   return (
-    <Card className="w-full shadow-xl border-0 bg-blue-50/80 backdrop-blur-sm">
-      <CardHeader className="text-center pb-4">
-        <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-          {isSignUp ? <UserPlus className="w-6 h-6 text-white" /> : <LogIn className="w-6 h-6 text-white" />}
+    <Card className="w-full max-w-md mx-auto shadow-xl rounded-xl border border-border bg-card/60 backdrop-blur">
+      <CardHeader className="pb-3 sm:pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              {isSignUp ? <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" /> : <LogIn className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />}
+            </div>
+            <div>
+              <CardTitle className="text-lg sm:text-xl lg:text-2xl font-heading font-bold leading-tight">
+                {isSignUp ? 'Create Account' : 'Sign In'}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm font-body">
+                {isSignUp
+                  ? 'Join The Daily Grind to start managing your household tasks'
+                  : 'Welcome back! Sign in to access your chore dashboard'}
+              </CardDescription>
+            </div>
+          </div>
         </div>
-        <CardTitle className="text-2xl font-bold text-gray-900">
-          {isSignUp ? 'Create Account' : 'Sign In'}
-        </CardTitle>
-        <CardDescription className="text-gray-600">
-          {isSignUp 
-            ? 'Join The Daily Grind to start managing your household tasks' 
-            : 'Welcome back! Sign in to access your chore dashboard'
-          }
-        </CardDescription>
-        
 
+        {/* Mode toggle */}
+        <div className="mt-3 sm:mt-4">
+          <div className="inline-flex p-1 bg-muted rounded-lg border border-border w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(false)}
+              className={`flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${!isSignUp ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSignUp(true)}
+              className={`flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${isSignUp ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
       </CardHeader>
 
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
+      <CardContent className="px-4 sm:px-6">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" autoComplete="on">
           {isSignUp && (
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="block text-sm font-medium text-foreground">
                 Full Name
               </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="Enter your full name"
-                value={name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                required={isSignUp}
-                autoComplete="name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="flex items-center gap-2 px-3 py-2 border border-input rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:border-ring bg-background text-foreground">
+                <UserIcon className="w-4 h-4 text-muted-foreground" />
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                  required={isSignUp}
+                  autoComplete="name"
+                  className="flex-1 bg-transparent outline-none"
+                />
+              </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email Address
             </label>
-            <input
-              ref={emailRef}
-              id="email"
-              name={isSignUp ? "email" : "username"}
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              required
-              autoComplete={isSignUp ? "email" : "username"}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex items-center gap-2 px-3 py-2 border border-input rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:border-ring bg-background text-foreground">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              <input
+                ref={emailRef}
+                id="email"
+                name={isSignUp ? 'email' : 'username'}
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                required
+                autoComplete={isSignUp ? 'email' : 'username'}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="flex-1 bg-transparent outline-none"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              ref={passwordRef}
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={isSignUp ? "new-password" : "current-password"}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                Password
+              </label>
+              {!isSignUp && (
+                <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                  Forgot password?
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 border border-input rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:border-ring bg-background text-foreground">
+              <Lock className="w-4 h-4 text-muted-foreground" />
+              <input
+                ref={passwordRef}
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                className="flex-1 bg-transparent outline-none"
+              />
+            </div>
           </div>
 
           {!isSignUp && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                checked={rememberMe}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="rememberMe" className="text-sm text-gray-600">
-                Remember me
-              </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-primary border-input rounded focus:ring-ring"
+                />
+                <label htmlFor="rememberMe" className="text-sm text-muted-foreground">
+                  Remember me
+                </label>
+              </div>
             </div>
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-2 text-red-800">
+            <div className="p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40">
+              <div className="flex items-center space-x-2 text-red-800 dark:text-red-300">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">Login Error</span>
               </div>
-              <p className="text-xs text-red-700 mt-1">{error}</p>
+              <p className="text-xs text-red-700 dark:text-red-300/90 mt-1">{error}</p>
               {!isSignUp && (
-                <div className="mt-2 text-xs text-red-600">
+                <div className="mt-2 text-xs text-red-600 dark:text-red-400">
                   <p>• Make sure your email and password are correct</p>
                   <p>• If you don't have an account, click "Create one" below</p>
                   <p>• Check the browser console for more details</p>
@@ -180,7 +222,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 hover:shadow-lg disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 px-4 rounded-lg transition-all duration-200 hover:shadow-lg disabled:opacity-50"
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
@@ -196,50 +238,21 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
         <div className="mt-6 text-center">
           <button
             onClick={toggleMode}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
           >
-            {isSignUp 
-              ? 'Already have an account? Sign in' 
-              : "Don't have an account? Create one"
-            }
+            {isSignUp
+              ? 'Already have an account? Sign in'
+              : "Don't have an account? Create one"}
           </button>
         </div>
 
         <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             By {isSignUp ? 'creating an account' : 'signing in'}, you agree to our terms of service and privacy policy.
           </p>
         </div>
 
-        {/* Debug Section - Remove in production */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Info:</h4>
-          <button
-            type="button"
-            onClick={() => {
-              const users = localStorage.getItem('choreAppUsers')
-              const currentUser = localStorage.getItem('choreAppUser')
-              console.log('=== LOCALSTORAGE DEBUG ===')
-              console.log('Users:', users ? JSON.parse(users) : 'No users found')
-              console.log('Current User:', currentUser ? JSON.parse(currentUser) : 'No current user')
-              alert(`Users in storage: ${users ? JSON.parse(users).length : 0}`)
-            }}
-            className="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-2"
-          >
-            Check Storage
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.removeItem('choreAppUsers')
-              localStorage.removeItem('choreAppUser')
-              alert('Storage cleared!')
-            }}
-            className="text-xs bg-red-500 text-white px-2 py-1 rounded"
-          >
-            Clear Storage
-          </button>
-        </div>
+
       </CardContent>
     </Card>
   )
