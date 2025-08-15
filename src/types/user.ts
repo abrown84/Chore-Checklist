@@ -10,6 +10,7 @@ export interface User {
 
 export interface UserStats {
   userId: string
+  userName?: string
   totalChores: number
   completedChores: number
   totalPoints: number
@@ -44,9 +45,10 @@ export interface Household {
 
 export interface UserInvite {
   id: string
+  householdId?: string
   email: string
   invitedBy: string
   invitedAt: Date
-  expiresAt: Date
+  expiresAt?: Date
   status: 'pending' | 'accepted' | 'declined' | 'expired'
 }

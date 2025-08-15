@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Trophy } from 'lucide-react'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'

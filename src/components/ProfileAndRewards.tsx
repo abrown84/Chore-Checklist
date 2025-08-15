@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { AVATAR_SOURCES, BACKGROUND_SOURCES } from '../utils/mediaSources'
+import { AVATAR_SOURCES } from '../utils/mediaSources'
 
 interface ProfileCustomization {
   avatar: string

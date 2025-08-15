@@ -5,9 +5,9 @@ import '@testing-library/jest-dom'
 // ============================================================================
 
 // Mock localStorage with working implementation
-const localStorageMock = {
+const localStorageMock: Storage = {
   store: {} as Record<string, string>,
-  getItem: jest.fn((key: string) => {
+  getItem: jest.fn((key: string): string | null => {
     return localStorageMock.store[key] || null
   }),
   setItem: jest.fn((key: string, value: string) => {
@@ -20,7 +20,7 @@ const localStorageMock = {
     localStorageMock.store = {}
   }),
   length: 0,
-  key: jest.fn((index: number) => {
+  key: jest.fn((index: number): string | null => {
     const keys = Object.keys(localStorageMock.store)
     return keys[index] || null
   }),
@@ -35,9 +35,9 @@ Object.defineProperty(localStorageMock, 'length', {
 global.localStorage = localStorageMock
 
 // Mock sessionStorage with working implementation
-const sessionStorageMock = {
+const sessionStorageMock: Storage = {
   store: {} as Record<string, string>,
-  getItem: jest.fn((key: string) => {
+  getItem: jest.fn((key: string): string | null => {
     return sessionStorageMock.store[key] || null
   }),
   setItem: jest.fn((key: string, value: string) => {
@@ -50,7 +50,7 @@ const sessionStorageMock = {
     sessionStorageMock.store = {}
   }),
   length: 0,
-  key: jest.fn((index: number) => {
+  key: jest.fn((index: number): string | null => {
     const keys = Object.keys(sessionStorageMock.store)
     return keys[index] || null
   }),
@@ -84,10 +84,10 @@ class MockIntersectionObserver {
   readonly rootMargin: string
   readonly thresholds: ReadonlyArray<number>
   
-  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
-    this.root = options?.root || null
+  constructor(_callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.root = (options?.root as Element) || null
     this.rootMargin = options?.rootMargin || '0px'
-    this.thresholds = options?.thresholds || [0]
+    this.thresholds = Array.isArray(options?.threshold) ? options.threshold : [options?.threshold || 0]
   }
   
   observe = jest.fn()
@@ -96,15 +96,8 @@ class MockIntersectionObserver {
   
   // Helper method to simulate intersection
   simulateIntersection(target: Element, isIntersecting: boolean = true) {
-    const entry = {
-      target,
-      isIntersecting,
-      intersectionRatio: isIntersecting ? 1 : 0,
-      boundingClientRect: {} as DOMRectReadOnly,
-      rootBounds: {} as DOMRectReadOnly,
-      time: Date.now(),
-    }
     // This would call the actual callback in a real implementation
+    console.log(`Simulating intersection for element ${target.tagName}, intersecting: ${isIntersecting}`)
   }
 }
 
@@ -112,8 +105,8 @@ global.IntersectionObserver = MockIntersectionObserver as any
 
 // Mock ResizeObserver with working implementation
 class MockResizeObserver {
-  constructor(callback: ResizeObserverCallback) {
-    // Store callback for potential simulation
+  constructor(_callback: ResizeObserverCallback) {
+    // Callback stored but not used in mock
   }
   
   observe = jest.fn()
@@ -123,6 +116,7 @@ class MockResizeObserver {
   // Helper method to simulate resize
   simulateResize(target: Element, size: { width: number; height: number }) {
     // This would call the actual callback in a real implementation
+    console.log(`Simulating resize for element ${target.tagName}, size: ${size.width}x${size.height}`)
   }
 }
 
@@ -261,8 +255,11 @@ HTMLElement.prototype.blur = jest.fn()
 // Mock HTMLElement.prototype.click
 HTMLElement.prototype.click = jest.fn()
 
-// Mock HTMLElement.prototype.select
-HTMLElement.prototype.select = jest.fn()
+// Mock HTMLInputElement.prototype.select (not HTMLElement)
+// This is already handled by HTMLInputElement mocks below
+
+// Mock HTMLInputElement.prototype.select
+HTMLInputElement.prototype.select = jest.fn()
 
 // Mock HTMLInputElement.prototype.setSelectionRange
 HTMLInputElement.prototype.setSelectionRange = jest.fn()

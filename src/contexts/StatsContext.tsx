@@ -491,6 +491,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       
       const calculatedStats: UserStats = {
         userId: userId,
+        userName: member.name, // Use member info for display
         totalChores: userChores.length,
         completedChores: completedChores.length,
         totalPoints,

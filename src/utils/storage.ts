@@ -14,7 +14,7 @@ interface StorageItem<T> {
 
 class StorageManager {
   private prefix = 'choreApp_'
-  private encryptionKey = 'your-secret-key' // In production, use environment variable
+  // private encryptionKey = 'your-secret-key' // In production, use environment variable - TODO: implement encryption
 
   /**
    * Set item in localStorage with options

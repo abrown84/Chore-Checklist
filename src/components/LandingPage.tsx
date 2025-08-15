@@ -1,4 +1,4 @@
-import React from 'react'
+
 import newLogo from '../brand_assets/DGlogo.png'
 import { motion } from 'framer-motion'
 import { Button } from './ui/button'

@@ -37,7 +37,7 @@ export const ChoreProgress: React.FC = () => {
     ? Math.max(0, Math.min(100, (stats.currentLevelPoints / Math.max(1, nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) * 100))
     : 100
 
-  const handleInspectStorage = () => {}
+
 
   const getLevelIcon = (level: number) => {
     if (level >= 10) return <Crown className="w-6 h-6 text-amber-600" />

@@ -92,7 +92,7 @@ describe('Mock Implementations', () => {
       const observer = new IntersectionObserver(mockCallback, {
         root: mockRoot,
         rootMargin: '10px',
-        thresholds: [0, 0.5, 1]
+        threshold: [0, 0.5, 1]
       })
       
       expect(observer.root).toBe(mockRoot)

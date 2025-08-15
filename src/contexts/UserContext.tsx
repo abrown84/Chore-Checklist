@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useRef, useEffect } from 'react'
 import { User, UserStats, Household, UserInvite } from '../types/user'
-import { Chore, LEVELS, MAX_LEVEL } from '../types/chore'
+import { Chore, LEVELS } from '../types/chore'
 
 interface UserState {
   currentUser: User | null
@@ -321,7 +321,47 @@ const createContextValue = (state: UserState, dispatch: React.Dispatch<UserActio
   
   syncWithAuth: useCallback((user: User) => {
     dispatch({ type: 'SET_CURRENT_USER', payload: user })
-  }, [dispatch])
+  }, [dispatch]),
+
+  inviteMember: useCallback((email: string) => {
+    // TODO: Implement actual invite functionality
+    const newInvite: UserInvite = {
+      id: `invite-${Date.now()}`,
+      householdId: state.household?.id || '',
+      email,
+      invitedBy: state.currentUser?.id || '',
+      invitedAt: new Date(),
+      status: 'pending'
+    }
+    dispatch({ type: 'ADD_INVITE', payload: newInvite })
+  }, [dispatch, state.household?.id, state.currentUser?.id]),
+
+  acceptInvite: useCallback((inviteId: string) => {
+    // TODO: Implement actual accept functionality
+    const invite = state.invites.find(i => i.id === inviteId)
+    if (invite) {
+      const updatedInvite = { ...invite, status: 'accepted' as const }
+      dispatch({ type: 'UPDATE_INVITE', payload: updatedInvite })
+    }
+  }, [dispatch, state.invites]),
+
+  declineInvite: useCallback((inviteId: string) => {
+    // TODO: Implement actual decline functionality
+    const invite = state.invites.find(i => i.id === inviteId)
+    if (invite) {
+      const updatedInvite = { ...invite, status: 'declined' as const }
+      dispatch({ type: 'UPDATE_INVITE', payload: updatedInvite })
+    }
+  }, [dispatch, state.invites]),
+
+  updateMemberRole: useCallback((memberId: string, role: 'admin' | 'member') => {
+    // TODO: Implement actual role update functionality
+    const member = state.members.find(m => m.id === memberId)
+    if (member) {
+      const updatedMember = { ...member, role }
+      dispatch({ type: 'UPDATE_MEMBER', payload: updatedMember })
+    }
+  }, [dispatch, state.members])
 })
 
 const UserContext = createContext<ReturnType<typeof createContextValue> | null>(null)

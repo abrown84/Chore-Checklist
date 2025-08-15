@@ -282,7 +282,7 @@ const createContextValue = (state: ChoreState, dispatch: React.Dispatch<ChoreAct
   }, [state.chores, dispatch])
 })
 
-const ChoreContext = createContext<ReturnType<typeof createContextValue> | null>(null)
+export const ChoreContext = createContext<ReturnType<typeof createContextValue> | null>(null)
 
 export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?: string }> = ({ 
   children 

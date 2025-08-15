@@ -114,6 +114,9 @@ export function measurePerformance<T>(
   const result = fn()
   const end = performance.now()
   
+  // Log performance measurement
+  console.log(`Performance: ${name} took ${end - start}ms`)
+  
   return result
 }
 
@@ -127,6 +130,9 @@ export async function measureAsyncPerformance<T>(
   const start = performance.now()
   const result = await fn()
   const end = performance.now()
+  
+  // Log async performance measurement
+  console.log(`Async Performance: ${name} took ${end - start}ms`)
   
   return result
 }

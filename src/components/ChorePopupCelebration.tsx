@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Star, Zap, Sparkles, Plus, Minus } from 'lucide-react'
+import { Star, Zap, Plus } from 'lucide-react'
 
 interface PopupCelebration {
   id: string
