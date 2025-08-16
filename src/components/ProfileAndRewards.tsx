@@ -23,6 +23,7 @@ import {
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { AVATAR_SOURCES } from '../utils/mediaSources'
+import { PWAInstallGuide } from './PWAInstallGuide'
 
 interface ProfileCustomization {
   avatar: string
@@ -664,6 +665,40 @@ export const ProfileAndRewards: React.FC = () => {
             )}
           </CardContent>
         )}
+      </Card>
+
+      {/* PWA Install Guide Section */}
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            📱 Install App
+            <span className="text-sm font-normal text-gray-500">(Progressive Web App)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Install The Daily Grind as a Progressive Web App for quick access, offline functionality, and a native app experience on your device.
+            </p>
+            <div className="flex justify-center">
+              <PWAInstallGuide />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-sm text-gray-500">
+              <div className="text-center">
+                <div className="text-2xl mb-2">🚀</div>
+                <div>Quick Access</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl mb-2">📱</div>
+                <div>Native Experience</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl mb-2">⚡</div>
+                <div>Offline Support</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Level Up Rewards Section */}

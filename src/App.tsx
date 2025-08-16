@@ -22,6 +22,8 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeToggle } from './components/ThemeToggle'
 import { Trophy, Users, DollarSign, ClipboardList, LogOut, Trash2, Palette } from 'lucide-react'
 import newLogo from './brand_assets/DGlogo.png'
+import { PWAInstaller } from './components/PWAInstaller'
+import { PWAStatus } from './components/PWAStatus'
 
 function AppContent() {
   const { user, signOut } = useAuth()
@@ -102,6 +104,7 @@ function AppContent() {
                   Welcome, <span className="font-medium text-foreground">{user?.name || user?.email}</span>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <PWAStatus />
                   <ThemeToggle />
                   <Button 
                     onClick={handleSignOut} 
@@ -306,6 +309,9 @@ function AppContent() {
 
   {/* Celebrations */}
   <LevelUpCelebration />
+  
+  {/* PWA Installer */}
+  <PWAInstaller />
   
   
  </div>
