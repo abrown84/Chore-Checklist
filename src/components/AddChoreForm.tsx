@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { useChores } from '../contexts/ChoreContext'
 import { DIFFICULTY_POINTS, DIFFICULTY_COLORS } from '../types/chore'
+import { validateChoreTitle, validateChoreDescription, validateDate } from '../utils/validation'
 
 export const AddChoreForm: React.FC = () => {
   const { addChore } = useChores()
@@ -15,32 +16,90 @@ export const AddChoreForm: React.FC = () => {
     priority: 'medium' as const,
     dueDate: ''
   })
+  const [errors, setErrors] = useState<Record<string, string[]>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string[]> = {}
     
-    const newChore = {
-      ...formData,
-      points: DIFFICULTY_POINTS[formData.difficulty],
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-      // Removed approval fields - no longer needed
+    // Validate title
+    const titleValidation = validateChoreTitle(formData.title)
+    if (!titleValidation.isValid) {
+      newErrors.title = titleValidation.errors
     }
     
-    addChore(newChore)
-    setFormData({
-      title: '',
-      description: '',
-      difficulty: 'medium',
-      category: 'daily',
-      priority: 'medium',
-      dueDate: ''
-    })
-    setIsOpen(false)
+    // Validate description (optional)
+    if (formData.description) {
+      const descValidation = validateChoreDescription(formData.description)
+      if (!descValidation.isValid) {
+        newErrors.description = descValidation.errors
+      }
+    }
+    
+    // Validate due date (optional)
+    if (formData.dueDate) {
+      const dateValidation = validateDate(formData.dueDate)
+      if (!dateValidation.isValid) {
+        newErrors.dueDate = dateValidation.errors
+      }
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+    
+    setIsSubmitting(true)
+    
+    try {
+      const newChore = {
+        ...formData,
+        points: DIFFICULTY_POINTS[formData.difficulty],
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+        // Removed approval fields - no longer needed
+      }
+      
+      addChore(newChore)
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        difficulty: 'medium',
+        category: 'daily',
+        priority: 'medium',
+        dueDate: ''
+      })
+      setErrors({})
+      setIsOpen(false)
+    } catch (error) {
+      console.error('Error adding chore:', error)
+      setErrors({ submit: ['Failed to add chore. Please try again.'] })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: [] }))
+    }
   }
+
+  const getFieldError = (field: string): string | undefined => {
+    return errors[field]?.[0]
+  }
+
+  const hasErrors = Object.values(errors).some(errorArray => errorArray.length > 0)
 
   if (!isOpen) {
     return (
@@ -67,53 +126,66 @@ export const AddChoreForm: React.FC = () => {
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Chore Title
+              Chore Title *
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+                getFieldError('title') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
+              }`}
               placeholder="e.g., Clean the kitchen"
               required
+              maxLength={100}
             />
+            {getFieldError('title') && (
+              <p className="text-sm text-red-600 mt-1">{getFieldError('title')}</p>
+            )}
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Description
+              Description (optional)
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+                getFieldError('description') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
+              }`}
               placeholder="Describe what needs to be done..."
               rows={3}
+              maxLength={500}
             />
+            {getFieldError('description') && (
+              <p className="text-sm text-red-600 mt-1">{getFieldError('description')}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.description.length}/500 characters
+            </p>
           </div>
 
           {/* Difficulty and Points */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Difficulty Level
+              Difficulty & Points
             </label>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {(['easy', 'medium', 'hard'] as const).map((difficulty) => (
                 <button
                   key={difficulty}
                   type="button"
                   onClick={() => handleChange('difficulty', difficulty)}
-                  className={`p-2 sm:p-3 rounded-lg border-2 transition-all ${
+                  className={`p-2 rounded-md border-2 transition-all ${
                     formData.difficulty === difficulty
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-foreground/20'
+                      ? `border-${DIFFICULTY_COLORS[difficulty]} bg-${DIFFICULTY_COLORS[difficulty]}/10`
+                      : 'border-border hover:border-border/60'
                   }`}
                 >
-                  <div className={`text-xs px-1 sm:px-2 py-1 rounded-full mb-1 sm:mb-2 ${DIFFICULTY_COLORS[difficulty]}`}>
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </div>
-                  <div className="text-sm sm:text-lg font-bold text-foreground">
+                  <div className="text-sm font-medium capitalize">{difficulty}</div>
+                  <div className={`text-xs text-${DIFFICULTY_COLORS[difficulty]}`}>
                     {DIFFICULTY_POINTS[difficulty]} pts
                   </div>
                 </button>
@@ -122,7 +194,7 @@ export const AddChoreForm: React.FC = () => {
           </div>
 
           {/* Category and Priority */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Category
@@ -135,9 +207,11 @@ export const AddChoreForm: React.FC = () => {
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
+                <option value="seasonal">Seasonal</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Priority
@@ -157,32 +231,54 @@ export const AddChoreForm: React.FC = () => {
           {/* Due Date */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Due Date (Optional)
+              Due Date (optional)
             </label>
             <input
               type="date"
               value={formData.dueDate}
               onChange={(e) => handleChange('dueDate', e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+                getFieldError('dueDate') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
+              }`}
+              min={new Date().toISOString().split('T')[0]}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Due time will automatically be set to 6:00 PM
-            </p>
+            {getFieldError('dueDate') && (
+              <p className="text-sm text-red-600 mt-1">{getFieldError('dueDate')}</p>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4">
+          {/* Submit Error */}
+          {errors.submit && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{errors.submit[0]}</p>
+            </div>
+          )}
+
+          {/* Form Actions */}
+          <div className="flex space-x-3 pt-2">
             <Button
               type="submit"
-              className="flex-1 bg-primary hover:bg-primary/90 text-white text-sm sm:text-base"
+              disabled={isSubmitting || hasErrors}
+              className="flex-1 bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
             >
-              Add Chore
+              {isSubmitting ? 'Adding...' : 'Add Chore'}
             </Button>
             <Button
               type="button"
+              onClick={() => {
+                setIsOpen(false)
+                setErrors({})
+                setFormData({
+                  title: '',
+                  description: '',
+                  difficulty: 'medium',
+                  category: 'daily',
+                  priority: 'medium',
+                  dueDate: ''
+                })
+              }}
               variant="outline"
-              onClick={() => setIsOpen(false)}
-              className="flex-1 text-sm sm:text-base"
+              className="flex-1"
             >
               Cancel
             </Button>

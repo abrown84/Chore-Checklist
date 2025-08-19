@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Chore, ChoreStats, LEVELS } from '../types/chore'
 import { resetChoresToDefaults } from '../utils/defaultChores'
-import { isMidnightResetTime, resetDailyChores } from '../utils/midnightReset'
+import { shouldPerformMidnightReset, resetDailyChores } from '../utils/midnightReset'
 
 interface ChoreState {
   chores: Chore[]
@@ -119,6 +119,8 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
     case 'COMPLETE_CHORE': {
       const choreToComplete = state.chores.find(chore => chore.id === action.payload.id)
       if (!choreToComplete) return state
+      
+      console.log('Completing chore:', choreToComplete.title, 'ID:', action.payload.id)
 
       let finalPoints = choreToComplete.points
       let bonusMessage = ''
@@ -178,6 +180,7 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
           : chore
       )
       
+      console.log('Chore completed successfully:', action.payload.id, 'Final points:', finalPoints)
       return {
         ...state,
         chores: updatedChores,
@@ -206,6 +209,7 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
     }
     
     case 'LOAD_CHORES': {
+      console.log('Loading chores:', action.payload.length, 'chores, completed:', action.payload.filter(c => c.completed).length)
       return {
         ...state,
         chores: action.payload,
@@ -284,16 +288,20 @@ const createContextValue = (state: ChoreState, dispatch: React.Dispatch<ChoreAct
 
 export const ChoreContext = createContext<ReturnType<typeof createContextValue> | null>(null)
 
-export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?: string }> = ({ 
-  children 
+export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?: string; isDemoMode: boolean; getDemoChores?: () => Chore[] }> = ({ 
+  children,
+  isDemoMode,
+  getDemoChores
 }) => {
   const [state, dispatch] = useReducer(choreReducer, initialState)
   const storageTimeoutRef = useRef<NodeJS.Timeout>()
   const lastStorageUpdate = useRef<number>(0)
   
-  // Debounced storage update to prevent excessive localStorage writes
+    // Debounced storage update to prevent excessive localStorage writes
   const updateStorage = useCallback((chores: Chore[]) => {
     const now = Date.now()
+    console.log('Storage update requested for', chores.length, 'chores')
+    
     if (now - lastStorageUpdate.current < 1000) { // Debounce to 1 second
       if (storageTimeoutRef.current) {
         clearTimeout(storageTimeoutRef.current)
@@ -302,6 +310,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
         try {
           localStorage.setItem('chores', JSON.stringify(chores))
           lastStorageUpdate.current = Date.now()
+          console.log('Storage updated (debounced)')
         } catch (error) {
           console.error('Error saving chores to storage:', error)
         }
@@ -310,6 +319,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
       try {
         localStorage.setItem('chores', JSON.stringify(chores))
         lastStorageUpdate.current = now
+        console.log('Storage updated (immediate)')
       } catch (error) {
         console.error('Error saving chores to storage:', error)
       }
@@ -318,48 +328,73 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
 
   // Load chores from storage on mount
   useEffect(() => {
+    console.log('ChoreProvider useEffect - isDemoMode:', isDemoMode, 'getDemoChores available:', !!getDemoChores)
     try {
-      const storedChores = localStorage.getItem('chores')
-      if (storedChores) {
-        const parsedChores = JSON.parse(storedChores)
-        // Convert stored dates back to Date objects
-        const choresWithDates = parsedChores.map((chore: any) => ({
-          ...chore,
-          createdAt: new Date(chore.createdAt),
-          dueDate: chore.dueDate ? new Date(chore.dueDate) : null,
-          completedAt: chore.completedAt ? new Date(chore.completedAt) : null
-        }))
-        dispatch({ type: 'LOAD_CHORES', payload: choresWithDates })
-      } else {
-        // If no stored chores exist, create default chores for new users
+      if (isDemoMode && getDemoChores) {
+        // In demo mode, load demo chores
+        console.log('Loading demo chores...')
+        const demoChores = getDemoChores()
+        console.log('Demo chores generated:', demoChores.length)
+        dispatch({ type: 'LOAD_CHORES', payload: demoChores })
+      } else if (isDemoMode) {
+        // Fallback: reset to defaults if getDemoChores is not available
+        console.log('Demo mode but no getDemoChores function, falling back to defaults')
         dispatch({ type: 'RESET_CHORES' })
+      } else {
+        try {
+          const storedChores = localStorage.getItem('chores')
+          if (storedChores) {
+            const parsedChores = JSON.parse(storedChores)
+            // Convert stored dates back to Date objects
+            const choresWithDates = parsedChores.map((chore: any) => ({
+              ...chore,
+              createdAt: new Date(chore.createdAt),
+              dueDate: chore.dueDate ? new Date(chore.dueDate) : null,
+              completedAt: chore.completedAt ? new Date(chore.completedAt) : null
+            }))
+            dispatch({ type: 'LOAD_CHORES', payload: choresWithDates })
+          } else {
+            // If no stored chores exist, create default chores for new users
+            dispatch({ type: 'RESET_CHORES' })
+          }
+        } catch (error) {
+          console.error('Error loading chores from storage:', error)
+          // On error, create default chores as fallback
+          dispatch({ type: 'RESET_CHORES' })
+        }
       }
     } catch (error) {
-      console.error('Error loading chores from storage:', error)
+      console.error('ChoreProvider: Error in useEffect:', error)
+      console.error('Error details:', error instanceof Error ? error.message : error)
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
       // On error, create default chores as fallback
       dispatch({ type: 'RESET_CHORES' })
     }
-  }, [])
+  }, [isDemoMode])
 
-  // Save chores to storage when they change
+  // Save chores to storage when they change (but not in demo mode)
   useEffect(() => {
-    if (state.chores.length > 0) {
+    if (state.chores.length > 0 && !isDemoMode) {
+      console.log('Saving chores to storage:', state.chores.length, 'chores')
       updateStorage(state.chores)
     }
-  }, [state.chores, updateStorage])
+  }, [state.chores, updateStorage, isDemoMode])
 
-  // Midnight reset logic
+  // Midnight reset logic - only run once on mount, not when chores change
   useEffect(() => {
     const checkMidnightReset = () => {
-      if (isMidnightResetTime()) {
+      if (shouldPerformMidnightReset()) {
+        console.log('Performing midnight reset of daily chores')
         const resetChores = resetDailyChores(state.chores)
+        const resetCount = resetChores.filter(chore => !chore.completed).length - state.chores.filter(chore => !chore.completed).length
+        console.log(`Reset ${resetCount} daily chores for today`)
         dispatch({ type: 'LOAD_CHORES', payload: resetChores })
       }
     }
 
     const interval = setInterval(checkMidnightReset, 60000) // Check every minute
     return () => clearInterval(interval)
-  }, [state.chores])
+  }, []) // Remove state.chores dependency to prevent recreation of interval
 
   // Cleanup timeout on unmount
   useEffect(() => {

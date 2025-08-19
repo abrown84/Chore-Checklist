@@ -23,12 +23,36 @@ export const Leaderboard: React.FC = React.memo(() => {
   // Get unified stats from StatsContext (single source of truth)
   const memberStats = getAllUserStats()
   
+  // Debug logging
+  console.log('🔍 Leaderboard Debug Data:', {
+    userState: {
+      currentUser: userState.currentUser,
+      membersCount: userState.members.length,
+      members: userState.members
+    },
+    choreState: {
+      choresCount: choreState.chores.length,
+      completedChores: choreState.chores.filter(c => c.completed).length
+    },
+    memberStats: {
+      count: memberStats.length,
+      stats: memberStats
+    }
+  })
+  
   // Use custom hook for leaderboard data processing
   const { processedLeaderboard, currentUserStats } = useLeaderboardData({
     memberStats,
     members: userState.members,
     currentUserId: userState.currentUser?.id,
     rankingMode,
+  })
+
+  // Debug processed leaderboard
+  console.log('🔍 Processed Leaderboard:', {
+    processedLeaderboard,
+    currentUserStats,
+    rankingMode
   })
 
   

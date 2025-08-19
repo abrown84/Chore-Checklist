@@ -24,6 +24,7 @@ import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { AVATAR_SOURCES } from '../utils/mediaSources'
 import { PWAInstallGuide } from './PWAInstallGuide'
+import { SecurityStatus } from './SecurityStatus'
 
 interface ProfileCustomization {
   avatar: string
@@ -665,6 +666,18 @@ export const ProfileAndRewards: React.FC = () => {
             )}
           </CardContent>
         )}
+      </Card>
+
+      {/* Security Status Section */}
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            🔒 Security & Privacy
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <SecurityStatus />
+        </CardContent>
       </Card>
 
       {/* PWA Install Guide Section */}

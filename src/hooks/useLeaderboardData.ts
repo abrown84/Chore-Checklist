@@ -20,11 +20,23 @@ export const useLeaderboardData = ({
   rankingMode,
 }: UseLeaderboardDataProps) => {
   const processedLeaderboard = useMemo(() => {
+    console.log('🔍 useLeaderboardData Processing:', {
+      inputMemberStats: memberStats,
+      inputMembers: members,
+      currentUserId,
+      rankingMode
+    })
+    
     return memberStats
       .map((stats) => {
         const user = members.find((m) => m.id === stats.userId)
-        if (!user) return null
+        if (!user) {
+          console.log('⚠️ User not found for stats:', stats.userId, 'Available members:', members.map(m => m.id))
+          return null
+        }
 
+        console.log('✅ Processing user:', user.name, 'Stats:', stats)
+        
         const currentLevelData = LEVELS.find((level) => level.level === stats.currentLevel)
         const nextLevelData = LEVELS.find((level) => level.level === (stats.currentLevel || 1) + 1)
         
@@ -34,7 +46,7 @@ export const useLeaderboardData = ({
             100
           : 100
 
-        return {
+        const processedItem = {
           ...stats,
           ...user,
           currentLevelData,
@@ -44,6 +56,9 @@ export const useLeaderboardData = ({
           completionRate: stats.totalChores > 0 ? (stats.completedChores / stats.totalChores) * 100 : 0,
           isCurrentUser: user.id === currentUserId,
         }
+        
+        console.log('✅ Processed item:', processedItem)
+        return processedItem
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .sort((a, b) => {

@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useReducer, useCallback, useMemo, useRef, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
 import { User, UserStats, Household, UserInvite } from '../types/user'
-import { Chore, LEVELS } from '../types/chore'
 
 interface UserState {
   currentUser: User | null
@@ -41,80 +40,6 @@ const initialState: UserState = {
   invites: [],
   isLoading: false,
   error: null
-}
-
-// Memoized stats calculation function
-const calculateUserStats = (chores: Chore[], members: User[]): UserStats[] => {
-  return members.map(member => {
-    const memberChores = chores.filter(chore => 
-      chore.completed && chore.completedBy === member.id
-    )
-    
-    const totalPoints = memberChores.reduce((sum, chore) => {
-      const earnedPoints = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
-      return sum + earnedPoints
-    }, 0)
-    
-    // Calculate level based on total points
-    let currentLevel = 1
-    let currentLevelPoints = totalPoints
-    let pointsToNextLevel = 100
-    
-    for (let i = 0; i < LEVELS.length; i++) {
-      if (totalPoints >= LEVELS[i].pointsRequired) {
-        currentLevel = LEVELS[i].level
-        currentLevelPoints = totalPoints - LEVELS[i].pointsRequired
-        if (i < LEVELS.length - 1) {
-          pointsToNextLevel = LEVELS[i + 1].pointsRequired - totalPoints
-        } else {
-          pointsToNextLevel = 0
-        }
-      } else {
-        break
-      }
-    }
-    
-    // Calculate streak
-    let currentStreak = 0
-    let longestStreak = 0
-    let tempStreak = 0
-    
-    const sortedCompleted = memberChores
-      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
-    
-    for (const chore of sortedCompleted) {
-      if (chore.completedAt) {
-        const completionDate = new Date(chore.completedAt)
-        const today = new Date()
-        const diffTime = Math.abs(today.getTime() - completionDate.getTime())
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-        
-        if (diffDays <= 1) {
-          tempStreak++
-          currentStreak = Math.max(currentStreak, tempStreak)
-        } else {
-          longestStreak = Math.max(longestStreak, tempStreak)
-          tempStreak = 0
-        }
-      }
-    }
-    
-    longestStreak = Math.max(longestStreak, tempStreak)
-    
-    return {
-      userId: member.id,
-      totalChores: memberChores.length,
-      completedChores: memberChores.length,
-      totalPoints,
-      earnedPoints: totalPoints,
-      currentLevel,
-      currentLevelPoints,
-      pointsToNextLevel,
-      currentStreak,
-      longestStreak,
-      lastActive: new Date()
-    }
-  })
 }
 
 function userReducer(state: UserState, action: UserAction): UserState {
@@ -354,7 +279,7 @@ const createContextValue = (state: UserState, dispatch: React.Dispatch<UserActio
     }
   }, [dispatch, state.invites]),
 
-  updateMemberRole: useCallback((memberId: string, role: 'admin' | 'member') => {
+  updateMemberRole: useCallback((memberId: string, role: 'admin' | 'parent' | 'teen' | 'kid' | 'member') => {
     // TODO: Implement actual role update functionality
     const member = state.members.find(m => m.id === memberId)
     if (member) {
@@ -366,7 +291,7 @@ const createContextValue = (state: UserState, dispatch: React.Dispatch<UserActio
 
 const UserContext = createContext<ReturnType<typeof createContextValue> | null>(null)
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boolean }> = ({ children, isDemoMode }) => {
   const [state, dispatch] = useReducer(userReducer, initialState)
   const storageTimeoutRef = useRef<NodeJS.Timeout>()
   const lastStorageUpdate = useRef<number>(0)
@@ -398,45 +323,113 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load users from storage on mount
   useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem('choreAppUsers')
-      const storedCurrentUser = localStorage.getItem('choreAppUser')
-      
-      if (storedUsers) {
-        const parsedUsers = JSON.parse(storedUsers)
-        const usersWithDates = parsedUsers.map((user: any) => ({
-          ...user,
-          joinedAt: new Date(user.joinedAt)
-        }))
-        dispatch({ type: 'SET_MEMBERS', payload: usersWithDates })
-      }
-      
-      if (storedCurrentUser) {
-        const parsedUser = JSON.parse(storedCurrentUser)
-        const userWithDates = {
-          ...parsedUser,
-          joinedAt: new Date(parsedUser.joinedAt)
+    // Always call hooks in the same order, regardless of isDemoMode
+    const loadUsers = () => {
+      try {
+        console.log('UserProvider: Loading users, isDemoMode:', isDemoMode)
+        
+        if (isDemoMode) {
+          // In demo mode, create demo users
+          console.log('UserProvider: Creating demo users...')
+          const demoUsers: User[] = [
+            {
+              id: 'demo-alex',
+              name: 'Alex',
+              email: 'alex@demo.com',
+              role: 'parent' as const,
+              joinedAt: new Date('2024-01-01'),
+              avatar: '👨‍💼',
+              isActive: true,
+              canApproveRedemptions: true
+            },
+            {
+              id: 'demo-janice',
+              name: 'Janice',
+              email: 'janice@demo.com',
+              role: 'parent' as const,
+              joinedAt: new Date('2024-01-15'),
+              avatar: '👩‍💼',
+              isActive: true,
+              canApproveRedemptions: true
+            },
+            {
+              id: 'demo-jordan',
+              name: 'Jordan',
+              email: 'jordan@demo.com',
+              role: 'teen' as const,
+              joinedAt: new Date('2024-02-01'),
+              avatar: '👨‍🎓',
+              isActive: true,
+              parentId: 'demo-alex',
+              canApproveRedemptions: false
+            },
+            {
+              id: 'demo-avery',
+              name: 'Avery',
+              email: 'avery@demo.com',
+              role: 'kid' as const,
+              joinedAt: new Date('2024-02-15'),
+              avatar: '👩‍🎨',
+              isActive: true,
+              parentId: 'demo-janice',
+              canApproveRedemptions: false
+            }
+          ]
+          const demoCurrentUser = demoUsers.find(user => user.id === 'demo-alex') || demoUsers[0]
+          
+          console.log('UserProvider: Dispatching demo users:', demoUsers.length)
+          dispatch({ type: 'SET_MEMBERS', payload: demoUsers })
+          dispatch({ type: 'SET_CURRENT_USER', payload: demoCurrentUser })
+          console.log('UserProvider: Demo users created successfully')
+        } else {
+          try {
+            const storedUsers = localStorage.getItem('choreAppUsers')
+            const storedCurrentUser = localStorage.getItem('choreAppUser')
+            
+            if (storedUsers) {
+              const parsedUsers = JSON.parse(storedUsers)
+              const usersWithDates = parsedUsers.map((user: any) => ({
+                ...user,
+                joinedAt: new Date(user.joinedAt)
+              }))
+              dispatch({ type: 'SET_MEMBERS', payload: usersWithDates })
+            }
+            
+            if (storedCurrentUser) {
+              const parsedUser = JSON.parse(storedCurrentUser)
+              const userWithDates = {
+                ...parsedUser,
+                joinedAt: new Date(parsedUser.joinedAt)
+              }
+              dispatch({ type: 'SET_CURRENT_USER', payload: userWithDates })
+            }
+          } catch (error) {
+            console.error('Error loading users from storage:', error)
+          }
         }
-        dispatch({ type: 'SET_CURRENT_USER', payload: userWithDates })
+      } catch (error) {
+        console.error('UserProvider: Error in loadUsers:', error)
+        console.error('Error details:', error instanceof Error ? error.message : error)
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
       }
-    } catch (error) {
-      console.error('Error loading users from storage:', error)
     }
-  }, [])
 
-  // Save users to storage when they change
+    loadUsers()
+  }, [isDemoMode, dispatch])
+
+  // Save users to storage when they change (but not in demo mode)
   useEffect(() => {
-    if (state.members.length > 0) {
+    if (state.members.length > 0 && !isDemoMode) {
       updateStorage('choreAppUsers', state.members)
     }
-  }, [state.members, updateStorage])
+  }, [state.members, updateStorage, isDemoMode])
 
-  // Save current user to storage when it changes
+  // Save current user to storage when it changes (but not in demo mode)
   useEffect(() => {
-    if (state.currentUser) {
+    if (state.currentUser && !isDemoMode) {
       updateStorage('choreAppUser', state.currentUser)
     }
-  }, [state.currentUser, updateStorage])
+  }, [state.currentUser, updateStorage, isDemoMode])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -513,26 +506,4 @@ export const useUserLoading = () => {
 export const useUserError = () => {
   const { state } = useUsers()
   return useMemo(() => state.error, [state.error])
-}
-
-// Memoized hook for getting current user stats
-export const getCurrentUserStats = () => {
-  const { state } = useUsers()
-  return state.memberStats.find(stats => stats.userId === state.currentUser?.id) || null
-}
-
-// Memoized hook for recalculating stats
-export const recalculateStats = (chores: Chore[]) => {
-  const { state, setMemberStats } = useUsers()
-  
-  return useCallback(() => {
-    if (state.members.length === 0) return
-    
-    const newStats = calculateUserStats(chores, state.members)
-    
-    // Sort by total points for ranking
-    newStats.sort((a, b) => b.totalPoints - a.totalPoints)
-    
-    setMemberStats(newStats)
-  }, [chores, state.members, setMemberStats])
 }

@@ -6,6 +6,22 @@ A modern, gamified chore management application that helps families track househ
 
 **Try the app live:** [chore-checklist.vercel.app](https://chore-checklist.vercel.app)
 
+## 🎮 Demo Mode
+
+The app includes a fully functional demo mode that allows you to explore all features without creating an account:
+
+- **Interactive Demo**: Click "Try the demo" on the landing page to enter demo mode
+- **Sample Data**: Experience the app with pre-populated chores, users, and progress
+- **Full Functionality**: All features work exactly as they would for real users
+- **Easy Exit**: Click "Exit Demo" at any time to return to the landing page
+- **No Data Persistence**: Demo data is not saved to your device
+
+Perfect for:
+- Testing the app before signing up
+- Demonstrating features to family members
+- Learning how the app works
+- Exploring different chore management strategies
+
 ## ✨ Features
 
 ### 🎯 **Smart Chore Management**

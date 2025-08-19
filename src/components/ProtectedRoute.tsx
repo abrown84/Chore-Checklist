@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useDemo } from '../contexts/DemoContext'
 import AuthForm from './AuthForm'
 import LandingPage from './LandingPage'
 
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading, signIn, signUp } = useAuth()
+  const { isDemoMode } = useDemo()
 
   // Manage whether to show auth form or landing page (must be top-level hook usage)
   const [showAuth, setShowAuth] = useState<boolean>(
@@ -25,7 +27,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  // Show loading state while checking authentication
+  // Always render the same structure, but conditionally show content
+  // This ensures hooks are called in the same order every time
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -37,16 +40,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // If no user, show landing page by default. Switch to auth when URL hash is #signin
-  if (!user) {
-    if (!showAuth) {
+  if (!user && !isDemoMode) {
+    if (showAuth) {
+      return <AuthForm onSignIn={signIn} onSignUp={signUp} />
+    } else {
       return <LandingPage />
     }
-
-    // Show the AuthForm as a standalone page
-    return <AuthForm onSignIn={signIn} onSignUp={signUp} />
   }
 
-  // If user is authenticated, render the protected content
+  // User is authenticated or in demo mode
   return <>{children}</>
 }

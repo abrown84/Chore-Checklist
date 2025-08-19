@@ -3,9 +3,11 @@ export interface User {
   name: string
   email: string
   avatar: string
-  role: 'admin' | 'member'
+  role: 'admin' | 'parent' | 'teen' | 'kid' | 'member'
   joinedAt: Date
   isActive: boolean
+  parentId?: string // For kids/teens to link to their parent
+  canApproveRedemptions?: boolean // Whether this user can approve redemptions
 }
 
 export interface UserStats {
@@ -51,4 +53,56 @@ export interface UserInvite {
   invitedAt: Date
   expiresAt?: Date
   status: 'pending' | 'accepted' | 'declined' | 'expired'
+}
+
+export interface RolePermissions {
+  canApproveRedemptions: boolean
+  canManageHousehold: boolean
+  canInviteMembers: boolean
+  canManageChores: boolean
+  canViewAllStats: boolean
+  requiresApproval: boolean
+}
+
+export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
+  admin: {
+    canApproveRedemptions: true,
+    canManageHousehold: true,
+    canInviteMembers: true,
+    canManageChores: true,
+    canViewAllStats: true,
+    requiresApproval: false
+  },
+  parent: {
+    canApproveRedemptions: true,
+    canManageHousehold: true,
+    canInviteMembers: true,
+    canManageChores: true,
+    canViewAllStats: true,
+    requiresApproval: false
+  },
+  teen: {
+    canApproveRedemptions: false,
+    canManageHousehold: false,
+    canInviteMembers: false,
+    canManageChores: true,
+    canViewAllStats: false,
+    requiresApproval: true
+  },
+  kid: {
+    canApproveRedemptions: false,
+    canManageHousehold: false,
+    canInviteMembers: false,
+    canManageChores: true,
+    canViewAllStats: false,
+    requiresApproval: true
+  },
+  member: {
+    canApproveRedemptions: false,
+    canManageHousehold: false,
+    canInviteMembers: false,
+    canManageChores: true,
+    canViewAllStats: false,
+    requiresApproval: false
+  }
 }

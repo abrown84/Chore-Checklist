@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import { Input } from './ui/input'
 import { ThemeToggle } from './ThemeToggle'
+import { useDemo } from '../contexts/DemoContext'
 import {
 	Users,
 	Trophy,
@@ -28,11 +29,11 @@ const fadeUp = {
 }
 
 const features = [
-	{ icon: Users, title: 'Multi‑user households', text: 'Parent, teen, kid roles with fine‑grained permissions.' },
-	{ icon: Coins, title: 'Points → Rewards', text: 'XP, streaks, and cash-outs that keep momentum.' },
+	{ icon: Users, title: 'Multi‑user households', text: 'Parent, teen, kid roles with fine‑grained permissions and parent approval for redemptions.' },
+	{ icon: Coins, title: 'Points → Rewards', text: 'XP, streaks, and cash-outs that keep momentum. Parents approve kids\' redemptions.' },
 	{ icon: Trophy, title: 'Leaderboards', text: 'Weekly and all‑time standings drive friendly competition.' },
 	{ icon: CalendarCheck, title: 'Schedules & Routines', text: 'Recurring tasks, reminders, and auto‑rotations.' },
-	{ icon: ShieldCheck, title: 'Progress & Safety', text: 'Audit logs, approvals, and parent controls.' },
+	{ icon: ShieldCheck, title: 'Progress & Safety', text: 'Audit logs, parent approvals, and role-based controls.' },
 	{ icon: Sparkles, title: 'Customization', text: 'Themes, avatars, and profile perks as you level up.' },
 ]
 
@@ -44,6 +45,8 @@ const demoLeaders = [
 ]
 
 export default function LandingPage() {
+	const { enterDemoMode } = useDemo()
+	
 	return (
 		<div className="min-h-screen bg-background text-foreground">
 			<div className="pointer-events-none fixed inset-0 -z-10">
@@ -61,7 +64,12 @@ export default function LandingPage() {
 					</div>
 					<nav className="hidden items-center gap-4 lg:gap-6 md:flex">
 						<a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
-						<a href="#demo" className="text-sm text-muted-foreground hover:text-foreground">Demo</a>
+						<button 
+							onClick={enterDemoMode}
+							className="text-sm text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer"
+						>
+							Demo
+						</button>
 						<a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
 						<a href="#faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
 					</nav>
@@ -93,10 +101,13 @@ export default function LandingPage() {
 						Household management that feels like a game
 					</h1>
 					<p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground font-body">
-						The Daily Grind blends tasks, goals, and routines with points, levels, and leaderboards. Designed for families and shared homes.
+						The Daily Grind blends real life goals and routines with  levels, and leaderboards. Designed for families and or anyone who wants to gamify their life.
 					</p>
 					<div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-						<Button className="bg-amber-400 text-slate-900 hover:bg-amber-300 w-full sm:w-auto">
+						<Button 
+							onClick={enterDemoMode}
+							className="bg-amber-400 text-slate-900 hover:bg-amber-300 w-full sm:w-auto"
+						>
 							Try the demo <ChevronRight className="ml-1 h-4 w-4" />
 						</Button>
 						<Button variant="outline" className="border-border bg-card/40 w-full sm:w-auto">
@@ -245,9 +256,9 @@ export default function LandingPage() {
 				<h2 className="mb-6 text-center text-3xl font-bold">FAQ</h2>
 				<div className="divide-y divide-border">
 					{[
-						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve cash‑outs.' },
+						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve kids\' cash‑outs.' },
 						{ q: 'Can I use it with roommates?', a: 'Yes. Roles and rewards are fully customizable for families or shared houses.' },
-						{ q: 'Is there parental control?', a: 'Admins approve rewards, edit XP values, and review audit logs.' },
+						{ q: 'Is there parental control?', a: 'Parents approve redemptions, edit XP values, and review audit logs. Teens and kids require approval.' },
 						{ q: 'Will there be iOS and Android apps?', a: 'Yes. Web first, native apps follow shortly after beta.' },
 					].map((item) => (
 						<details key={item.q} className="group py-4">

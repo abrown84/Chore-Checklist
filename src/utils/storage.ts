@@ -1,26 +1,174 @@
-// Robust storage utility for localStorage operations
+// Robust storage utility for localStorage operations with enhanced security
 
 interface StorageOptions {
   encrypt?: boolean
   compress?: boolean
   ttl?: number // Time to live in milliseconds
+  validate?: boolean // Enable input validation
 }
 
 interface StorageItem<T> {
   value: T
   timestamp: number
   ttl?: number
+  checksum?: string // For data integrity
 }
 
 class StorageManager {
   private prefix = 'choreApp_'
-  // private encryptionKey = 'your-secret-key' // In production, use environment variable - TODO: implement encryption
+  private encryptionKey: string
+  private maxStorageSize = 5 * 1024 * 1024 // 5MB limit
+  private rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+
+  constructor() {
+    // Generate a unique encryption key for this session
+    this.encryptionKey = this.generateEncryptionKey()
+  }
 
   /**
-   * Set item in localStorage with options
+   * Generate a unique encryption key for this session
+   */
+  private generateEncryptionKey(): string {
+    const storedKey = localStorage.getItem('choreApp_encryption_key')
+    if (storedKey) {
+      return storedKey
+    }
+    
+    // Generate a new key if none exists
+    const newKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    
+    localStorage.setItem('choreApp_encryption_key', newKey)
+    return newKey
+  }
+
+  /**
+   * Rate limiting for storage operations
+   */
+  private checkRateLimit(operation: string, limit: number = 10, windowMs: number = 60000): boolean {
+    const key = `${operation}_${Date.now() - (Date.now() % windowMs)}`
+    const current = this.rateLimitMap.get(key) || { count: 0, resetTime: Date.now() + windowMs }
+    
+    if (Date.now() > current.resetTime) {
+      current.count = 0
+      current.resetTime = Date.now() + windowMs
+    }
+    
+    if (current.count >= limit) {
+      return false
+    }
+    
+    current.count++
+    this.rateLimitMap.set(key, current)
+    return true
+  }
+
+  /**
+   * Input validation and sanitization
+   */
+  private validateInput<T>(value: T, key: string): boolean {
+    if (value === null || value === undefined) {
+      console.warn(`Storage validation failed: ${key} cannot be null or undefined`)
+      return false
+    }
+
+    // Check for circular references
+    try {
+      JSON.stringify(value)
+    } catch (error) {
+      console.warn(`Storage validation failed: ${key} contains circular references`)
+      return false
+    }
+
+    // Check size limits
+    const serialized = JSON.stringify(value)
+    if (serialized.length > this.maxStorageSize) {
+      console.warn(`Storage validation failed: ${key} exceeds size limit`)
+      return false
+    }
+
+    // Check for potentially malicious content
+    if (typeof serialized === 'string') {
+      const suspiciousPatterns = [
+        /<script/i,
+        /javascript:/i,
+        /on\w+\s*=/i,
+        /eval\s*\(/i,
+        /document\./i
+      ]
+      
+      if (suspiciousPatterns.some(pattern => pattern.test(serialized))) {
+        console.warn(`Storage validation failed: ${key} contains potentially malicious content`)
+        return false
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Enhanced encryption using a more secure method
+   */
+  private encrypt(text: string): string {
+    try {
+      // Simple but more secure than base64 - XOR with encryption key
+      let encrypted = ''
+      for (let i = 0; i < text.length; i++) {
+        const charCode = text.charCodeAt(i) ^ this.encryptionKey.charCodeAt(i % this.encryptionKey.length)
+        encrypted += String.fromCharCode(charCode)
+      }
+      return btoa(encrypted)
+    } catch (error) {
+      console.error('Encryption failed, falling back to base64:', error)
+      return btoa(text)
+    }
+  }
+
+  private decrypt(encryptedText: string): string {
+    try {
+      const decoded = atob(encryptedText)
+      let decrypted = ''
+      for (let i = 0; i < decoded.length; i++) {
+        const charCode = decoded.charCodeAt(i) ^ this.encryptionKey.charCodeAt(i % this.encryptionKey.length)
+        decrypted += String.fromCharCode(charCode)
+      }
+      return decrypted
+    } catch (error) {
+      console.error('Decryption failed, falling back to base64:', error)
+      return atob(encryptedText)
+    }
+  }
+
+  /**
+   * Generate checksum for data integrity
+   */
+  private generateChecksum(data: string): string {
+    let hash = 0
+    for (let i = 0; i < data.length; i++) {
+      const char = data.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return hash.toString(16)
+  }
+
+  /**
+   * Set item in localStorage with enhanced security
    */
   setItem<T>(key: string, value: T, options: StorageOptions = {}): boolean {
+    // Rate limiting
+    if (!this.checkRateLimit('set', 20, 60000)) {
+      console.warn('Storage rate limit exceeded for set operation')
+      return false
+    }
+
     try {
+      // Input validation
+      if (options.validate !== false && !this.validateInput(value, key)) {
+        return false
+      }
+
       const storageKey = this.prefix + key
       const item: StorageItem<T> = {
         value,
@@ -29,6 +177,10 @@ class StorageManager {
       }
 
       let dataToStore = JSON.stringify(item)
+      
+      // Add checksum for data integrity
+      item.checksum = this.generateChecksum(dataToStore)
+      dataToStore = JSON.stringify(item)
       
       if (options.encrypt) {
         dataToStore = this.encrypt(dataToStore)
@@ -47,9 +199,15 @@ class StorageManager {
   }
 
   /**
-   * Get item from localStorage with automatic cleanup
+   * Get item from localStorage with enhanced security
    */
   getItem<T>(key: string, options: StorageOptions = {}): T | null {
+    // Rate limiting
+    if (!this.checkRateLimit('get', 50, 60000)) {
+      console.warn('Storage rate limit exceeded for get operation')
+      return null
+    }
+
     try {
       const storageKey = this.prefix + key
       const rawData = localStorage.getItem(storageKey)
@@ -67,6 +225,20 @@ class StorageManager {
       }
 
       const item: StorageItem<T> = JSON.parse(dataToParse)
+      
+      // Verify checksum for data integrity
+      if (item.checksum) {
+        const expectedChecksum = this.generateChecksum(JSON.stringify({
+          ...item,
+          checksum: undefined
+        }))
+        
+        if (item.checksum !== expectedChecksum) {
+          console.warn(`Data integrity check failed for ${key}, removing corrupted item`)
+          this.removeItem(key)
+          return null
+        }
+      }
       
       // Check if item has expired
       if (item.ttl && Date.now() - item.timestamp > item.ttl) {
@@ -216,15 +388,6 @@ class StorageManager {
     })
 
     return cleanedCount
-  }
-
-  // Simple encryption (for basic obfuscation - not for security)
-  private encrypt(text: string): string {
-    return btoa(text)
-  }
-
-  private decrypt(encryptedText: string): string {
-    return atob(encryptedText)
   }
 
   // Simple compression (for basic size reduction)

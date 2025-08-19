@@ -12,6 +12,7 @@ import { ChoreProvider, useChores } from './contexts/ChoreContext'
 import { UserProvider, useUsers } from './contexts/UserContext'
 import { StatsProvider } from './contexts/StatsContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { DemoProvider, useDemo } from './contexts/DemoContext'
 import { LevelUpCelebration } from './components/LevelUpCelebration'
 import { Leaderboard } from './components/Leaderboard'
 
@@ -29,6 +30,7 @@ function AppContent() {
   const { user, signOut } = useAuth()
   const { clearChoreState } = useChores()
   const { syncWithAuth, resetUserState } = useUsers()
+  const { isDemoMode, exitDemoMode } = useDemo()
   const [activeTab, setActiveTab] = useState('chores')
   
 
@@ -101,21 +103,38 @@ function AppContent() {
               {/* Desktop User Info */}
               <div className="hidden lg:flex items-center space-x-4">
                 <div className="text-sm text-muted-foreground">
-                  Welcome, <span className="font-medium text-foreground">{user?.name || user?.email}</span>
+                  {isDemoMode ? (
+                    <span className="text-amber-600 font-medium">Demo Mode</span>
+                  ) : (
+                    <>Welcome, <span className="font-medium text-foreground">{user?.name || user?.email}</span></>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <PWAStatus />
                   <ThemeToggle />
-                  <Button 
-                    onClick={handleSignOut} 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                  {user?.role === 'admin' && (
+                  {isDemoMode && (
+                    <Button 
+                      onClick={exitDemoMode} 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center border-amber-500 text-amber-600 hover:bg-amber-50"
+                      title="Exit Demo"
+                    >
+                      Exit Demo
+                    </Button>
+                  )}
+                  {!isDemoMode && (
+                    <Button 
+                      onClick={handleSignOut} 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {!isDemoMode && user?.role === 'admin' && (
                     <Button 
                       onClick={handleClearCredentials}
                       variant="destructive"
@@ -132,32 +151,60 @@ function AppContent() {
               {/* Tablet User Info */}
               <div className="hidden md:flex lg:hidden items-center space-x-2">
                 <div className="text-sm text-muted-foreground max-w-24 truncate">
-                  <span className="font-medium text-foreground">{user?.name || user?.email}</span>
+                  {isDemoMode ? (
+                    <span className="text-amber-600 font-medium">Demo Mode</span>
+                  ) : (
+                    <span className="font-medium text-foreground">{user?.name || user?.email}</span>
+                  )}
                 </div>
                 <ThemeToggle />
-                <Button 
-                  onClick={handleSignOut} 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+                {isDemoMode ? (
+                  <Button 
+                    onClick={exitDemoMode} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center border-amber-500 text-amber-600 hover:bg-amber-50"
+                    title="Exit Demo"
+                  >
+                    Exit
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleSignOut} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
 
               {/* Mobile User Info */}
               <div className="md:hidden flex items-center space-x-1">
                 <ThemeToggle />
-                <Button 
-                  onClick={handleSignOut} 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+                {isDemoMode ? (
+                  <Button 
+                    onClick={exitDemoMode} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center border-amber-500 text-amber-600 hover:bg-amber-50"
+                    title="Exit Demo"
+                  >
+                    Exit
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleSignOut} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -174,7 +221,9 @@ function AppContent() {
                 <img src={newLogo} alt="The Daily Grind" className="h-6 w-6" />
                 <h2 className="text-base xl:text-lg font-brand font-semibold text-foreground">Daily Grind</h2>
               </div>
-              <p className="text-xs xl:text-sm text-muted-foreground mt-1">Your daily productivity hub</p>
+              <p className="text-xs xl:text-sm text-muted-foreground mt-1">
+                {isDemoMode ? '🎮 Demo Mode' : 'Your daily productivity hub'}
+              </p>
              </div>
 
              {/* Navigation Items */}
@@ -201,26 +250,40 @@ function AppContent() {
              {/* Sidebar Footer */}
              <div className="p-3 xl:p-4 border-t border-border">
                <div className="space-y-2">
-                  <Button 
-                    onClick={handleSignOut} 
-                    variant="outline" 
-                    size="sm"
-                    className="w-full flex items-center justify-center text-sm"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    <span>Sign Out</span>
-                  </Button>
-                  {user?.role === 'admin' && (
+                  {isDemoMode ? (
                     <Button 
-                      onClick={handleClearCredentials}
-                      variant="destructive"
+                      onClick={exitDemoMode} 
+                      variant="outline" 
                       size="sm"
-                      className="w-full flex items-center justify-center space-x-2 text-sm"
+                      className="w-full flex items-center justify-center text-sm border-amber-500 text-amber-600 hover:bg-amber-50"
+                      title="Exit Demo"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="hidden xl:inline">Clear Saved Data</span>
+                      Exit Demo
                     </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        onClick={handleSignOut} 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full flex items-center justify-center text-sm"
+                        title="Sign Out"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        <span>Sign Out</span>
+                      </Button>
+                      {user?.role === 'admin' && (
+                        <Button 
+                          onClick={handleClearCredentials}
+                          variant="destructive"
+                          size="sm"
+                          className="w-full flex items-center justify-center space-x-2 text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="hidden xl:inline">Clear Saved Data</span>
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -229,6 +292,27 @@ function AppContent() {
 
          {/* Main Content */}
          <main className="flex-1 transition-all duration-300 min-w-0">
+           {/* Demo Mode Banner */}
+           {isDemoMode && (
+             <div className="bg-amber-50 border-b border-amber-200">
+               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                 <div className="flex items-center justify-center text-amber-800">
+                   <span className="text-sm font-medium">
+                     🎮 Demo Mode - Try out the app with sample data
+                   </span>
+                   <Button 
+                     onClick={exitDemoMode} 
+                     variant="outline" 
+                     size="sm"
+                     className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100"
+                   >
+                     Exit Demo
+                   </Button>
+                 </div>
+               </div>
+             </div>
+           )}
+           
            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 pb-20 lg:pb-8">
 
         {/* Tab Content */}
@@ -323,8 +407,6 @@ function StatsWrapper({ children }: { children: React.ReactNode }) {
   const { state: choreState } = useChores()
   const { state: userState } = useUsers()
   
-  
-  
   return (
     <StatsProvider chores={choreState.chores} members={userState.members}>
       {children}
@@ -332,33 +414,38 @@ function StatsWrapper({ children }: { children: React.ReactNode }) {
   )
 }
 
+
+
+
+
+// Demo mode wrapper that provides demo context
+function DemoModeWrapperWithDemo({ children }: { children: React.ReactNode }) {
+  const { isDemoMode, getDemoChores } = useDemo()
+  const { user } = useAuth()
+  
+  return (
+    <UserProvider isDemoMode={isDemoMode}>
+      <ChoreProvider currentUserId={user?.id} isDemoMode={isDemoMode} getDemoChores={getDemoChores}>
+        <StatsWrapper>
+          {children}
+        </StatsWrapper>
+      </ChoreProvider>
+    </UserProvider>
+  )
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <UserProvider>
+        <DemoProvider>
           <ProtectedRoute>
-            <ChoreProviderWrapper>
+            <DemoModeWrapperWithDemo>
               <AppContent />
-            </ChoreProviderWrapper>
+            </DemoModeWrapperWithDemo>
           </ProtectedRoute>
-        </UserProvider>
+        </DemoProvider>
       </ThemeProvider>
     </ErrorBoundary>
-  )
-}
-
-// Wrapper component to provide chore context with current user ID
-function ChoreProviderWrapper({ children }: { children: React.ReactNode }) {
-  // Get currentUserId from authentication state instead of UserContext to avoid circular dependency
-  const { user } = useAuth()
-  const currentUserId = user?.id
-  
-  return (
-    <ChoreProvider currentUserId={currentUserId}>
-      <StatsWrapper>
-        {children}
-      </StatsWrapper>
-    </ChoreProvider>
   )
 }

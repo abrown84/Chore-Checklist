@@ -72,6 +72,12 @@ const usePersistentPointDeductions = () => {
   })
 
   const updateDeductions = useCallback((userId: string, pointsToDeduct: number) => {
+    console.log(`Updating point deductions for user ${userId}:`, {
+      pointsToDeduct,
+      previousTotal: pointDeductions[userId] || 0,
+      newTotal: (pointDeductions[userId] || 0) + pointsToDeduct
+    })
+    
     setPointDeductions(prev => {
       const prevDeductions = prev[userId] || 0
       const newDeductions = {
@@ -82,7 +88,7 @@ const usePersistentPointDeductions = () => {
       localStorage.setItem('pointDeductions', JSON.stringify(newDeductions))
       return newDeductions
     })
-  }, [])
+  }, [pointDeductions])
 
   // Save point deductions to localStorage whenever they change
   useEffect(() => {
@@ -108,6 +114,13 @@ const useLevelPersistence = () => {
 
   const setLevelPersistenceForUser = useCallback((userId: string, level: number, pointsAtRedemption: number, gracePeriodDays: number = 30) => {
     const expiresAt = Date.now() + (gracePeriodDays * 24 * 60 * 60 * 1000)
+    console.log(`Setting level persistence for user ${userId}:`, {
+      level,
+      pointsAtRedemption,
+      gracePeriodDays,
+      expiresAt: new Date(expiresAt).toLocaleString()
+    })
+    
     setLevelPersistence(prev => {
       const newPersistence = {
         ...prev,
@@ -132,9 +145,15 @@ const useLevelPersistence = () => {
   // Clean up expired level persistence
   useEffect(() => {
     const now = Date.now()
-    const hasExpired = Object.entries(levelPersistence).some(([, data]) => data.expiresAt < now)
-
-    if (hasExpired) {
+    const expiredEntries = Object.entries(levelPersistence).filter(([, data]) => data.expiresAt < now)
+    
+    if (expiredEntries.length > 0) {
+      console.log(`Cleaning up expired level persistence for users:`, expiredEntries.map(([userId, data]) => ({
+        userId,
+        level: data.level,
+        expiredAt: new Date(data.expiresAt).toLocaleString()
+      })))
+      
       setLevelPersistence(prev => {
         const newPersistence = Object.fromEntries(
           Object.entries(prev).filter(([_userId, data]) => data.expiresAt >= now)
@@ -361,12 +380,20 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
 
   // Efficient user stats calculation with memoization - SINGLE SOURCE OF TRUTH
   const userStats = useMemo(() => {
+    console.log('🔍 StatsContext: Calculating userStats', {
+      membersCount: members.length,
+      choreDistributionKeys: Object.keys(choreDistribution),
+      pointDeductions: pointDeductions,
+      refreshTrigger
+    })
     
     // CRITICAL FIX: Calculate stats for ALL users who have chores (members + completed chore users)
     const allUserIds = new Set([
       ...members.map(m => m.id),
       ...Object.keys(choreDistribution)
     ])
+    
+    console.log('🔍 StatsContext: All user IDs to process:', Array.from(allUserIds))
     
     return Array.from(allUserIds).map(userId => {
       // Get member info if available, otherwise create a minimal user representation
@@ -382,8 +409,13 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       const userChores = choreDistribution[userId] || []
       const completedChores = userChores.filter(c => c.completed)
       
+      console.log(`🔍 StatsContext: Processing user ${userId} (${member.name})`, {
+        totalChores: userChores.length,
+        completedChores: completedChores.length,
+        userChores: userChores
+      })
+      
       // Check if we have persistent stats for this user
-      const persistentUserStats = getStats(userId)
       
       // Calculate total points from completed chores
       // Use finalPoints if available (includes bonuses/penalties), otherwise fall back to base points
@@ -411,7 +443,13 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       const userDeductions = pointDeductions[userId] || 0
       const earnedPoints = Math.max(0, totalLifetimePoints - userDeductions)
       
-
+      console.log(`🔍 StatsContext: Points calculation for ${userId}`, {
+        baseEarnedPoints,
+        resetChoresPoints,
+        totalLifetimePoints,
+        userDeductions,
+        finalEarnedPoints: earnedPoints
+      })
       
       // Calculate total potential points from all assigned chores
       const totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
@@ -461,6 +499,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       
 
       
+
+      
       // Check if user has level persistence (recently redeemed points)
       const userLevelPersistence = levelPersistence[userId]
       let finalLevel = currentLevel
@@ -475,19 +515,46 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
           expiresAt: userLevelPersistence.expiresAt,
           pointsAtRedemption: userLevelPersistence.pointsAtRedemption
         }
-
+        
+        console.log(`Applying level persistence for user ${userId}:`, {
+          currentLevel,
+          persistedLevel: userLevelPersistence.level,
+          earnedPoints,
+          pointsAtRedemption: userLevelPersistence.pointsAtRedemption,
+          expiresAt: new Date(userLevelPersistence.expiresAt).toLocaleString()
+        })
       }
       
       const currentLevelData = LEVELS.find(level => level.level === finalLevel)
       const nextLevelData = LEVELS.find(level => level.level === finalLevel + 1)
       
       // Fix: Ensure currentLevelPoints is always positive and represents points earned in current level
-      const currentLevelPoints = Math.max(0, earnedPoints - (currentLevelData?.pointsRequired || 0))
+      // If user has level persistence, calculate based on their original points at redemption
+      let currentLevelPoints = 0
+      if (userLevelPersistence && userLevelPersistence.expiresAt > Date.now()) {
+        // User has level persistence - calculate based on their original points
+        const originalPoints = userLevelPersistence.pointsAtRedemption
+        currentLevelPoints = Math.max(0, originalPoints - (currentLevelData?.pointsRequired || 0))
+      } else {
+        // No level persistence - calculate based on current earned points
+        currentLevelPoints = Math.max(0, earnedPoints - (currentLevelData?.pointsRequired || 0))
+      }
       
       // Fix: Ensure pointsToNextLevel is always positive and represents points needed for next level
-      const pointsToNextLevel = nextLevelData 
-        ? Math.max(0, nextLevelData.pointsRequired - earnedPoints)
-        : 0
+      // If user has level persistence, calculate based on their original points at redemption
+      let pointsToNextLevel = 0
+      if (userLevelPersistence && userLevelPersistence.expiresAt > Date.now()) {
+        // User has level persistence - calculate based on their original points
+        const originalPoints = userLevelPersistence.pointsAtRedemption
+        pointsToNextLevel = nextLevelData 
+          ? Math.max(0, nextLevelData.pointsRequired - originalPoints)
+          : 0
+      } else {
+        // No level persistence - calculate based on current earned points
+        pointsToNextLevel = nextLevelData 
+          ? Math.max(0, nextLevelData.pointsRequired - earnedPoints)
+          : 0
+      }
       
       const calculatedStats: UserStats = {
         userId: userId,
@@ -502,7 +569,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         currentLevelPoints,
         pointsToNextLevel,
         lastActive: new Date(),
-        levelPersistenceInfo
+        levelPersistenceInfo,
+        efficiencyScore: calculateEfficiencyScore(userChores, completedChores) // Add efficiency score
       }
       
       // Previously, we merged with persistent stats by taking maximum values for
@@ -510,17 +578,11 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       // reducing totals and could keep users at higher levels incorrectly.
       // We now trust the freshly calculated stats (which already account for
       // deductions and level persistence) to be the single source of truth.
-      if (persistentUserStats) {
-
-        return calculatedStats
-      }
       
-      // Note: We'll save the calculated stats after the calculation is complete
-      // to avoid circular dependencies in useMemo
-      
+      // Always return the freshly calculated stats as they are the single source of truth
       return calculatedStats
     })
-  }, [members, choreDistribution, pointDeductions, calculateUserLevel, levelPersistence, getStats, refreshTrigger])
+  }, [members, choreDistribution, pointDeductions, calculateUserLevel, levelPersistence, getStats, refreshTrigger, calculateEfficiencyScore])
 
   // Update persistent storage after stats are calculated (avoid circular dependency)
   useEffect(() => {

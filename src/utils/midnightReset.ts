@@ -13,8 +13,32 @@ export function isMidnightResetTime(): boolean {
   const hours = now.getHours()
   const minutes = now.getMinutes()
   
-  // Reset window: 12:00 AM to 12:01 AM
+  // Reset window: 12:00 AM to 12:01 AM (very narrow window to prevent multiple resets)
   return hours === 0 && minutes === 0
+}
+
+// Track if we've already reset today to prevent multiple resets
+let lastResetDate: string | null = null
+
+/**
+ * Check if we should perform a midnight reset (prevents multiple resets on the same day)
+ */
+export function shouldPerformMidnightReset(): boolean {
+  const now = new Date()
+  const today = now.toDateString()
+  
+  // If we've already reset today, don't reset again
+  if (lastResetDate === today) {
+    return false
+  }
+  
+  // Only reset if it's midnight and we haven't reset today
+  if (isMidnightResetTime()) {
+    lastResetDate = today
+    return true
+  }
+  
+  return false
 }
 
 /**
@@ -46,9 +70,13 @@ export function shouldResetChore(chore: Chore): boolean {
  */
 export function resetDailyChores(chores: Chore[]): Chore[] {
   const now = new Date()
+  let resetCount = 0
   
-  return chores.map(chore => {
+  const resetChores = chores.map(chore => {
     if (shouldResetChore(chore)) {
+      resetCount++
+      console.log(`Resetting daily chore: ${chore.title} (was completed on ${chore.completedAt?.toLocaleDateString()})`)
+      
       // Reset the chore for today
       const dueDate = new Date(now)
       dueDate.setHours(18, 0, 0, 0) // 6:00 PM today
@@ -66,6 +94,12 @@ export function resetDailyChores(chores: Chore[]): Chore[] {
     }
     return chore
   })
+  
+  if (resetCount > 0) {
+    console.log(`Total chores reset: ${resetCount}`)
+  }
+  
+  return resetChores
 }
 
 /**

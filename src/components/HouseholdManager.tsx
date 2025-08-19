@@ -4,7 +4,8 @@ import { Button } from './ui/button'
 import { useUsers } from '../contexts/UserContext'
 import { useChores } from '../contexts/ChoreContext'
 import { User } from '../types/user'
-import { Users, UserPlus, Settings, Crown, UserMinus, Mail, Check, X, Edit3, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Users, UserPlus, Settings, Crown, UserMinus, Mail, Check, X, Edit3, ToggleLeft, ToggleRight, Baby, GraduationCap } from 'lucide-react'
+import { ROLE_PERMISSIONS } from '../types/user'
 
 export const HouseholdManager: React.FC = () => {
   const { state, inviteMember, acceptInvite, declineInvite, removeMember, updateMemberRole, updateHouseholdSettings, clearLeaderboard } = useUsers()
@@ -12,6 +13,7 @@ export const HouseholdManager: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('')
   const [editingMember, setEditingMember] = useState<User | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
 
   const handleInvite = () => {
@@ -24,28 +26,80 @@ export const HouseholdManager: React.FC = () => {
   const handleEditMember = (member: User) => {
     setEditingMember(member)
     setEditingName(member.name)
+    setEditingRole(member.role)
   }
 
   const handleSaveEdit = () => {
-    if (editingMember && editingName.trim()) {
-      // Update member name (you can extend this to update other fields)
-      updateMemberRole(editingMember.id, editingMember.role)
+    if (editingMember && editingName.trim() && editingRole) {
+      // Update member name and role
+      updateMemberRole(editingMember.id, editingRole as any)
       setEditingMember(null)
       setEditingName('')
+      setEditingRole('')
     }
   }
 
   const handleCancelEdit = () => {
     setEditingMember(null)
     setEditingName('')
+    setEditingRole('')
   }
 
   const getRoleIcon = (role: string) => {
-    return role === 'admin' ? <Crown className="w-4 h-4 text-yellow-500" /> : <Users className="w-4 h-4 text-gray-500" />
+    switch (role) {
+      case 'admin':
+        return <Crown className="w-4 h-4 text-yellow-500" />
+      case 'parent':
+        return <Users className="w-4 h-4 text-blue-500" />
+      case 'teen':
+        return <GraduationCap className="w-4 h-4 text-green-500" />
+      case 'kid':
+        return <Baby className="w-4 h-4 text-purple-500" />
+      default:
+        return <Users className="w-4 h-4 text-gray-500" />
+    }
   }
 
   const getRoleColor = (role: string) => {
-    return role === 'admin' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+    switch (role) {
+      case 'admin':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'parent':
+        return 'bg-blue-100 text-blue-800'
+      case 'teen':
+        return 'bg-green-100 text-green-800'
+      case 'kid':
+        return 'bg-purple-100 text-purple-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Full system access and control'
+      case 'parent':
+        return 'Can approve redemptions and manage household'
+      case 'teen':
+        return 'Can manage chores, requires approval for redemptions'
+      case 'kid':
+        return 'Can manage chores, requires approval for redemptions'
+      case 'member':
+        return 'Standard member with basic access'
+      default:
+        return 'Standard member'
+    }
+  }
+
+  const canManageMember = (currentUserRole: string, targetMemberRole: string) => {
+    // Admins can manage everyone
+    if (currentUserRole === 'admin') return true
+    
+    // Parents can manage teens and kids
+    if (currentUserRole === 'parent' && (targetMemberRole === 'teen' || targetMemberRole === 'kid')) return true
+    
+    return false
   }
 
   const handleToggleInvites = () => {
@@ -89,6 +143,9 @@ export const HouseholdManager: React.FC = () => {
     )
   }
 
+  const currentUserRole = state.currentUser?.role || 'member'
+  const canManageHousehold = ROLE_PERMISSIONS[currentUserRole]?.canManageHousehold || false
+
   return (
     <div className="space-y-6">
       <Card>
@@ -124,18 +181,18 @@ export const HouseholdManager: React.FC = () => {
               <div className="text-sm text-gray-500">Members</div>
             </div>
           </div>
-          {state.currentUser?.role !== 'admin' && (
+          {!canManageHousehold && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                ℹ️ You can view household information here. Contact an admin to make changes to household settings.
+                ℹ️ You can view household information here. Contact a parent or admin to make changes to household settings.
               </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Invite New Member - Admin Only */}
-      {state.currentUser?.role === 'admin' && state.household.settings.allowInvites ? (
+      {/* Invite New Member - Admin/Parent Only */}
+      {canManageHousehold && state.household.settings.allowInvites ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -166,7 +223,7 @@ export const HouseholdManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      ) : state.currentUser?.role === 'admin' && !state.household.settings.allowInvites ? (
+      ) : canManageHousehold && !state.household.settings.allowInvites ? (
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-gray-500">
@@ -175,7 +232,7 @@ export const HouseholdManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      ) : state.currentUser?.role !== 'admin' ? (
+      ) : !canManageHousehold ? (
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-gray-500">
@@ -184,14 +241,14 @@ export const HouseholdManager: React.FC = () => {
                 {state.household.settings.allowInvites ? 'Invites are currently enabled' : 'Invites are currently disabled'}
                 {state.household.settings.requireApproval && ' (approval required)'}
               </p>
-              <p className="text-xs mt-2">Contact an admin to change these settings</p>
+              <p className="text-xs mt-2">Contact a parent or admin to change these settings</p>
             </div>
           </CardContent>
         </Card>
       ) : null}
 
-      {/* Pending Invites - Admin Only */}
-      {state.currentUser?.role === 'admin' && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
+      {/* Pending Invites - Admin/Parent Only */}
+      {canManageHousehold && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -235,8 +292,8 @@ export const HouseholdManager: React.FC = () => {
         </Card>
       )}
       
-      {/* Pending Invites Info for Non-Admin Users */}
-      {state.currentUser?.role !== 'admin' && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
+      {/* Pending Invites Info for Non-Admin/Parent Users */}
+      {!canManageHousehold && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-gray-500">
@@ -244,7 +301,7 @@ export const HouseholdManager: React.FC = () => {
               <p className="text-xs mt-1">
                 There are {state.invites.filter(invite => invite.status === 'pending').length} pending invite(s)
               </p>
-              <p className="text-xs mt-2">Admins will handle these invites</p>
+              <p className="text-xs mt-2">Parents and admins will handle these invites</p>
             </div>
           </CardContent>
         </Card>
@@ -259,10 +316,10 @@ export const HouseholdManager: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {state.currentUser?.role !== 'admin' && (
+          {!canManageHousehold && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                ℹ️ You can view household members here. Contact an admin to make changes to member roles or remove members.
+                ℹ️ You can view household members here. Contact a parent or admin to make changes to member roles or remove members.
               </p>
             </div>
           )}
@@ -273,47 +330,68 @@ export const HouseholdManager: React.FC = () => {
                   <div className="text-2xl">{member.avatar}</div>
                   <div>
                     {editingMember?.id === member.id ? (
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                        />
-                        <Button
-                          onClick={handleSaveEdit}
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={handleCancelEdit}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Name"
+                          />
+                          <select
+                            value={editingRole}
+                            onChange={(e) => setEditingRole(e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="parent">Parent</option>
+                            <option value="teen">Teen</option>
+                            <option value="kid">Kid</option>
+                            <option value="member">Member</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={handleSaveEdit}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            onClick={handleCancelEdit}
+                            size="sm"
+                            variant="outline"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                        {state.currentUser?.role === 'admin' && (
-                          <Button
-                            onClick={() => handleEditMember(member)}
-                            size="sm"
-                            variant="ghost"
-                            className="p-1 h-auto"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </Button>
-                        )}
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-semibold text-gray-900">{member.name}</h3>
+                          {canManageMember(currentUserRole, member.role) && (
+                            <Button
+                              onClick={() => handleEditMember(member)}
+                              size="sm"
+                              variant="ghost"
+                              className="p-1 h-auto"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{member.email}</p>
+                        <p className="text-xs text-gray-400">
+                          Joined {member.joinedAt.toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {getRoleDescription(member.role)}
+                        </p>
                       </div>
                     )}
-                    <p className="text-sm text-gray-500">{member.email}</p>
-                    <p className="text-xs text-gray-400">
-                      Joined {member.joinedAt.toLocaleDateString()}
-                    </p>
                   </div>
                 </div>
                 
@@ -325,7 +403,7 @@ export const HouseholdManager: React.FC = () => {
                     </div>
                   </span>
                   
-                  {state.currentUser?.role === 'admin' && state.currentUser?.id !== member.id && (
+                  {canManageMember(currentUserRole, member.role) && state.currentUser?.id !== member.id && (
                     <Button
                       onClick={() => removeMember(member.id)}
                       size="sm"
@@ -349,8 +427,8 @@ export const HouseholdManager: React.FC = () => {
         </div>
       )}
 
-      {/* Admin-only: Advanced Settings */}
-      {state.currentUser?.role === 'admin' && (
+      {/* Admin/Parent-only: Advanced Settings */}
+      {canManageHousehold && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -414,7 +492,7 @@ export const HouseholdManager: React.FC = () => {
             <div className="mt-6 p-4 border border-red-200 rounded-lg bg-red-50">
               <h4 className="font-medium text-red-900 mb-3 flex items-center">
                 <Settings className="w-4 h-4 mr-2" />
-                Data Management (Admin Only)
+                Data Management (Admin/Parent Only)
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

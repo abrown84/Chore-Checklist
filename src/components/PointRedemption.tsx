@@ -3,12 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../contexts/StatsContext'
-import { DollarSign, Coins, Calculator, Settings, AlertCircle, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
+import { DollarSign, Coins, Calculator, Settings, AlertCircle, CheckCircle, XCircle, Clock, UserCheck, Users, Baby, GraduationCap } from 'lucide-react'
+import { LEVELS } from '../types/chore'
+import { ROLE_PERMISSIONS } from '../types/user'
 
 interface RedemptionRequest {
   id: string
   userId: string
   userName: string
+  userRole: string
   pointsRequested: number
   cashAmount: number
   status: 'pending' | 'approved' | 'rejected'
@@ -22,7 +25,7 @@ export const PointRedemption: React.FC = () => {
   const { state: userState } = useUsers()
   const { getAllUserStats, updateUserPoints, setLevelPersistence, forceRefresh } = useStats()
   const [conversionRate, setConversionRate] = useState(100) // points per dollar
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [canApproveRedemptions, setCanApproveRedemptions] = useState(false)
   const [redemptionRequests, setRedemptionRequests] = useState<RedemptionRequest[]>([])
   const [pointsToRedeem, setPointsToRedeem] = useState('')
   const [showAdminPanel, setShowAdminPanel] = useState(false)
@@ -36,10 +39,58 @@ export const PointRedemption: React.FC = () => {
   const currentUser = userState.currentUser
   const currentUserStats = memberStats.find(s => s.userId === currentUser?.id)
 
+  // Helper function to calculate user level based on points
+  const calculateUserLevel = (earnedPoints: number): number => {
+    let currentLevel = 1
+    
+    // Iterate through levels in descending order to find the highest level user qualifies for
+    for (let i = LEVELS.length - 1; i >= 0; i--) {
+      if (earnedPoints >= LEVELS[i].pointsRequired) {
+        currentLevel = LEVELS[i].level
+        break
+      }
+    }
+    
+    return currentLevel
+  }
+
+  // Helper function to get role icon
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'parent':
+        return <Users className="w-4 h-4 text-blue-500" />
+      case 'teen':
+        return <GraduationCap className="w-4 h-4 text-green-500" />
+      case 'kid':
+        return <Baby className="w-4 h-4 text-purple-500" />
+      case 'admin':
+        return <UserCheck className="w-4 h-4 text-yellow-500" />
+      default:
+        return <Users className="w-4 h-4 text-gray-500" />
+    }
+  }
+
+  // Helper function to get role color
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'parent':
+        return 'bg-blue-100 text-blue-800'
+      case 'teen':
+        return 'bg-green-100 text-green-800'
+      case 'kid':
+        return 'bg-purple-100 text-purple-800'
+      case 'admin':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   useEffect(() => {
-    // Check if current user is admin based on their role
-    const adminStatus = currentUser?.role === 'admin'
-    setIsAdmin(adminStatus)
+    // Check if current user can approve redemptions based on their role
+    const userRole = currentUser?.role || 'member'
+    const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS.member
+    setCanApproveRedemptions(permissions.canApproveRedemptions)
     
     // Load conversion rate from localStorage
     const savedRate = localStorage.getItem('pointRedemptionRate')
@@ -94,6 +145,7 @@ export const PointRedemption: React.FC = () => {
       id: Date.now().toString(),
       userId: currentUser.id,
       userName: currentUser.name || currentUser.email,
+      userRole: currentUser.role,
       pointsRequested: points,
       cashAmount,
       status: 'pending',
@@ -132,14 +184,27 @@ export const PointRedemption: React.FC = () => {
       
       // If approved, deduct the points from the user's total
       if (status === 'approved') {
-        updateUserPoints(request.userId, request.pointsRequested)
-        
-        // Set level persistence for the user so they keep their current level
+        // Get the user's stats BEFORE deducting points to preserve their level
         const userStats = memberStats.find(s => s.userId === request.userId)
         if (userStats) {
-          // Set level persistence for configurable days
-          setLevelPersistence(request.userId, userStats.currentLevel, userStats.earnedPoints, levelPersistenceDays)
+          // Calculate what level the user was at BEFORE redemption
+          const levelBeforeRedemption = calculateUserLevel(userStats.earnedPoints)
+          
+          console.log(`Setting level persistence for user ${request.userId}:`, {
+            pointsBeforeRedemption: userStats.earnedPoints,
+            levelBeforeRedemption,
+            pointsToDeduct: request.pointsRequested,
+            pointsAfterRedemption: userStats.earnedPoints - request.pointsRequested,
+            levelAfterRedemption: calculateUserLevel(userStats.earnedPoints - request.pointsRequested),
+            gracePeriodDays: levelPersistenceDays
+          })
+          
+          // Set level persistence to the level BEFORE redemption so they keep it
+          setLevelPersistence(request.userId, levelBeforeRedemption, userStats.earnedPoints, levelPersistenceDays)
         }
+        
+        // Now deduct the points
+        updateUserPoints(request.userId, request.pointsRequested)
         
         // Force refresh the stats to ensure UI updates
         setTimeout(() => {
@@ -167,7 +232,19 @@ export const PointRedemption: React.FC = () => {
     processRedemptionRequest(requestId, status)
   }
 
-  const pendingRequests = redemptionRequests.filter(req => req.status === 'pending')
+  // Get pending requests that the current user can approve
+  const getPendingRequestsForApproval = () => {
+    if (!currentUser || !canApproveRedemptions) return []
+    
+    // If user is admin or parent, they can see all pending requests
+    if (currentUser.role === 'admin' || currentUser.role === 'parent') {
+      return redemptionRequests.filter(req => req.status === 'pending')
+    }
+    
+    return []
+  }
+
+  const pendingRequests = getPendingRequestsForApproval()
   const userRequests = redemptionRequests.filter(req => req.userId === currentUser?.id)
 
   return (
@@ -236,7 +313,7 @@ export const PointRedemption: React.FC = () => {
           <div className="text-xs space-y-1">
             <p>Current User: {currentUser?.name || currentUser?.email || 'None'}</p>
             <p>User Role: {currentUser?.role || 'None'}</p>
-            <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
+            <p>Can Approve Redemptions: {canApproveRedemptions ? 'Yes' : 'No'}</p>
             <p>Total Requests: {redemptionRequests.length}</p>
             <p>Pending Requests: {redemptionRequests.filter(req => req.status === 'pending').length}</p>
           </div>
@@ -249,6 +326,7 @@ export const PointRedemption: React.FC = () => {
                   id: Date.now().toString(),
                   userId: 'test-user',
                   userName: 'Test User',
+                  userRole: 'kid',
                   pointsRequested: 500,
                   cashAmount: 5.00,
                   status: 'pending',
@@ -268,17 +346,18 @@ export const PointRedemption: React.FC = () => {
             >
               Log Requests
             </Button>
-            {!isAdmin && (
+            {!canApproveRedemptions && (
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={() => {
-                  // Manually promote to admin by updating localStorage
+                  // Manually promote to parent by updating localStorage
                   if (currentUser) {
                     const storedUser = localStorage.getItem('choreAppUser')
                     if (storedUser) {
                       const parsedUser = JSON.parse(storedUser)
-                      parsedUser.role = 'admin'
+                      parsedUser.role = 'parent'
+                      parsedUser.canApproveRedemptions = true
                       localStorage.setItem('choreAppUser', JSON.stringify(parsedUser))
                       
                       // Also update in users array
@@ -287,7 +366,8 @@ export const PointRedemption: React.FC = () => {
                         const users = JSON.parse(storedUsers)
                         const userIndex = users.findIndex((u: any) => u.id === currentUser.id)
                         if (userIndex !== -1) {
-                          users[userIndex].role = 'admin'
+                          users[userIndex].role = 'parent'
+                          users[userIndex].canApproveRedemptions = true
                           localStorage.setItem('choreAppUsers', JSON.stringify(users))
                         }
                       }
@@ -298,23 +378,26 @@ export const PointRedemption: React.FC = () => {
                   }
                 }}
               >
-                Promote to Admin
+                Promote to Parent
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Admin Panel */}
-      {isAdmin && (
+      {/* Parent/Admin Approval Panel */}
+      {canApproveRedemptions && (
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Settings className="w-5 h-5" />
-              <span>Admin Controls</span>
+              <span>{currentUser?.role === 'parent' ? 'Parent Controls' : 'Admin Controls'}</span>
             </CardTitle>
             <CardDescription>
-              Manage conversion rates and approve redemption requests
+              {currentUser?.role === 'parent' 
+                ? 'Review and approve redemption requests from your kids'
+                : 'Manage conversion rates and approve redemption requests'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -343,68 +426,76 @@ export const PointRedemption: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setShowAdminPanel(!showAdminPanel)}
-                variant="outline"
-              >
-                {showAdminPanel ? 'Hide' : 'Show'} Conversion Rate Settings
-              </Button>
-            </div>
-            
-            {showAdminPanel && (
-              <div className="space-y-4">
-                {/* Conversion Rate Settings */}
-                <div className="p-4 bg-muted rounded-lg border">
-                  <label htmlFor="conversionRate" className="text-sm font-medium block mb-2">
-                    New Conversion Rate (points per dollar)
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      id="conversionRate"
-                      type="number"
-                      value={newConversionRate}
-                      onChange={(e) => setNewConversionRate(e.target.value)}
-                      placeholder={conversionRate.toString()}
-                      min="1"
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-600">points = $1.00</span>
-                    <Button onClick={saveConversionRate} size="sm">
-                      Update Rate
-                    </Button>
-                  </div>
+            {/* Conversion Rate Settings - Admin Only */}
+            {currentUser?.role === 'admin' && (
+              <>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    onClick={() => setShowAdminPanel(!showAdminPanel)}
+                    variant="outline"
+                  >
+                    {showAdminPanel ? 'Hide' : 'Show'} Conversion Rate Settings
+                  </Button>
                 </div>
+                
+                {showAdminPanel && (
+                  <div className="space-y-4">
+                    {/* Conversion Rate Settings */}
+                    <div className="p-4 bg-muted rounded-lg border">
+                      <label htmlFor="conversionRate" className="text-sm font-medium block mb-2">
+                        New Conversion Rate (points per dollar)
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          id="conversionRate"
+                          type="number"
+                          value={newConversionRate}
+                          onChange={(e) => setNewConversionRate(e.target.value)}
+                          placeholder={conversionRate.toString()}
+                          min="1"
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">points = $1.00</span>
+                        <Button onClick={saveConversionRate} size="sm">
+                          Update Rate
+                        </Button>
+                      </div>
+                    </div>
 
-                {/* Level Persistence Settings */}
-                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                  <label htmlFor="levelPersistenceDays" className="text-sm font-medium block mb-2 text-amber-800">
-                    Level Persistence Grace Period (days)
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      id="levelPersistenceDays"
-                      type="number"
-                      value={levelPersistenceDays}
-                      onChange={(e) => setLevelPersistenceDays(parseInt(e.target.value) || 30)}
-                      min="1"
-                      max="365"
-                      className="w-24 px-3 py-2 border border-amber-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <span className="text-sm text-amber-700">days</span>
-                    <div className="text-xs text-amber-600">
-                      Users keep their level for this many days after redeeming points
+                    {/* Level Persistence Settings */}
+                    <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                      <label htmlFor="levelPersistenceDays" className="text-sm font-medium block mb-2 text-amber-800">
+                        Level Persistence Grace Period (days)
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          id="levelPersistenceDays"
+                          type="number"
+                          value={levelPersistenceDays}
+                          onChange={(e) => setLevelPersistenceDays(parseInt(e.target.value) || 30)}
+                          min="1"
+                          max="365"
+                          className="w-24 px-3 py-2 border border-amber-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                        <span className="text-sm text-amber-700">days</span>
+                        <div className="text-xs text-amber-600">
+                          Users keep their level for this many days after redeeming points
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
 
-            {/* Pending Requests for Admin */}
+            {/* Pending Requests for Parent/Admin Approval */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Clock className="w-5 h-5 text-orange-500" />
-                <h3 className="font-medium text-gray-900">Pending Redemption Requests ({pendingRequests.length})</h3>
+                <h3 className="font-medium text-gray-900">
+                  Pending Redemption Requests ({pendingRequests.length})
+                  {currentUser?.role === 'parent' && ' - From Your Kids'}
+                </h3>
               </div>
               
               {pendingRequests.length > 0 ? (
@@ -413,8 +504,11 @@ export const PointRedemption: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <UserCheck className="w-4 h-4 text-blue-500" />
+                          {getRoleIcon(request.userRole)}
                           <p className="font-medium text-gray-900">{request.userName}</p>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(request.userRole)}`}>
+                            {request.userRole.charAt(0).toUpperCase() + request.userRole.slice(1)}
+                          </span>
                           <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
                             Pending
                           </span>
@@ -465,7 +559,12 @@ export const PointRedemption: React.FC = () => {
                 <div className="p-6 text-center bg-gray-50 border border-gray-200 rounded-lg">
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
                   <p className="text-gray-600 font-medium">No pending redemption requests</p>
-                  <p className="text-sm text-gray-500">All requests have been processed!</p>
+                  <p className="text-sm text-gray-500">
+                    {currentUser?.role === 'parent' 
+                      ? 'Your kids haven\'t requested any redemptions yet!'
+                      : 'All requests have been processed!'
+                    }
+                  </p>
                 </div>
               )}
             </div>
@@ -570,6 +669,19 @@ export const PointRedemption: React.FC = () => {
             <DollarSign className="w-4 h-4 mr-2" />
             Submit Redemption Request
           </Button>
+          
+          {/* Role-based info */}
+          {currentUser && (currentUser.role === 'teen' || currentUser.role === 'kid') && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center space-x-2 text-blue-700">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">Parent Approval Required</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                As a {currentUser.role}, your redemption requests need to be approved by a parent before processing.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -656,11 +768,17 @@ export const PointRedemption: React.FC = () => {
               <h3 className="font-medium mb-2">How Point Redemption Works</h3>
               <ul className="text-sm space-y-1">
                 <li>• Submit a redemption request with your desired point amount</li>
-                <li>• Admin will review and approve/reject your request</li>
+                <li>• {currentUser?.role === 'teen' || currentUser?.role === 'kid' 
+                  ? 'A parent will review and approve/reject your request'
+                  : 'Admin will review and approve/reject your request'
+                }</li>
                 <li>• Approved redemptions will be processed for cash payout</li>
                 <li>• Conversion rate is set by admin and may change over time</li>
                 <li>• You can only redeem points you've actually earned</li>
                 <li>• <strong>Level Protection:</strong> Your current level is protected for {levelPersistenceDays} days after redemption</li>
+                {currentUser?.role === 'teen' || currentUser?.role === 'kid' ? (
+                  <li>• <strong>Parent Approval:</strong> As a {currentUser.role}, your requests need parent approval</li>
+                ) : null}
               </ul>
             </div>
           </div>
