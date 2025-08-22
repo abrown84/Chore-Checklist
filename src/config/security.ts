@@ -17,7 +17,7 @@ export const SECURITY_CONFIG = {
     WEAK_PASSWORDS: [
       'password', '123456', 'qwerty', 'admin', 'letmein',
       'password123', '123456789', 'abc123', 'password1'
-    ],
+    ] as const,
   },
   
   // Input validation
@@ -60,7 +60,7 @@ export const SECURITY_CONFIG = {
       /alert\s*\(/i,
       /confirm\s*\(/i,
       /prompt\s*\(/i,
-    ],
+    ] as RegExp[],
     MAX_FILE_SIZE: 1024 * 1024, // 1MB max file size
   },
   
@@ -105,7 +105,7 @@ export const SecurityUtils = {
    * Check if a password is weak
    */
   isWeakPassword(password: string): boolean {
-    return SECURITY_CONFIG.AUTH.WEAK_PASSWORDS.includes(password.toLowerCase())
+    return (SECURITY_CONFIG.AUTH.WEAK_PASSWORDS as readonly string[]).includes(password.toLowerCase())
   },
   
   /**

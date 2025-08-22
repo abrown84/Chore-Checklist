@@ -9,7 +9,7 @@ interface StoredUser {
   email: string
   name: string
   password: string // Store password for demo purposes
-  role: 'admin' | 'member'
+  role: 'admin' | 'parent' | 'teen' | 'kid' | 'member'
   avatar: string
   joinedAt: Date
   isActive: boolean
