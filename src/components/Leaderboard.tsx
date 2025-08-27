@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react'
-import { Trophy, DollarSign, Coins, Star, Clock, CheckCircle, XCircle, ArrowRight, TrendingUp, Users, Target, Award } from 'lucide-react'
+import { Trophy, DollarSign, Coins, Star, Clock, CheckCircle, ArrowRight, TrendingUp, Target, Award } from 'lucide-react'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../hooks/useStats'
 import { useChores } from '../contexts/ChoreContext'

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Star, Target, CheckCircle, DollarSign, Clock, AlertCircle, TrendingUp, Award } from 'lucide-react'
+import { Star, Target, CheckCircle, DollarSign, Clock, TrendingUp, Award } from 'lucide-react'
 import { RANKING_MODES, RankingMode } from '../../config/constants'
 import { getEfficiencyBadge, getRankColor, getRankIcon } from '../../hooks/useLeaderboardData'
 import { useRedemption } from '../../contexts/RedemptionContext'

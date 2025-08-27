@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock, CheckCircle, DollarSign, AlertCircle } from 'lucide-react'
+import { Clock, CheckCircle, DollarSign } from 'lucide-react'
 import { Chore } from '../../types/chore'
 import { useRedemption } from '../../contexts/RedemptionContext'
 import { APP_CONFIG } from '../../config/constants'
@@ -27,7 +27,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ chore
     ...recentChores.map(chore => ({
       type: 'chore' as const,
       id: chore.id,
-      title: `${chore.name} completed`,
+      title: `${chore.title} completed`,
       description: `+${chore.points} points`,
       timestamp: new Date(chore.completedAt!),
       icon: <CheckCircle className="w-4 h-4 text-success" />,
