@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useStats } from '../contexts/StatsContext'
+import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
 import { Star, Crown, Target, Trophy, X, Award, Sparkles, Zap, Flame } from 'lucide-react'

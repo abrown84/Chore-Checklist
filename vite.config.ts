@@ -61,6 +61,7 @@ export default defineConfig({
   },
   define: {
     __dirname: JSON.stringify(__dirname),
-    'process.env': process.env
+    'process.env': process.env,
+    'import.meta.env': JSON.stringify(process.env)
   }
 })

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { useUsers } from '../contexts/UserContext'
-import { useStats } from '../contexts/StatsContext'
+import { useStats } from '../hooks/useStats'
 import { 
   Palette, 
   User, 

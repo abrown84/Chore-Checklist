@@ -326,11 +326,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boo
     // Always call hooks in the same order, regardless of isDemoMode
     const loadUsers = () => {
       try {
-        console.log('UserProvider: Loading users, isDemoMode:', isDemoMode)
+
         
         if (isDemoMode) {
           // In demo mode, create demo users
-          console.log('UserProvider: Creating demo users...')
+
           const demoUsers: User[] = [
             {
               id: 'demo-alex',
@@ -377,10 +377,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boo
           ]
           const demoCurrentUser = demoUsers.find(user => user.id === 'demo-alex') || demoUsers[0]
           
-          console.log('UserProvider: Dispatching demo users:', demoUsers.length)
+
           dispatch({ type: 'SET_MEMBERS', payload: demoUsers })
           dispatch({ type: 'SET_CURRENT_USER', payload: demoCurrentUser })
-          console.log('UserProvider: Demo users created successfully')
+
         } else {
           try {
             const storedUsers = localStorage.getItem('choreAppUsers')

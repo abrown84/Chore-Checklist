@@ -1,7 +1,9 @@
 
 import React from 'react'
-import { useStats } from '../contexts/StatsContext'
+import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
+import { useDemo } from '../contexts/DemoContext'
+import { useChores } from '../contexts/ChoreContext'
 import { LEVELS } from '../types/chore'
 import { Star, Crown, Target, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from 'lucide-react'
 import { useMemo } from 'react'
@@ -63,19 +65,58 @@ const getSeasonInfo = (season: string) => {
 export const PointsCounter: React.FC = () => {
   const { getUserStats } = useStats()
   const { user } = useAuth()
+  const { isDemoMode } = useDemo()
+  const { state: choreState } = useChores()
   
   // Get current user's stats from StatsContext
   const userStats = user ? getUserStats(user.id) : null
   
-  
-  
-  // Use userStats if available, otherwise fall back to default values
-  const stats = userStats || {
-    earnedPoints: 0,
-    currentLevel: 1,
-    currentLevelPoints: 0,
-    pointsToNextLevel: 100,
-    levelPersistenceInfo: undefined
+  // In demo mode, calculate stats directly from chores to ensure consistency
+  let stats
+  if (isDemoMode && choreState.chores.length > 0) {
+    const completedChores = choreState.chores.filter(chore => chore.completed)
+    const earnedPoints = completedChores.reduce((sum, chore) => {
+      const pointsToAdd = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
+      return sum + pointsToAdd
+    }, 0)
+    
+    // Calculate level based on earned points
+    let currentLevel = 1
+    let currentLevelPoints = earnedPoints
+    let pointsToNextLevel = 100
+    
+    for (let i = 0; i < LEVELS.length; i++) {
+      if (earnedPoints >= LEVELS[i].pointsRequired) {
+        currentLevel = LEVELS[i].level
+        currentLevelPoints = earnedPoints - LEVELS[i].pointsRequired
+        if (i < LEVELS.length - 1) {
+          pointsToNextLevel = LEVELS[i + 1].pointsRequired - earnedPoints
+        } else {
+          pointsToNextLevel = 0
+        }
+      } else {
+        break
+      }
+    }
+    
+    stats = {
+      earnedPoints,
+      currentLevel,
+      currentLevelPoints,
+      pointsToNextLevel,
+      levelPersistenceInfo: undefined
+    }
+    
+    console.log('🎯 PointsCounter: Demo mode stats calculated from chores:', stats)
+  } else {
+    // Use userStats if available, otherwise fall back to default values
+    stats = userStats || {
+      earnedPoints: 0,
+      currentLevel: 1,
+      currentLevelPoints: 0,
+      pointsToNextLevel: 100,
+      levelPersistenceInfo: undefined
+    }
   }
   
   // Calculate progress percentage correctly based on current level band

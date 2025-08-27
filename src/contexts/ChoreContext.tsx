@@ -36,8 +36,16 @@ const initialState: ChoreState = {
 // Memoized stats calculation function
 const calculateStats = (chores: Chore[]): ChoreStats => {
   const completedChores = chores.filter(chore => chore.completed)
-  const totalPoints = chores.reduce((sum, chore) => sum + chore.points, 0)
-  const earnedPoints = completedChores.reduce((sum, chore) => sum + chore.points, 0)
+  const totalPoints = chores.reduce((sum, chore) => {
+    // Use finalPoints if available (includes bonus points), otherwise fall back to base points
+    const pointsToAdd = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
+    return sum + pointsToAdd
+  }, 0)
+  const earnedPoints = completedChores.reduce((sum, chore) => {
+    // Use finalPoints if available (includes bonus points), otherwise fall back to base points
+    const pointsToAdd = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
+    return sum + pointsToAdd
+  }, 0)
   
   // Calculate streak logic (simplified for performance)
   let currentStreak = 0
@@ -85,6 +93,8 @@ const calculateStats = (chores: Chore[]): ChoreStats => {
     }
   }
   
+
+
   return {
     totalChores: chores.length,
     completedChores: completedChores.length,
@@ -120,7 +130,7 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
       const choreToComplete = state.chores.find(chore => chore.id === action.payload.id)
       if (!choreToComplete) return state
       
-      console.log('Completing chore:', choreToComplete.title, 'ID:', action.payload.id)
+
 
       let finalPoints = choreToComplete.points
       let bonusMessage = ''
@@ -180,7 +190,7 @@ function choreReducer(state: ChoreState, action: ChoreAction): ChoreState {
           : chore
       )
       
-      console.log('Chore completed successfully:', action.payload.id, 'Final points:', finalPoints)
+
       return {
         ...state,
         chores: updatedChores,
@@ -300,7 +310,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
     // Debounced storage update to prevent excessive localStorage writes
   const updateStorage = useCallback((chores: Chore[]) => {
     const now = Date.now()
-    console.log('Storage update requested for', chores.length, 'chores')
+
     
     if (now - lastStorageUpdate.current < 1000) { // Debounce to 1 second
       if (storageTimeoutRef.current) {
@@ -310,7 +320,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
         try {
           localStorage.setItem('chores', JSON.stringify(chores))
           lastStorageUpdate.current = Date.now()
-          console.log('Storage updated (debounced)')
+
         } catch (error) {
           console.error('Error saving chores to storage:', error)
         }
@@ -319,7 +329,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
       try {
         localStorage.setItem('chores', JSON.stringify(chores))
         lastStorageUpdate.current = now
-        console.log('Storage updated (immediate)')
+
       } catch (error) {
         console.error('Error saving chores to storage:', error)
       }
@@ -328,17 +338,37 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
 
   // Load chores from storage on mount
   useEffect(() => {
-    console.log('ChoreProvider useEffect - isDemoMode:', isDemoMode, 'getDemoChores available:', !!getDemoChores)
+
     try {
       if (isDemoMode && getDemoChores) {
-        // In demo mode, load demo chores
-        console.log('Loading demo chores...')
+        // In demo mode, try to load stored demo chores first, then generate new ones if needed
+        try {
+          const storedDemoChores = localStorage.getItem('demoChores')
+          if (storedDemoChores) {
+            const parsedDemoChores = JSON.parse(storedDemoChores)
+            // Convert stored dates back to Date objects
+            const demoChoresWithDates = parsedDemoChores.map((chore: any) => ({
+              ...chore,
+              createdAt: new Date(chore.createdAt),
+              dueDate: chore.dueDate ? new Date(chore.dueDate) : null,
+              completedAt: chore.completedAt ? new Date(chore.completedAt) : null
+            }))
+
+            dispatch({ type: 'LOAD_CHORES', payload: demoChoresWithDates })
+            return
+          }
+        } catch (error) {
+          console.warn('Error loading stored demo chores, will generate new ones:', error)
+        }
+        
+        // If no stored demo chores, generate new ones
+
         const demoChores = getDemoChores()
-        console.log('Demo chores generated:', demoChores.length)
+
         dispatch({ type: 'LOAD_CHORES', payload: demoChores })
       } else if (isDemoMode) {
         // Fallback: reset to defaults if getDemoChores is not available
-        console.log('Demo mode but no getDemoChores function, falling back to defaults')
+
         dispatch({ type: 'RESET_CHORES' })
       } else {
         try {
@@ -370,13 +400,24 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
       // On error, create default chores as fallback
       dispatch({ type: 'RESET_CHORES' })
     }
-  }, [isDemoMode])
+  }, [isDemoMode, getDemoChores])
 
-  // Save chores to storage when they change (but not in demo mode)
+  // Save chores to storage when they change (including demo mode for consistency)
   useEffect(() => {
-    if (state.chores.length > 0 && !isDemoMode) {
-      console.log('Saving chores to storage:', state.chores.length, 'chores')
-      updateStorage(state.chores)
+    if (state.chores.length > 0) {
+      if (isDemoMode) {
+        // In demo mode, save to a special demo storage key to avoid conflicts
+        try {
+          localStorage.setItem('demoChores', JSON.stringify(state.chores))
+
+        } catch (error) {
+          console.error('Error saving demo chores to storage:', error)
+        }
+      } else {
+        // In regular mode, save to normal storage
+
+        updateStorage(state.chores)
+      }
     }
   }, [state.chores, updateStorage, isDemoMode])
 
@@ -384,10 +425,10 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
   useEffect(() => {
     const checkMidnightReset = () => {
       if (shouldPerformMidnightReset()) {
-        console.log('Performing midnight reset of daily chores')
+
         const resetChores = resetDailyChores(state.chores)
-        const resetCount = resetChores.filter(chore => !chore.completed).length - state.chores.filter(chore => !chore.completed).length
-        console.log(`Reset ${resetCount} daily chores for today`)
+
+
         dispatch({ type: 'LOAD_CHORES', payload: resetChores })
       }
     }

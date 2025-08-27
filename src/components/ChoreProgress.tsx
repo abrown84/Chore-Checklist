@@ -3,8 +3,9 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { useChores } from '../contexts/ChoreContext'
-import { useStats } from '../contexts/StatsContext'
+import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
+import { useDemo } from '../contexts/DemoContext'
 import { Target, Star, Trophy, Crown, Award, CheckCircle } from 'lucide-react'
 import { LEVELS } from '../types/chore'
 
@@ -12,22 +13,64 @@ export const ChoreProgress: React.FC = () => {
   const { state, resetChores } = useChores()
   const { getUserStats } = useStats()
   const { user } = useAuth()
+  const { isDemoMode } = useDemo()
   
   // Get the current user's stats from StatsContext
   const userStats = user ? getUserStats(user.id) : null
   
-  // Use userStats if available, otherwise create fallback stats
-  const stats = userStats || {
-    totalChores: state.chores.length,
-    completedChores: state.chores.filter(c => c.completed).length,
-    totalPoints: state.chores.reduce((sum, c) => sum + c.points, 0),
-    earnedPoints: state.chores.filter(c => c.completed).reduce((sum, c) => sum + (c.finalPoints || c.points), 0),
-    currentStreak: 0,
-    longestStreak: 0,
-    currentLevel: 1,
-    currentLevelPoints: 0,
-    pointsToNextLevel: 100,
-    lastActive: new Date()
+  // In demo mode, calculate stats directly from chores to ensure consistency
+  let stats
+  if (isDemoMode && state.chores.length > 0) {
+    const completedChores = state.chores.filter(c => c.completed)
+    const earnedPoints = completedChores.reduce((sum, c) => sum + (c.finalPoints || c.points), 0)
+    
+    // Calculate level based on earned points
+    let currentLevel = 1
+    let currentLevelPoints = earnedPoints
+    let pointsToNextLevel = 100
+    
+    for (let i = 0; i < LEVELS.length; i++) {
+      if (earnedPoints >= LEVELS[i].pointsRequired) {
+        currentLevel = LEVELS[i].level
+        currentLevelPoints = earnedPoints - LEVELS[i].pointsRequired
+        if (i < LEVELS.length - 1) {
+          pointsToNextLevel = LEVELS[i + 1].pointsRequired - earnedPoints
+        } else {
+          pointsToNextLevel = 0
+        }
+      } else {
+        break
+      }
+    }
+    
+    stats = {
+      totalChores: state.chores.length,
+      completedChores: completedChores.length,
+      totalPoints: state.chores.reduce((sum, c) => sum + (c.finalPoints || c.points), 0),
+      earnedPoints,
+      currentStreak: 0,
+      longestStreak: 0,
+      currentLevel,
+      currentLevelPoints,
+      pointsToNextLevel,
+      lastActive: new Date()
+    }
+    
+
+  } else {
+    // Use userStats if available, otherwise create fallback stats
+    stats = userStats || {
+      totalChores: state.chores.length,
+      completedChores: state.chores.filter(c => c.completed).length,
+      totalPoints: state.chores.reduce((sum, c) => sum + c.points, 0),
+      earnedPoints: state.chores.filter(c => c.completed).reduce((sum, c) => sum + (c.finalPoints || c.points), 0),
+      currentStreak: 0,
+      longestStreak: 0,
+      currentLevel: 1,
+      currentLevelPoints: 0,
+      pointsToNextLevel: 100,
+      lastActive: new Date()
+    }
   }
 
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)

@@ -7,6 +7,8 @@ import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
 import { motion } from 'framer-motion'
 import newLogo from '../brand_assets/DGlogo.png'
+import { PageWrapper } from './PageWrapper'
+import { ThemeToggle } from './ThemeToggle'
 
 function Logo({ className = 'h-8 w-8' }: { className?: string }) {
     return <img src={newLogo} alt="The Daily Grind logo" className={className} />
@@ -136,11 +138,33 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Background gradient matching LandingPage */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)] dark:bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)]" />
-      </div>
+    <PageWrapper showBackground={true}>
+      {/* Header - Same as LandingPage */}
+      <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+              <Logo className="h-4 w-4 sm:h-6 sm:w-6" />
+            </div>
+            <div className="text-sm sm:text-lg font-brand font-bold tracking-tight">THE DAILY GRIND</div>
+            <Badge className="ml-1 sm:ml-2 bg-amber-400 text-slate-900 text-xs">Beta</Badge>
+          </div>
+          <nav className="hidden items-center gap-4 lg:gap-6 md:flex">
+            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
+          </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+            <Button asChild variant="ghost" className="hidden lg:inline-flex" size="sm">
+              <a href="#signin">Sign in</a>
+            </Button>
+            <Button asChild className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm">
+              <a href="#signin">Get the app</a>
+            </Button>
+          </div>
+        </div>
+      </header>
 
       <div className="flex items-center justify-center min-h-screen p-4">
         <motion.div 
@@ -420,6 +444,6 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
           </div>
         </motion.div>
       </div>
-    </div>
+    </PageWrapper>
   )
 }

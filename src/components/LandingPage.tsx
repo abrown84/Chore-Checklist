@@ -7,6 +7,7 @@ import { Badge } from './ui/badge'
 import { Input } from './ui/input'
 import { ThemeToggle } from './ThemeToggle'
 import { useDemo } from '../contexts/DemoContext'
+import { PageWrapper } from './PageWrapper'
 import {
 	Users,
 	Trophy,
@@ -48,11 +49,7 @@ export default function LandingPage() {
 	const { enterDemoMode } = useDemo()
 	
 	return (
-		<div className="min-h-screen bg-background text-foreground">
-			<div className="pointer-events-none fixed inset-0 -z-10">
-				<div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)] dark:bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)]" />
-			</div>
-
+		<PageWrapper showBackground={true}>
 			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
 					<div className="flex items-center gap-2 sm:gap-3">
@@ -117,6 +114,14 @@ export default function LandingPage() {
 					<div className="mt-4 sm:mt-6 text-xs text-muted-foreground">
 						Trusted by busy parents and motivated kids in 1,000+ homes
 					</div>
+					
+					{/* Demo Troubleshooting */}
+					<div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+						<div className="text-xs text-amber-800 dark:text-amber-200">
+							<strong>Demo not working?</strong> If you encounter issues, try refreshing the page or clearing your browser data. 
+							The demo creates temporary data that doesn't persist between sessions.
+						</div>
+					</div>
 				</motion.div>
 			</section>
 
@@ -124,7 +129,7 @@ export default function LandingPage() {
 				<div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
 					{features.map((f, i) => (
 						<motion.div key={f.title} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-							<Card className="h-full border-border bg-card/40">
+							<Card className="h-full border-border bg-card/40 backdrop-blur-sm">
 								<CardHeader className="flex flex-row items-center gap-3 pb-2">
 									<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
 										<f.icon className="h-5 w-5" />
@@ -140,7 +145,7 @@ export default function LandingPage() {
 
 			<section id="demo" className="mx-auto max-w-7xl px-6 pb-20">
 				<div className="grid items-start gap-6 lg:grid-cols-2">
-					<Card className="border-border bg-card/40">
+					<Card className="border-border bg-card/40 backdrop-blur-sm">
 						<CardHeader>
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-semibold">Live Leaderboard (demo)</h3>
@@ -167,7 +172,7 @@ export default function LandingPage() {
 						</CardFooter>
 					</Card>
 
-					<Card className="border-border bg-card/40">
+					<Card className="border-border bg-card/40 backdrop-blur-sm">
 						<CardHeader>
 							<h3 className="text-xl font-semibold">Get early access</h3>
 							<p className="text-sm text-muted-foreground">Join the beta and receive setup templates for families and shared houses.</p>
@@ -192,7 +197,7 @@ export default function LandingPage() {
 						{ step: '2', title: 'Assign XP & rewards', text: 'Choose values, add streaks, and set cash-out rules.' },
 						{ step: '3', title: 'Play to progress', text: 'Complete tasks, climb the board, unlock perks, repeat.' },
 					].map((s) => (
-						<Card key={s.step} className="border-border bg-card/40">
+						<Card key={s.step} className="border-border bg-card/40 backdrop-blur-sm">
 							<CardHeader className="pb-2">
 								<div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-slate-900 font-bold">{s.step}</div>
 								<h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
@@ -209,7 +214,7 @@ export default function LandingPage() {
 					<p className="mt-1 text-muted-foreground">Start free. Upgrade for advanced automation and more users.</p>
 				</div>
 				<div className="grid gap-6 md:grid-cols-2">
-					<Card className="border-border bg-card/40">
+					<Card className="border-border bg-card/40 backdrop-blur-sm">
 						<CardHeader>
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-semibold">Free</h3>
@@ -229,7 +234,7 @@ export default function LandingPage() {
 						</CardFooter>
 					</Card>
 
-					<Card className="border-amber-500/40 bg-card/40">
+					<Card className="border-amber-500/40 bg-card/40 backdrop-blur-sm">
 						<CardHeader>
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-semibold">Pro</h3>
@@ -286,7 +291,7 @@ export default function LandingPage() {
 					</div>
 				</div>
 			</footer>
-		</div>
+		</PageWrapper>
 	)
 }
 

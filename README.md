@@ -22,6 +22,23 @@ Perfect for:
 - Learning how the app works
 - Exploring different chore management strategies
 
+### 🔧 Demo Mode Troubleshooting
+
+If you encounter issues with demo mode:
+
+1. **Refresh the page** - Demo mode data is stored in localStorage and sometimes needs a refresh
+2. **Use the Reset Demo button** - Available in the header when in demo mode (orange button)
+3. **Clear browser data** - If persistent issues occur, clear localStorage for the site
+4. **Check console logs** - Open browser dev tools to see any error messages
+
+**Common Issues & Solutions:**
+- **Demo not loading**: Click "Reset Demo" button in header
+- **Chores not appearing**: Refresh the page or reset demo mode
+- **Stats not calculating**: Ensure you're in demo mode (check header for "Demo Mode" indicator)
+- **App stuck loading**: Clear browser cache and reload
+
+The demo creates temporary data that doesn't persist between browser sessions, so refreshing or resetting will always give you a clean demo experience.
+
 ## ✨ Features
 
 ### 🎯 **Smart Chore Management**

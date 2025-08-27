@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { UserStats } from '../types/user'
 import { LEVELS } from '../types/chore'
+import { useDemo } from '../contexts/DemoContext'
 
 interface UseUserProgressProps {
   userStats: UserStats | undefined
 }
 
 export const useUserProgress = ({ userStats }: UseUserProgressProps) => {
+  const { isDemoMode } = useDemo()
+  
   const progressData = useMemo(() => {
     if (!userStats) {
       return {
@@ -20,6 +23,8 @@ export const useUserProgress = ({ userStats }: UseUserProgressProps) => {
 
     const currentLevelData = LEVELS.find((level) => level.level === userStats.currentLevel)
     const nextLevelData = LEVELS.find((level) => level.level === (userStats.currentLevel || 1) + 1)
+
+
 
     if (!nextLevelData) {
       return {
@@ -46,7 +51,7 @@ export const useUserProgress = ({ userStats }: UseUserProgressProps) => {
       pointsToNextLevel,
       isMaxLevel: false,
     }
-  }, [userStats])
+  }, [userStats, isDemoMode])
 
   return progressData
 }

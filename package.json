@@ -9,10 +9,10 @@
     "build:pwa": "tsc && vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test": "jest --config jest.config.mjs",
+    "test:watch": "jest --config jest.config.mjs --watch",
+    "test:coverage": "jest --config jest.config.mjs --coverage",
+    "test:ci": "jest --config jest.config.mjs --ci --coverage --watchAll=false"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -35,6 +35,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@shadcn/ui": "0.0.4",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
@@ -53,6 +54,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
+    "ts-jest": "^29.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^1.0.2",

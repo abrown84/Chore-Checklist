@@ -11,13 +11,18 @@ interface UseLeaderboardDataProps {
   members: User[]
   currentUserId?: string
   rankingMode: RankingMode
+  redemptionData?: {
+    getPendingRedemptionPoints: (userId: string) => number
+    getTotalRedeemedValue: (userId: string) => number
+  }
 }
 
-export const useLeaderboardData = ({
-  memberStats,
-  members,
-  currentUserId,
+export const useLeaderboardData = ({ 
+  memberStats, 
+  members, 
+  currentUserId, 
   rankingMode,
+  redemptionData 
 }: UseLeaderboardDataProps) => {
   const processedLeaderboard = useMemo(() => {
     console.log('🔍 useLeaderboardData Processing:', {
@@ -66,11 +71,16 @@ export const useLeaderboardData = ({
           return b.earnedPoints - a.earnedPoints
         } else if (rankingMode === RANKING_MODES.EFFICIENCY) {
           return b.efficiencyScore - a.efficiencyScore
+        } else if (rankingMode === RANKING_MODES.LIFETIME && redemptionData) {
+          // For lifetime ranking, calculate total points including redeemed
+          const aLifetimePoints = a.earnedPoints + (redemptionData.getTotalRedeemedValue(a.userId) * 100) // Assuming 100 points per dollar
+          const bLifetimePoints = b.earnedPoints + (redemptionData.getTotalRedeemedValue(b.userId) * 100)
+          return bLifetimePoints - aLifetimePoints
         } else {
           return b.completedChores - a.completedChores
         }
       })
-  }, [memberStats, members, currentUserId, rankingMode])
+  }, [memberStats, members, currentUserId, rankingMode, redemptionData])
 
   const householdStats = useMemo(() => {
     const totalHouseholdPoints = memberStats.reduce((sum, stats) => sum + stats.earnedPoints, 0)
