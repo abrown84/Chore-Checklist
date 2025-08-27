@@ -79,12 +79,14 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
   const sortedChores = useMemo(() => {
     return [...filteredChores].sort((a, b) => {
       switch (sortBy) {
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 3, medium: 2, low: 1 }
           return priorityOrder[b.priority] - priorityOrder[a.priority]
-        case 'difficulty':
+        }
+        case 'difficulty': {
           const difficultyOrder = { hard: 3, medium: 2, easy: 1 }
           return difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty]
+        }
         case 'dueDate':
           if (!a.dueDate && !b.dueDate) return 0
           if (!a.dueDate) return 1

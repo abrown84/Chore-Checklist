@@ -304,7 +304,7 @@ export const ChoreProvider: React.FC<{ children: React.ReactNode; currentUserId?
   getDemoChores
 }) => {
   const [state, dispatch] = useReducer(choreReducer, initialState)
-  const storageTimeoutRef = useRef<NodeJS.Timeout>()
+  const storageTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const lastStorageUpdate = useRef<number>(0)
   
     // Debounced storage update to prevent excessive localStorage writes

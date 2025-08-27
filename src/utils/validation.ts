@@ -28,7 +28,7 @@ export function sanitizeHtml(html: string, allowedTags: string[] = []): string {
   }
   
   // Only allow specified tags
-  const allowedTagsRegex = new RegExp(`<(?!\/?(?:${allowedTags.join('|')})\b)[^>]+>`, 'gi')
+  const allowedTagsRegex = new RegExp(`<(?!/?)(?:${allowedTags.join('|')})\b)[^>]+>`, 'gi')
   return html.replace(allowedTagsRegex, '')
 }
 

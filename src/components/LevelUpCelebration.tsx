@@ -22,9 +22,9 @@ export const LevelUpCelebration: React.FC = () => {
     levelName: string
   } | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
-  const particleTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const fireworkTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const miniCelebrationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fireworkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const miniCelebrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastProcessedLevel = useRef<number>(1) // Track the last level we processed to prevent double celebrations
   // const audioRef = useRef<HTMLAudioElement | null>(null) // For future sound effects
 

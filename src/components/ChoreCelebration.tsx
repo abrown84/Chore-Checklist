@@ -11,8 +11,8 @@ export const ChoreCelebration: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false)
   const [showParticles, setShowParticles] = useState(false)
   const lastCompletedChoreId = useRef<string | null>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const particleTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Find the chore that was just completed by looking for the most recent completedAt timestamp

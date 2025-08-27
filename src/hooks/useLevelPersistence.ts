@@ -55,7 +55,7 @@ export const useLevelPersistence = () => {
       
       setLevelPersistence(prev => {
         const newPersistence = Object.fromEntries(
-          Object.entries(prev).filter(([_userId, data]) => data.expiresAt >= now)
+          Object.entries(prev).filter(([, data]) => data.expiresAt >= now)
         )
         localStorage.setItem('levelPersistence', JSON.stringify(newPersistence))
         return newPersistence

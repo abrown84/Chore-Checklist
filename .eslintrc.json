@@ -1,7 +1,9 @@
 {
   "env": {
     "browser": true,
-    "es2021": true
+    "es2021": true,
+    "jest": true,
+    "node": true
   },
   "extends": [
     "eslint:recommended"
@@ -20,5 +22,9 @@
   "rules": {
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "warn"
+  },
+  "globals": {
+    "process": "readonly",
+    "__dirname": "readonly"
   }
 }

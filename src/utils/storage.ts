@@ -349,10 +349,14 @@ class StorageManager {
         const testData = 'x'.repeat(1024 * 1024) // 1MB chunks
         let i = 0
         
-        while (true) {
-          localStorage.setItem(testKey + i, testData)
-          available += testData.length
-          i++
+        while (i < 1000) { // Safety limit to prevent infinite loops
+          try {
+            localStorage.setItem(testKey + i, testData)
+            available += testData.length
+            i++
+          } catch {
+            break // Storage limit reached
+          }
         }
       } catch {
         // Storage limit reached

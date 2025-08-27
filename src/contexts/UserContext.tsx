@@ -293,7 +293,7 @@ const UserContext = createContext<ReturnType<typeof createContextValue> | null>(
 
 export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boolean }> = ({ children, isDemoMode }) => {
   const [state, dispatch] = useReducer(userReducer, initialState)
-  const storageTimeoutRef = useRef<NodeJS.Timeout>()
+  const storageTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const lastStorageUpdate = useRef<number>(0)
   
   // Debounced storage update to prevent excessive localStorage writes
