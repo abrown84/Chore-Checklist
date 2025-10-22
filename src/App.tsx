@@ -9,6 +9,7 @@ import { AppLayout } from './components/AppLayout'
 import { AppContent } from './components/AppContent'
 import { AppProviders } from './components/AppProviders'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { MigrationBanner } from './components/MigrationBanner'
 
 function AppContentWrapper() {
   const { user, signOut } = useAuth()
@@ -60,6 +61,9 @@ function AppContentWrapper() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Toaster position="top-right" />
+      
+      {/* Migration Banner */}
+      <MigrationBanner />
       
       {/* Header */}
       <AppHeader

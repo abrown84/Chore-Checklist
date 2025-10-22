@@ -1,4 +1,5 @@
 import React from 'react'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import { ChoreProvider, useChores } from '../contexts/ChoreContext'
 import { UserProvider, useUsers } from '../contexts/UserContext'
 import { StatsProvider } from '../contexts/StatsContext'
@@ -7,6 +8,9 @@ import { DemoProvider, useDemo } from '../contexts/DemoContext'
 import { RedemptionProvider } from '../contexts/RedemptionContext'
 import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
+
+// Initialize Convex client
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
 
 // Wrapper component to provide stats context with data from other contexts
 function StatsWrapper({ children }: { children: React.ReactNode }) {
@@ -58,14 +62,16 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
-    <ThemeProvider>
-      <DemoProvider>
-        <ProtectedRoute>
-          <DemoModeWrapperWithDemo>
-            {children}
-          </DemoModeWrapperWithDemo>
-        </ProtectedRoute>
-      </DemoProvider>
-    </ThemeProvider>
+    <ConvexProvider client={convex}>
+      <ThemeProvider>
+        <DemoProvider>
+          <ProtectedRoute>
+            <DemoModeWrapperWithDemo>
+              {children}
+            </DemoModeWrapperWithDemo>
+          </ProtectedRoute>
+        </DemoProvider>
+      </ThemeProvider>
+    </ConvexProvider>
   )
 }

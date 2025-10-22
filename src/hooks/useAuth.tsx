@@ -133,10 +133,19 @@ export function useAuth() {
 
   // Set up activity monitoring for session timeout
   useEffect(() => {
-    const updateActivity = () => updateSessionActivity()
+    let lastUpdate = 0
+    const THROTTLE_MS = 60000 // Only update once per minute
     
-    // Update activity on user interactions
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+    const updateActivity = () => {
+      const now = Date.now()
+      if (now - lastUpdate > THROTTLE_MS) {
+        lastUpdate = now
+        updateSessionActivity()
+      }
+    }
+    
+    // Update activity on user interactions (throttled)
+    const events = ['mousedown', 'keypress', 'click'] // Removed mousemove and scroll
     events.forEach(event => {
       document.addEventListener(event, updateActivity, true)
     })
