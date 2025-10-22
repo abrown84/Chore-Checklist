@@ -14,7 +14,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         sourcemap: false
       },
-      includeAssets: ['favicon.png'],
+      includeAssets: ['favicon.png', 'manifest.json'],
       manifest: {
         name: 'The Daily Grind - Chore Checklist',
         short_name: 'Daily Grind',
@@ -60,8 +60,6 @@ export default defineConfig({
     sourcemap: false
   },
   define: {
-    __dirname: JSON.stringify(__dirname),
-    'process.env': process.env,
-    'import.meta.env': JSON.stringify(process.env)
+    __dirname: JSON.stringify(__dirname)
   }
 })
