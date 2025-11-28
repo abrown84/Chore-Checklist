@@ -1,43 +1,10 @@
-# 🏠 Smart Chore Tracker with Points
+# 🏠 Chore Checklist - Smart Family Task Management
 
-A modern, gamified chore management application that helps families track household tasks, earn points, and build good habits together.
+A modern, gamified chore management application built with React, TypeScript, and Convex. Help families track household tasks, earn points, and build good habits together.
 
-## 🌐 Live Preview
+## 🌐 Live Demo
 
-**Try the app live:** [chore-checklist.vercel.app](https://chore-checklist.vercel.app)
-
-## 🎮 Demo Mode
-
-The app includes a fully functional demo mode that allows you to explore all features without creating an account:
-
-- **Interactive Demo**: Click "Try the demo" on the landing page to enter demo mode
-- **Sample Data**: Experience the app with pre-populated chores, users, and progress
-- **Full Functionality**: All features work exactly as they would for real users
-- **Easy Exit**: Click "Exit Demo" at any time to return to the landing page
-- **No Data Persistence**: Demo data is not saved to your device
-
-Perfect for:
-- Testing the app before signing up
-- Demonstrating features to family members
-- Learning how the app works
-- Exploring different chore management strategies
-
-### 🔧 Demo Mode Troubleshooting
-
-If you encounter issues with demo mode:
-
-1. **Refresh the page** - Demo mode data is stored in localStorage and sometimes needs a refresh
-2. **Use the Reset Demo button** - Available in the header when in demo mode (orange button)
-3. **Clear browser data** - If persistent issues occur, clear localStorage for the site
-4. **Check console logs** - Open browser dev tools to see any error messages
-
-**Common Issues & Solutions:**
-- **Demo not loading**: Click "Reset Demo" button in header
-- **Chores not appearing**: Refresh the page or reset demo mode
-- **Stats not calculating**: Ensure you're in demo mode (check header for "Demo Mode" indicator)
-- **App stuck loading**: Clear browser cache and reload
-
-The demo creates temporary data that doesn't persist between browser sessions, so refreshing or resetting will always give you a clean demo experience.
+**Try the app:** [Deployed on Vercel](https://chore-checklist.vercel.app)
 
 ## ✨ Features
 
@@ -46,198 +13,257 @@ The demo creates temporary data that doesn't persist between browser sessions, s
 - **Difficulty-Based Points**: Easy (5 pts), Medium (10 pts), Hard (15 pts)
 - **Priority Levels**: High, Medium, Low priority with visual indicators
 - **Due Date Tracking**: Smart due date management with overdue warnings and early completion bonuses
-
-### 🔄 **Reset & Reset Functionality**
-- **Reset to Defaults**: One-click reset to reload the complete default chore list with fresh dates
-- **Progress Reset**: Clear all completed chores and start fresh
-- **Smart Date Management**: Automatically calculates appropriate due dates for recurring tasks
-
-### 📊 **Enhanced Organization**
-- **Category Grouping**: View chores organized by frequency or in a flat list
-- **Multiple View Modes**: Grid and List views for different preferences
-- **Advanced Filtering**: Filter by status, category, priority, and difficulty
-- **Smart Sorting**: Sort by priority, difficulty, or due date
+- **38 Default Chores**: Pre-configured chores ready to use
 
 ### 🎮 **Gamification Features**
 - **Point System**: Earn points for completing chores
-- **Level Progression**: Level up as you earn more points
+- **Level Progression**: 10 levels with unique rewards and themes
 - **Early Completion Bonuses**: Get bonus points for completing tasks ahead of schedule
 - **Late Completion Penalties**: Reduced points for overdue tasks
 - **Achievement Tracking**: Visual feedback for your progress
+- **Leaderboard**: See who's leading the household chores
 
 ### 👥 **Family Management**
 - **Multi-User Support**: Track chores for multiple family members
-- **Leaderboard**: See who's leading the household chores
+- **Household System**: Create and manage households with role-based access
+- **Invite System**: Invite family members via email
 - **Progress Sharing**: Celebrate achievements together
+
+### 💰 **Reward System**
+- **Point Redemption**: Request cash redemptions for earned points
+- **Approval Workflow**: Parents can approve/reject redemption requests
+- **Transaction History**: Track all point deductions and redemptions
+
+### 🎨 **User Experience**
+- **PWA Support**: Install as a Progressive Web App
+- **Offline Support**: Works offline with service workers
+- **Dark Mode**: Beautiful dark theme support
+- **Responsive Design**: Optimized for mobile and desktop
+- **Real-time Updates**: Live updates via Convex subscriptions
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 16+ 
+- Node.js 18+ 
 - npm or yarn
+- Convex account (free tier available)
 
 ### Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd chore-checklist-with-points
 
-# Install dependencies
-npm install
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Chore-Checklist
+   ```
 
-# Start development server
-npm run dev
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up Convex**
+   ```bash
+   npx convex dev
+   ```
+   This will:
+   - Create a Convex account (if needed)
+   - Set up your deployment
+   - Generate a deployment URL
+
+4. **Configure environment variables**
+   
+   Create a `.env.local` file:
+   ```env
+   VITE_CONVEX_URL=https://your-deployment.convex.cloud
+   ```
+   
+   Get your deployment URL from the Convex dashboard or the output of `npx convex dev`.
+
+5. **Set up Convex Auth**
+   
+   In your Convex dashboard, set these environment variables:
+   - `CONVEX_SITE_URL`: Your site URL (e.g., `http://localhost:3000` for dev)
+   - `JWT_PRIVATE_KEY`: Generated JWT private key
+   - `JWKS`: Generated JWKS
+   
+   To generate JWT keys:
+   ```bash
+   node -e "const { generateKeyPair, exportPKCS8, exportJWK } = require('jose'); (async () => { const keys = await generateKeyPair('RS256', { extractable: true }); const privateKey = await exportPKCS8(keys.privateKey); const publicKey = await exportJWK(keys.publicKey); const jwks = JSON.stringify({ keys: [{ use: 'sig', ...publicKey }] }); console.log('JWT_PRIVATE_KEY=' + JSON.stringify(privateKey.trimEnd().replace(/\\n/g, ' '))); console.log('JWKS=' + jwks); })();"
+   ```
+
+6. **Seed default chores** (optional)
+   
+   After creating a household, you can seed default chores using the Convex dashboard:
+   - Go to Functions → Run Function
+   - Select `chores:adminSeedChores`
+   - Pass your `householdId` as an argument
+
+7. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
 ### Build for Production
+
 ```bash
 npm run build
 npm run preview
 ```
 
-## 📋 Default Chore List
+## 📋 Default Chores
 
-The application comes with a comprehensive set of pre-configured chores organized by frequency:
+The application comes with 38 pre-configured chores organized by frequency:
 
-### 🌅 Daily Chores
-- Make the bed (5 pts)
-- Take out trash (5 pts)
-- Wash dishes (5 pts)
-- Wipe kitchen counters (5 pts)
-- Feed pets (5 pts)
+### 🌅 Daily Chores (11 chores)
+- Morning Setup Routine (5 pts)
+- Waste Management Protocol (5 pts)
+- Kitchen Surface Optimization (5 pts)
+- Dishware Cycle Management (5 pts)
+- Bathroom Efficiency Check (5 pts)
+- Pet Care Protocol (5 pts)
+- 5-Minute Reset Sprint (5 pts)
+- Kitchen Command Center Reset (10 pts)
+- Floor Maintenance Protocol (10 pts)
+- Living Space Optimization (10 pts)
+- Plant Wellness Check (10 pts)
 
-### 📅 Weekly Chores
-- Vacuum floors (10 pts)
-- Change bed sheets (10 pts)
-- Clean bathroom (10 pts)
-- Do laundry (10 pts)
-- Take out recycling (10 pts)
+### 📅 Weekly Chores (12 chores)
+- Sleep Environment Upgrade (5 pts)
+- Complete Waste Audit (5 pts)
+- Visual Clarity Enhancement (5 pts)
+- Information Management Sprint (5 pts)
+- Textile Care Cycle (10 pts)
+- Deep Surface Restoration (10 pts)
+- Bathroom System Overhaul (10 pts)
+- Outdoor Ecosystem Management (10 pts)
+- Weekly Nutrition Strategy (10 pts)
+- Food Storage Audit (10 pts)
+- Kitchen System Optimization (15 pts)
+- Strategic Declutter Mission (15 pts)
 
-### 🗓️ Monthly Chores
-- Deep clean kitchen (15 pts)
-- Organize closets (15 pts)
-- Clean windows (15 pts)
-- Dust ceiling fans (15 pts)
-- Clean refrigerator (15 pts)
+### 🗓️ Monthly Chores (10 chores)
+- Illumination System Maintenance (5 pts)
+- Comfort Textile Refresh (5 pts)
+- Airflow Optimization Protocol (5 pts)
+- Cooking System Deep Clean (10 pts)
+- Complete Window System Overhaul (10 pts)
+- Carpet Restoration Protocol (10 pts)
+- Food Inventory Optimization (10 pts)
+- Wardrobe Management System (15 pts)
+- Comprehensive Home Reset (15 pts)
+- Storage Facility Optimization (15 pts)
 
-### 🌸 Seasonal Chores
-- Spring cleaning (15 pts)
-- Summer yard work (15 pts)
-- Fall cleanup (15 pts)
-- Winter preparation (15 pts)
+### 🌸 Seasonal Chores (5 chores)
+- Seasonal Aesthetic Update (5 pts)
+- Clothing Inventory Transition (5 pts)
+- Landscape Seasonal Strategy (10 pts)
+- Climate Control System Service (10 pts)
+- Comprehensive System Refresh (15 pts)
 
-## 🎨 Customization
+## 🔧 Technical Stack
 
-### Adding Custom Chores
-- Use the "Add Chore" form to create personalized tasks
-- Set custom difficulty, priority, and due dates
-- Choose from existing categories or create new ones
+### Frontend
+- **React 18** - UI library
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animations
+- **Radix UI** - Accessible components
 
-### Modifying Default Chores
-- Edit the `src/utils/defaultChores.ts` file to customize the default list
-- Add new categories or modify existing ones
-- Adjust point values and difficulty levels
+### Backend
+- **Convex** - Backend-as-a-Service
+  - Real-time database
+  - Serverless functions
+  - Authentication
+  - File storage
 
-## 🔧 Technical Details
+### Features
+- **PWA** - Progressive Web App support
+- **Service Workers** - Offline functionality
+- **Convex Auth** - Authentication system
 
-### Architecture
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS with custom components
-- **State Management**: React Context API
-- **Storage**: Local Storage with automatic persistence
-- **UI Components**: Custom component library with shadcn/ui
+## 📁 Project Structure
 
-### Key Components
-- `ChoreList`: Main chore display with filtering and organization
-- `ChoreContext`: State management for chores and statistics
-- `AddChoreForm`: Form for creating new chores
-- `PointsCounter`: Real-time points and level display
-- `HouseholdManager`: Family member and settings management
-
-### Data Structure
-```typescript
-interface Chore {
-  id: string
-  title: string
-  description?: string
-  difficulty: 'easy' | 'medium' | 'hard'
-  points: number
-  category: 'daily' | 'weekly' | 'monthly' | 'seasonal'
-  priority: 'low' | 'medium' | 'high'
-  dueDate: Date
-  completed: boolean
-  completedAt?: Date
-  finalPoints?: number
-  bonusMessage?: string
-}
+```
+Chore-Checklist/
+├── convex/              # Convex backend functions
+│   ├── chores.ts        # Chore CRUD operations
+│   ├── users.ts         # User management
+│   ├── households.ts    # Household management
+│   ├── stats.ts         # Statistics calculations
+│   ├── auth.ts          # Authentication
+│   └── schema.ts        # Database schema
+├── src/
+│   ├── components/      # React components
+│   ├── contexts/        # React contexts
+│   ├── hooks/           # Custom hooks
+│   ├── utils/           # Utility functions
+│   └── types/           # TypeScript types
+├── public/              # Static assets
+└── dist/               # Build output
 ```
 
-## 🎯 Usage Tips
+## 🚀 Deployment
 
-### For Parents
-- Use the reset functionality to start fresh each week/month
-- Customize the default chore list to match your family's needs
-- Set appropriate due dates for recurring tasks
-- Monitor progress through the dashboard
+### Vercel Deployment
 
-### For Kids
-- Complete chores to earn points and level up
-- Try to complete tasks early for bonus points
-- Check the leaderboard to see your ranking
-- Use the rewards system to redeem points
+See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed deployment instructions.
 
-### For Families
-- Set up household members in the Household Manager
-- Create a chore rotation schedule
-- Celebrate achievements together
-- Use the app to build consistent habits
+Quick steps:
+1. Push code to GitHub
+2. Import repository in Vercel
+3. Set environment variable: `VITE_CONVEX_URL`
+4. Deploy!
 
-## 🔄 Reset Functionality
+### Environment Variables
 
-### When to Use Reset
-- **Weekly Reset**: Start fresh each week with new due dates
-- **Monthly Reset**: Clear progress and reload seasonal tasks
-- **Seasonal Reset**: Update chores for changing seasons
-- **Fresh Start**: Clear all data and begin again
+**Vercel:**
+- `VITE_CONVEX_URL` - Your Convex deployment URL
 
-### How Reset Works
-1. Click "Reset to Defaults" button
-2. Confirm the action in the popup
-3. All chores are cleared and replaced with fresh defaults
-4. Due dates are recalculated based on current date
-5. Progress is reset to start fresh
+**Convex Dashboard:**
+- `CONVEX_SITE_URL` - Your Vercel deployment URL
+- `JWT_PRIVATE_KEY` - Generated JWT private key
+- `JWKS` - Generated JWKS
 
-## 🎨 UI Features
+## 🎯 Usage
 
-### Visual Indicators
-- **Color Coding**: Different colors for difficulty levels and priorities
-- **Icons**: Emoji and Lucide icons for better visual recognition
-- **Status Badges**: Clear indicators for overdue, due soon, and completed tasks
-- **Progress Bars**: Visual progress tracking for categories
+### Creating a Household
+1. Sign up or log in
+2. Create a new household
+3. Invite family members via email
+4. Seed default chores (optional)
 
-### Responsive Design
-- **Mobile First**: Optimized for mobile devices
-- **Responsive Grid**: Adapts to different screen sizes
-- **Touch Friendly**: Large touch targets for mobile users
-- **Accessible**: High contrast and readable text
+### Managing Chores
+- **Add Chore**: Use the "Add Chore" form
+- **Complete Chore**: Click the checkmark on any chore
+- **Edit Chore**: Click the edit icon
+- **Delete Chore**: Click the delete icon
 
-## 🚀 Future Enhancements
+### Earning Points
+- Complete chores to earn points
+- Early completion = bonus points
+- Late completion = penalty points
+- Level up as you earn more points
 
-- [ ] Cloud synchronization
-- [ ] Push notifications for due dates
-- [ ] Photo verification for completed chores
-- [ ] Integration with smart home devices
-- [ ] Advanced analytics and reporting
-- [ ] Multi-language support
-- [ ] Dark mode theme
+### Redemptions
+- Request cash redemption for points
+- Parents/admins can approve/reject
+- Track all transactions in history
+
+## 📚 Documentation
+
+- [Deployment Guide](./VERCEL_DEPLOYMENT.md)
+- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md)
+- [Migration Guide](./MIGRATION_GUIDE.md) - For migrating from localStorage
+- [PWA Guide](./PWA_README.md) - PWA features and setup
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
@@ -245,10 +271,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Built with React and modern web technologies
-- UI components inspired by shadcn/ui
-- Icons from Lucide React
-- Styling with Tailwind CSS
+- Built with [Convex](https://convex.dev) for the backend
+- UI components inspired by [shadcn/ui](https://ui.shadcn.com)
+- Icons from [Lucide React](https://lucide.dev)
+- Styling with [Tailwind CSS](https://tailwindcss.com)
 
 ---
 

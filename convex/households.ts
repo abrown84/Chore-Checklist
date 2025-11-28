@@ -1,13 +1,13 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUserId } from "./authHelpers";
 
 // Query: Get household by ID
 export const getHousehold = query({
   args: { householdId: v.id("households") },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -19,7 +19,7 @@ export const getHousehold = query({
     // Verify user is member of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -34,14 +34,14 @@ export const getHousehold = query({
 export const getUserHouseholds = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
       return [];
     }
 
     const memberships = await ctx.db
       .query("householdMembers")
-      .withIndex("by_user", (q) => q.eq("userId", identity))
+      .withIndex("by_user", (q) => q.eq("userId", userId as any))
       .collect();
 
     const households = await Promise.all(
@@ -65,15 +65,15 @@ export const getUserHouseholds = query({
 export const getHouseholdMembers = query({
   args: { householdId: v.id("households") },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Verify user is member of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -118,8 +118,8 @@ export const createHousehold = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -128,7 +128,7 @@ export const createHousehold = mutation({
     // Create household
     const householdId = await ctx.db.insert("households", {
       name: args.name,
-      createdBy: identity,
+      createdBy: userId as any,
       createdAt: now,
       updatedAt: now,
     });
@@ -136,7 +136,7 @@ export const createHousehold = mutation({
     // Add creator as admin member
     await ctx.db.insert("householdMembers", {
       householdId,
-      userId: identity,
+      userId: userId as any,
       role: "admin",
       joinedAt: now,
     });
@@ -150,10 +150,18 @@ export const updateHousehold = mutation({
   args: {
     householdId: v.id("households"),
     name: v.string(),
+    description: v.optional(v.string()),
+    settings: v.optional(
+      v.object({
+        allowInvites: v.boolean(),
+        requireApproval: v.boolean(),
+        maxMembers: v.number(),
+      })
+    ),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -165,17 +173,27 @@ export const updateHousehold = mutation({
     // Verify user is admin of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership || membership.role !== "admin") {
       throw new Error("Not an admin of this household");
     }
 
-    await ctx.db.patch(args.householdId, {
+    const updateData: any = {
       name: args.name,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (args.description !== undefined) {
+      updateData.description = args.description;
+    }
+
+    if (args.settings !== undefined) {
+      updateData.settings = args.settings;
+    }
+
+    await ctx.db.patch(args.householdId, updateData);
 
     return args.householdId;
   },
@@ -186,11 +204,19 @@ export const addHouseholdMember = mutation({
   args: {
     householdId: v.id("households"),
     userId: v.id("users"),
-    role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
+    role: v.optional(
+      v.union(
+        v.literal("admin"),
+        v.literal("parent"),
+        v.literal("teen"),
+        v.literal("kid"),
+        v.literal("member")
+      )
+    ),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getCurrentUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -202,7 +228,7 @@ export const addHouseholdMember = mutation({
     // Verify user is admin of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", currentUserId as any))
       .first();
 
     if (!membership || membership.role !== "admin") {
@@ -238,8 +264,8 @@ export const removeHouseholdMember = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getCurrentUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -251,14 +277,14 @@ export const removeHouseholdMember = mutation({
     // Verify user is admin of household or removing themselves
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", currentUserId as any))
       .first();
 
     if (!membership) {
       throw new Error("Not a member of this household");
     }
 
-    if (membership.role !== "admin" && identity !== args.userId) {
+    if (membership.role !== "admin" && currentUserId !== args.userId) {
       throw new Error("Not authorized to remove this member");
     }
 
@@ -295,11 +321,17 @@ export const updateMemberRole = mutation({
   args: {
     householdId: v.id("households"),
     userId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("member")),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("parent"),
+      v.literal("teen"),
+      v.literal("kid"),
+      v.literal("member")
+    ),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getCurrentUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -311,7 +343,7 @@ export const updateMemberRole = mutation({
     // Verify user is admin of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", currentUserId as any))
       .first();
 
     if (!membership || membership.role !== "admin") {
@@ -329,7 +361,10 @@ export const updateMemberRole = mutation({
     }
 
     // Don't allow demoting the last admin
-    if (memberToUpdate.role === "admin" && args.role === "member") {
+    if (
+      memberToUpdate.role === "admin" &&
+      args.role !== "admin"
+    ) {
       const adminCount = await ctx.db
         .query("householdMembers")
         .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
@@ -353,8 +388,8 @@ export const updateMemberRole = mutation({
 export const deleteHousehold = mutation({
   args: { householdId: v.id("households") },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getCurrentUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -366,7 +401,7 @@ export const deleteHousehold = mutation({
     // Verify user is admin of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", currentUserId as any))
       .first();
 
     if (!membership || membership.role !== "admin") {

@@ -1,48 +1,237 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { Id } from '../../convex/_generated/dataModel'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { useUsers } from '../contexts/UserContext'
+import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
+import { useAuth } from '../hooks/useAuth'
 import { useChores } from '../contexts/ChoreContext'
-import { User } from '../types/user'
-import { Users, UserPlus, Settings, Crown, UserMinus, Mail, Check, X, Edit3, ToggleLeft, ToggleRight, Baby, GraduationCap } from 'lucide-react'
 import { ROLE_PERMISSIONS } from '../types/user'
+import {
+  Users,
+  UserPlus,
+  Settings,
+  Crown,
+  UserMinus,
+  Mail,
+  Check,
+  X,
+  Edit3,
+  ToggleLeft,
+  ToggleRight,
+  Baby,
+  GraduationCap,
+  Home,
+  Loader2,
+} from 'lucide-react'
 
 export const HouseholdManager: React.FC = () => {
-  const { state, inviteMember, acceptInvite, declineInvite, removeMember, updateMemberRole, updateHouseholdSettings, clearLeaderboard } = useUsers()
+  const { user: currentUser } = useAuth()
+  const householdId = useCurrentHousehold()
   const { resetChores } = useChores()
+  
+  // Queries
+  const household = useQuery(
+    api.households.getHousehold,
+    householdId ? { householdId } : 'skip'
+  )
+  const members = useQuery(
+    api.households.getHouseholdMembers,
+    householdId ? { householdId } : 'skip'
+  )
+  const invites = useQuery(
+    api.invites.getHouseholdInvites,
+    householdId ? { householdId } : 'skip'
+  )
+  
+  // Mutations
+  const createHousehold = useMutation(api.households.createHousehold)
+  const updateHousehold = useMutation(api.households.updateHousehold)
+  const updateMemberRole = useMutation(api.households.updateMemberRole)
+  const removeMember = useMutation(api.households.removeHouseholdMember)
+  const createInvite = useMutation(api.invites.createInvite)
+  const acceptInviteMutation = useMutation(api.invites.acceptInvite)
+  const declineInviteMutation = useMutation(api.invites.declineInvite)
+  // const cancelInvite = useMutation(api.invites.cancelInvite) // Reserved for future use
+  
+  // Local state
   const [inviteEmail, setInviteEmail] = useState('')
-  const [editingMember, setEditingMember] = useState<User | null>(null)
-  const [editingName, setEditingName] = useState('')
+  const [editingMemberId, setEditingMemberId] = useState<Id<'users'> | null>(null)
   const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
+  const [householdName, setHouseholdName] = useState('')
+  const [isCreatingHousehold, setIsCreatingHousehold] = useState(false)
 
-  const handleInvite = () => {
-    if (inviteEmail.trim()) {
-      inviteMember(inviteEmail.trim())
-      setInviteEmail('')
+  // Transform members data to match UI expectations
+  const transformedMembers = useMemo(() => {
+    if (!members) return []
+    return members
+      .filter((member): member is NonNullable<typeof member> => member !== null && member.user !== null)
+      .map((member) => ({
+        id: member.userId,
+        name: member.user.name || 'Unknown',
+        email: member.user.email || '',
+        avatar: member.user.avatarUrl || '👤',
+        role: member.role,
+        joinedAt: new Date(member.joinedAt),
+        isActive: true,
+      }))
+  }, [members])
+
+  // Get current user's role in household
+  const currentUserMember = useMemo(() => {
+    if (!members || !currentUser) return null
+    return members.find((m) => m && m.userId === currentUser.id)
+  }, [members, currentUser])
+
+  const currentUserRole = currentUserMember?.role || 'member'
+  const canManageHousehold = ROLE_PERMISSIONS[currentUserRole]?.canManageHousehold || false
+
+  // Household settings with defaults
+  const householdSettings = useMemo(() => {
+    if (!household) {
+      return {
+        allowInvites: true,
+        requireApproval: false,
+        maxMembers: 10,
+      }
+    }
+    return household.settings || {
+      allowInvites: true,
+      requireApproval: false,
+      maxMembers: 10,
+    }
+  }, [household])
+
+  const pendingInvites = useMemo(() => {
+    return invites?.filter((invite) => invite.status === 'pending') || []
+  }, [invites])
+
+  const handleCreateHousehold = async () => {
+    if (!householdName.trim()) return
+    setIsCreatingHousehold(true)
+    try {
+      await createHousehold({ name: householdName.trim() })
+      setHouseholdName('')
+    } catch (error) {
+      console.error('Error creating household:', error)
+      alert('Failed to create household. Please try again.')
+    } finally {
+      setIsCreatingHousehold(false)
     }
   }
 
-  const handleEditMember = (member: User) => {
-    setEditingMember(member)
-    setEditingName(member.name)
-    setEditingRole(member.role)
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !householdId) return
+    try {
+      await createInvite({
+        householdId,
+        email: inviteEmail.trim(),
+      })
+      setInviteEmail('')
+    } catch (error: any) {
+      console.error('Error creating invite:', error)
+      alert(error.message || 'Failed to create invite. Please try again.')
+    }
   }
 
-  const handleSaveEdit = () => {
-    if (editingMember && editingName.trim() && editingRole) {
-      // Update member name and role
-      updateMemberRole(editingMember.id, editingRole as any)
-      setEditingMember(null)
-      setEditingName('')
+  const handleAcceptInvite = async (inviteId: Id<'userInvites'>) => {
+    try {
+      await acceptInviteMutation({ inviteId })
+    } catch (error: any) {
+      console.error('Error accepting invite:', error)
+      alert(error.message || 'Failed to accept invite. Please try again.')
+    }
+  }
+
+  const handleDeclineInvite = async (inviteId: Id<'userInvites'>) => {
+    try {
+      await declineInviteMutation({ inviteId })
+    } catch (error: any) {
+      console.error('Error declining invite:', error)
+      alert(error.message || 'Failed to decline invite. Please try again.')
+    }
+  }
+
+  const handleEditMember = (memberId: Id<'users'>, currentRole: string) => {
+    setEditingMemberId(memberId)
+    setEditingRole(currentRole)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingMemberId || !editingRole || !householdId) return
+    try {
+      await updateMemberRole({
+        householdId,
+        userId: editingMemberId,
+        role: editingRole as any,
+      })
+      setEditingMemberId(null)
       setEditingRole('')
+    } catch (error: any) {
+      console.error('Error updating member role:', error)
+      alert(error.message || 'Failed to update member role. Please try again.')
     }
   }
 
   const handleCancelEdit = () => {
-    setEditingMember(null)
-    setEditingName('')
+    setEditingMemberId(null)
     setEditingRole('')
+  }
+
+  const handleRemoveMember = async (userId: Id<'users'>) => {
+    if (!householdId) return
+    if (!window.confirm('Are you sure you want to remove this member?')) return
+    try {
+      await removeMember({
+        householdId,
+        userId,
+      })
+    } catch (error: any) {
+      console.error('Error removing member:', error)
+      alert(error.message || 'Failed to remove member. Please try again.')
+    }
+  }
+
+  const handleToggleInvites = async () => {
+    if (!householdId || !household) return
+    try {
+      await updateHousehold({
+        householdId,
+        name: household.name,
+        description: household.description,
+        settings: {
+          ...householdSettings,
+          allowInvites: !householdSettings.allowInvites,
+        },
+      })
+      setShowSettingsFeedback(true)
+      setTimeout(() => setShowSettingsFeedback(false), 2000)
+    } catch (error: any) {
+      console.error('Error updating household settings:', error)
+      alert(error.message || 'Failed to update settings. Please try again.')
+    }
+  }
+
+  const handleToggleApproval = async () => {
+    if (!householdId || !household) return
+    try {
+      await updateHousehold({
+        householdId,
+        name: household.name,
+        description: household.description,
+        settings: {
+          ...householdSettings,
+          requireApproval: !householdSettings.requireApproval,
+        },
+      })
+      setShowSettingsFeedback(true)
+      setTimeout(() => setShowSettingsFeedback(false), 2000)
+    } catch (error: any) {
+      console.error('Error updating household settings:', error)
+      alert(error.message || 'Failed to update settings. Please try again.')
+    }
   }
 
   const getRoleIcon = (role: string) => {
@@ -93,72 +282,79 @@ export const HouseholdManager: React.FC = () => {
   }
 
   const canManageMember = (currentUserRole: string, targetMemberRole: string) => {
-    // Admins can manage everyone
     if (currentUserRole === 'admin') return true
-    
-    // Parents can manage teens and kids
-    if (currentUserRole === 'parent' && (targetMemberRole === 'teen' || targetMemberRole === 'kid')) return true
-    
+    if (currentUserRole === 'parent' && (targetMemberRole === 'teen' || targetMemberRole === 'kid'))
+      return true
     return false
   }
 
-  const handleToggleInvites = () => {
-    updateHouseholdSettings({ allowInvites: !state.household!.settings.allowInvites })
-    setShowSettingsFeedback(true)
-    setTimeout(() => setShowSettingsFeedback(false), 2000)
-  }
-
-  const handleToggleApproval = () => {
-    updateHouseholdSettings({ requireApproval: !state.household!.settings.requireApproval })
-    setShowSettingsFeedback(true)
-    setTimeout(() => setShowSettingsFeedback(false), 2000)
-  }
-
-  if (!state.household) {
+  // Check if queries are still loading (reserved for future loading states)
+  // const isLoadingHousehold = householdId === null && household === undefined
+  // const isLoadingMembers = householdId !== null && members === undefined
+  // const isLoadingInvites = householdId !== null && invites === undefined
+  
+  // Show loading only if we have a householdId but data is still loading
+  if (householdId && (household === undefined || members === undefined || invites === undefined)) {
     return (
       <div className="space-y-6">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-start space-x-3">
-              <div className="text-xl">🚧</div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Households coming soon</h3>
-                <p className="text-sm text-gray-600">We're actively building household invites, roles, and shared stats. Stay tuned!</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
           <CardContent className="p-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">🏠 Create Your Household</h2>
-            <p className="text-gray-600 mb-6">
-              Start managing chores together with your family, roommates, or friends!
-            </p>
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              Create Household
-            </Button>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
+            <p className="text-gray-600">Loading household...</p>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const currentUserRole = state.currentUser?.role || 'member'
-  const canManageHousehold = ROLE_PERMISSIONS[currentUserRole]?.canManageHousehold || false
+  // No household - show create form
+  // This handles both: no householdId (null) OR householdId exists but household query returned null/undefined
+  if (!householdId || !household) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Home className="w-12 h-12 mx-auto mb-4 text-indigo-500" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">🏠 Create Your Household</h2>
+            <p className="text-gray-600 mb-6">
+              Start managing chores together with your family, roommates, or friends!
+            </p>
+            <div className="max-w-md mx-auto space-y-4">
+              <input
+                type="text"
+                placeholder="Household name"
+                value={householdName}
+                onChange={(e) => setHouseholdName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateHousehold()
+                  }
+                }}
+              />
+              <Button
+                onClick={handleCreateHousehold}
+                disabled={!householdName.trim() || isCreatingHousehold}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full"
+              >
+                {isCreatingHousehold ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Household'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-start space-x-3">
-            <div className="text-xl">🚧</div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Households coming soon</h3>
-              <p className="text-sm text-gray-600">We're actively building household invites, roles, and shared stats. Some features may change.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
       {/* Household Info */}
       <Card>
         <CardHeader>
@@ -170,21 +366,26 @@ export const HouseholdManager: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">{state.household.name}</h3>
-              <p className="text-gray-600 text-sm">{state.household.description}</p>
+              <h3 className="font-semibold text-gray-900 mb-2">{household.name}</h3>
+              {household.description && (
+                <p className="text-gray-600 text-sm">{household.description}</p>
+              )}
               <p className="text-gray-500 text-xs mt-2">
-                Created {state.household.createdAt.toLocaleDateString()}
+                Created {new Date(household.createdAt).toLocaleDateString()}
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-indigo-600">{state.members.length}</div>
+              <div className="text-2xl font-bold text-indigo-600">
+                {transformedMembers.length}
+              </div>
               <div className="text-sm text-gray-500">Members</div>
             </div>
           </div>
           {!canManageHousehold && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                ℹ️ You can view household information here. Contact a parent or admin to make changes to household settings.
+                ℹ️ You can view household information here. Contact a parent or admin to make
+                changes to household settings.
               </p>
             </div>
           )}
@@ -192,7 +393,7 @@ export const HouseholdManager: React.FC = () => {
       </Card>
 
       {/* Invite New Member - Admin/Parent Only */}
-      {canManageHousehold && state.household.settings.allowInvites ? (
+      {canManageHousehold && householdSettings.allowInvites ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -209,13 +410,18 @@ export const HouseholdManager: React.FC = () => {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleInvite()
+                    }
+                  }}
                 />
                 <Button onClick={handleInvite} className="bg-green-600 hover:bg-green-700">
                   <Mail className="w-4 h-4 mr-2" />
                   Invite
                 </Button>
               </div>
-              {state.household.settings.requireApproval && (
+              {householdSettings.requireApproval && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
                   ⚠️ New members will require approval before joining
                 </p>
@@ -223,12 +429,14 @@ export const HouseholdManager: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      ) : canManageHousehold && !state.household.settings.allowInvites ? (
+      ) : canManageHousehold && !householdSettings.allowInvites ? (
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-gray-500">
               <p className="text-sm">Invites are currently disabled</p>
-              <p className="text-xs mt-1">Enable invites in Advanced Settings to invite new members</p>
+              <p className="text-xs mt-1">
+                Enable invites in Advanced Settings to invite new members
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -238,17 +446,21 @@ export const HouseholdManager: React.FC = () => {
             <div className="text-gray-500">
               <p className="text-sm">Invite Settings</p>
               <p className="text-xs mt-1">
-                {state.household.settings.allowInvites ? 'Invites are currently enabled' : 'Invites are currently disabled'}
-                {state.household.settings.requireApproval && ' (approval required)'}
+                {householdSettings.allowInvites
+                  ? 'Invites are currently enabled'
+                  : 'Invites are currently disabled'}
+                {householdSettings.requireApproval && ' (approval required)'}
               </p>
-              <p className="text-xs mt-2">Contact a parent or admin to change these settings</p>
+              <p className="text-xs mt-2">
+                Contact a parent or admin to change these settings
+              </p>
             </div>
           </CardContent>
         </Card>
       ) : null}
 
       {/* Pending Invites - Admin/Parent Only */}
-      {canManageHousehold && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
+      {canManageHousehold && pendingInvites.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -258,48 +470,49 @@ export const HouseholdManager: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {state.invites
-                .filter(invite => invite.status === 'pending')
-                .map(invite => (
-                  <div key={invite.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{invite.email}</p>
-                      <p className="text-sm text-gray-500">
-                        Invited {invite.invitedAt.toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={() => acceptInvite(invite.id)}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => declineInvite(invite.id)}
-                        size="sm"
-                        variant="outline"
-                        className="border-red-300 text-red-600 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {pendingInvites.map((invite) => (
+                <div
+                  key={invite._id}
+                  className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{invite.email}</p>
+                    <p className="text-sm text-gray-500">
+                      Invited {new Date(invite.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
-                ))}
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleAcceptInvite(invite._id)}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeclineInvite(invite._id)}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
-      
+
       {/* Pending Invites Info for Non-Admin/Parent Users */}
-      {!canManageHousehold && state.invites.filter(invite => invite.status === 'pending').length > 0 && (
+      {!canManageHousehold && pendingInvites.length > 0 && (
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-gray-500">
               <p className="text-sm">Pending Invites</p>
               <p className="text-xs mt-1">
-                There are {state.invites.filter(invite => invite.status === 'pending').length} pending invite(s)
+                There are {pendingInvites.length} pending invite(s)
               </p>
               <p className="text-xs mt-2">Parents and admins will handle these invites</p>
             </div>
@@ -319,38 +532,33 @@ export const HouseholdManager: React.FC = () => {
           {!canManageHousehold && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                ℹ️ You can view household members here. Contact a parent or admin to make changes to member roles or remove members.
+                ℹ️ You can view household members here. Contact a parent or admin to make changes
+                to member roles or remove members.
               </p>
             </div>
           )}
           <div className="space-y-4">
-            {state.members.map(member => (
-              <div key={member.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            {transformedMembers.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">{member.avatar}</div>
                   <div>
-                    {editingMember?.id === member.id ? (
+                    {editingMemberId === member.id ? (
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="Name"
-                          />
-                          <select
-                            value={editingRole}
-                            onChange={(e) => setEditingRole(e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="parent">Parent</option>
-                            <option value="teen">Teen</option>
-                            <option value="kid">Kid</option>
-                            <option value="member">Member</option>
-                          </select>
-                        </div>
+                        <select
+                          value={editingRole}
+                          onChange={(e) => setEditingRole(e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="parent">Parent</option>
+                          <option value="teen">Teen</option>
+                          <option value="kid">Kid</option>
+                          <option value="member">Member</option>
+                        </select>
                         <div className="flex items-center space-x-2">
                           <Button
                             onClick={handleSaveEdit}
@@ -359,11 +567,7 @@ export const HouseholdManager: React.FC = () => {
                           >
                             <Check className="w-4 h-4" />
                           </Button>
-                          <Button
-                            onClick={handleCancelEdit}
-                            size="sm"
-                            variant="outline"
-                          >
+                          <Button onClick={handleCancelEdit} size="sm" variant="outline">
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
@@ -374,7 +578,7 @@ export const HouseholdManager: React.FC = () => {
                           <h3 className="font-semibold text-gray-900">{member.name}</h3>
                           {canManageMember(currentUserRole, member.role) && (
                             <Button
-                              onClick={() => handleEditMember(member)}
+                              onClick={() => handleEditMember(member.id, member.role)}
                               size="sm"
                               variant="ghost"
                               className="p-1 h-auto"
@@ -394,25 +598,30 @@ export const HouseholdManager: React.FC = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
+                      member.role
+                    )}`}
+                  >
                     <div className="flex items-center space-x-1">
                       {getRoleIcon(member.role)}
                       <span>{member.role}</span>
                     </div>
                   </span>
-                  
-                  {canManageMember(currentUserRole, member.role) && state.currentUser?.id !== member.id && (
-                    <Button
-                      onClick={() => removeMember(member.id)}
-                      size="sm"
-                      variant="outline"
-                      className="border-red-300 text-red-600 hover:bg-red-50"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                    </Button>
-                  )}
+
+                  {canManageMember(currentUserRole, member.role) &&
+                    currentUser?.id !== member.id && (
+                      <Button
+                        onClick={() => handleRemoveMember(member.id)}
+                        size="sm"
+                        variant="outline"
+                        className="border-red-300 text-red-600 hover:bg-red-50"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                      </Button>
+                    )}
                 </div>
               </div>
             ))}
@@ -443,7 +652,7 @@ export const HouseholdManager: React.FC = () => {
                   <div>
                     <h4 className="font-medium text-gray-900 mb-1">Invite Settings</h4>
                     <p className="text-sm text-gray-600">
-                      {state.household.settings.allowInvites ? 'Invites enabled' : 'Invites disabled'}
+                      {householdSettings.allowInvites ? 'Invites enabled' : 'Invites disabled'}
                     </p>
                   </div>
                   <Button
@@ -452,7 +661,7 @@ export const HouseholdManager: React.FC = () => {
                     size="sm"
                     className="p-2 h-auto"
                   >
-                    {state.household.settings.allowInvites ? (
+                    {householdSettings.allowInvites ? (
                       <ToggleRight className="w-5 h-5 text-green-600" />
                     ) : (
                       <ToggleLeft className="w-5 h-5 text-gray-400" />
@@ -465,7 +674,7 @@ export const HouseholdManager: React.FC = () => {
                   <div>
                     <h4 className="font-medium text-gray-900 mb-1">Approval Required</h4>
                     <p className="text-sm text-gray-600">
-                      {state.household.settings.requireApproval ? 'Yes' : 'No'}
+                      {householdSettings.requireApproval ? 'Yes' : 'No'}
                     </p>
                   </div>
                   <Button
@@ -474,7 +683,7 @@ export const HouseholdManager: React.FC = () => {
                     size="sm"
                     className="p-2 h-auto"
                   >
-                    {state.household.settings.requireApproval ? (
+                    {householdSettings.requireApproval ? (
                       <ToggleRight className="w-5 h-5 text-green-600" />
                     ) : (
                       <ToggleLeft className="w-5 h-5 text-gray-400" />
@@ -484,10 +693,10 @@ export const HouseholdManager: React.FC = () => {
               </div>
               <div className="p-4 border border-gray-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Max Members</h4>
-                <p className="text-sm text-gray-600">{state.household.settings.maxMembers}</p>
+                <p className="text-sm text-gray-600">{householdSettings.maxMembers}</p>
               </div>
             </div>
-            
+
             {/* Admin Data Management */}
             <div className="mt-6 p-4 border border-red-200 rounded-lg bg-red-50">
               <h4 className="font-medium text-red-900 mb-3 flex items-center">
@@ -498,11 +707,16 @@ export const HouseholdManager: React.FC = () => {
                 <div>
                   <h5 className="font-medium text-red-800 mb-2">Clear All Chores</h5>
                   <p className="text-sm text-red-700 mb-3">
-                    This will remove all chores and reset the chore system. This action cannot be undone.
+                    This will remove all chores and reset the chore system. This action cannot be
+                    undone.
                   </p>
                   <Button
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to clear all chores? This action cannot be undone.')) {
+                      if (
+                        window.confirm(
+                          'Are you sure you want to clear all chores? This action cannot be undone.'
+                        )
+                      ) {
                         resetChores()
                       }
                     }}
@@ -511,24 +725,6 @@ export const HouseholdManager: React.FC = () => {
                     className="border-red-300 text-red-600 hover:bg-red-50"
                   >
                     Clear All Chores
-                  </Button>
-                </div>
-                <div>
-                  <h5 className="font-medium text-red-800 mb-2">Clear Leaderboard</h5>
-                  <p className="text-sm text-red-700 mb-3">
-                    This will reset all member stats, points, and levels. This action cannot be undone.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to clear the leaderboard? This action cannot be undone.')) {
-                        clearLeaderboard()
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    Clear Leaderboard
                   </Button>
                 </div>
               </div>

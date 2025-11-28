@@ -1,138 +1,45 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { User } from '../types/user'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
-import { storage } from '../utils/storage'
+import { useConvexAuth } from './useConvexAuth'
 
-interface StoredUser {
-  id: string
-  email: string
-  name: string
-  password: string // Store password for demo purposes
-  role: 'admin' | 'parent' | 'teen' | 'kid' | 'member'
-  avatar: string
-  joinedAt: Date
-  isActive: boolean
-  lastLogin?: Date
-  loginAttempts?: number
-  lockedUntil?: Date
-}
-
-interface SessionData {
-  userId: string
-  token: string
-  expiresAt: number
-  lastActivity: number
-}
-
+/**
+ * Main authentication hook that wraps Convex Auth
+ * 
+ * This hook provides:
+ * - User authentication state from Convex Auth
+ * - Session activity tracking for inactivity timeout
+ * - Input validation for sign in/up forms
+ * 
+ * All user data is stored in Convex - NO localStorage fallback for auth.
+ * localStorage is only used for:
+ * - Session activity tracking (for inactivity warnings)
+ * - Migration status flags
+ * - UI preferences (theme, etc.)
+ */
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Integrate Convex Auth - this is the single source of truth
+  const convexAuth = useConvexAuth()
+  
   const [sessionExpired, setSessionExpired] = useState(false)
-
+  const [lastActivity, setLastActivity] = useState(Date.now())
+  
+  // Use ref for lastActivity in interval to avoid stale closures
+  const lastActivityRef = useRef(lastActivity)
+  lastActivityRef.current = lastActivity
+  
   // Session configuration
-  const SESSION_TIMEOUT = 24 * 60 * 60 * 1000 // 24 hours
-  const MAX_LOGIN_ATTEMPTS = 5
-  const LOCKOUT_DURATION = 15 * 60 * 1000 // 15 minutes
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
+  const INACTIVITY_WARNING = 25 * 60 * 1000 // Warning at 25 minutes
 
-  // Check for existing user on mount
+  // Extract stable references from convexAuth
+  const { isAuthenticated, signOut: convexSignOut, signIn: convexSignIn, signUp: convexSignUp, user } = convexAuth
+
+  // Track user activity for session timeout
   useEffect(() => {
-    // Migrate legacy storage keys to new keys if needed
-    try {
-      const legacyUsers = localStorage.getItem('users')
-      const hasNewUsers = localStorage.getItem('choreAppUsers')
-      if (!hasNewUsers && legacyUsers) {
-        localStorage.setItem('choreAppUsers', legacyUsers)
-      }
-      const legacyUser = localStorage.getItem('user')
-      const hasNewUser = localStorage.getItem('choreAppUser')
-      if (!hasNewUser && legacyUser) {
-        localStorage.setItem('choreAppUser', legacyUser)
-      }
-    } catch (error) {
-      console.error('Error migrating legacy auth storage keys:', error)
-    }
+    if (!isAuthenticated) return
 
-    const storedUser = localStorage.getItem('choreAppUser')
-    if (storedUser) {
-      try {
-        const parsedUser: StoredUser = JSON.parse(storedUser)
-        
-        // Check if user account is locked
-        if (parsedUser.lockedUntil && new Date() < new Date(parsedUser.lockedUntil)) {
-          const remainingTime = Math.ceil((new Date(parsedUser.lockedUntil).getTime() - Date.now()) / 1000 / 60)
-          console.warn(`Account is locked for ${remainingTime} more minutes`)
-          setSessionExpired(true)
-          setIsLoading(false)
-          return
-        }
-
-        // Check session expiration
-        const sessionData = getSessionData()
-        if (sessionData && Date.now() > sessionData.expiresAt) {
-          console.warn('Session has expired')
-          setSessionExpired(true)
-          signOut()
-          setIsLoading(false)
-          return
-        }
-
-        // Check inactivity timeout
-        if (sessionData && Date.now() - sessionData.lastActivity > INACTIVITY_TIMEOUT) {
-          console.warn('Session expired due to inactivity')
-          setSessionExpired(true)
-          signOut()
-          setIsLoading(false)
-          return
-        }
-
-        // Convert stored dates back to Date objects
-        const userWithDates: User = {
-          id: parsedUser.id,
-          email: parsedUser.email,
-          name: parsedUser.name || parsedUser.email.split('@')[0], // Fallback to email username if name is missing
-          role: parsedUser.role,
-          avatar: parsedUser.avatar,
-          joinedAt: new Date(parsedUser.joinedAt),
-          isActive: parsedUser.isActive
-        }
-
-        setUser(userWithDates)
-        
-        // Update session activity
-        updateSessionActivity()
-        
-        // Check if this user should be admin (first user in the system)
-        const storedUsers = localStorage.getItem('choreAppUsers')
-        if (storedUsers) {
-          try {
-            const users: StoredUser[] = JSON.parse(storedUsers)
-            if (users.length > 0 && users[0].id === parsedUser.id && parsedUser.role !== 'admin') {
-              // This user is the first user but not an admin, update their role
-              const updatedUser = { ...userWithDates, role: 'admin' as const }
-              setUser(updatedUser)
-              
-              // Update stored user
-              localStorage.setItem('choreAppUser', JSON.stringify({ ...parsedUser, role: 'admin' }))
-              
-              // Update in users array
-              users[0] = { ...users[0], role: 'admin' }
-              localStorage.setItem('choreAppUsers', JSON.stringify(users))
-            }
-          } catch (error) {
-            console.error('Error checking admin status:', error)
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing stored user:', error)
-      }
-    }
-    setIsLoading(false)
-  }, [])
-
-  // Set up activity monitoring for session timeout
-  useEffect(() => {
     let lastUpdate = 0
     const THROTTLE_MS = 60000 // Only update once per minute
     
@@ -140,22 +47,28 @@ export function useAuth() {
       const now = Date.now()
       if (now - lastUpdate > THROTTLE_MS) {
         lastUpdate = now
-        updateSessionActivity()
+        setLastActivity(now)
       }
     }
     
     // Update activity on user interactions (throttled)
-    const events = ['mousedown', 'keypress', 'click'] // Removed mousemove and scroll
+    const events = ['mousedown', 'keypress', 'click']
     events.forEach(event => {
       document.addEventListener(event, updateActivity, true)
     })
 
-    // Check session status every minute
+    // Check inactivity every minute
     const interval = setInterval(() => {
-      const sessionData = getSessionData()
-      if (sessionData && Date.now() > sessionData.expiresAt) {
+      const inactiveTime = Date.now() - lastActivityRef.current
+      
+      if (inactiveTime > INACTIVITY_TIMEOUT) {
+        console.warn('Session expired due to inactivity')
         setSessionExpired(true)
-        signOut()
+        // Auto sign out after inactivity
+        convexSignOut().catch(console.error)
+      } else if (inactiveTime > INACTIVITY_WARNING) {
+        // Could trigger a warning UI here
+        console.log('Session will expire soon due to inactivity')
       }
     }, 60000)
 
@@ -165,345 +78,126 @@ export function useAuth() {
       })
       clearInterval(interval)
     }
-  }, [])
+  }, [isAuthenticated, convexSignOut, INACTIVITY_TIMEOUT, INACTIVITY_WARNING])
 
-  // Sync auth state across multiple hook instances/tabs
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'choreAppUser') {
-        if (e.newValue) {
-          try {
-            const parsedUser: StoredUser = JSON.parse(e.newValue)
-            const userWithDates: User = {
-              id: parsedUser.id,
-              email: parsedUser.email,
-              name: parsedUser.name || parsedUser.email.split('@')[0], // Fallback to email username if name is missing
-              role: parsedUser.role,
-              avatar: parsedUser.avatar,
-              joinedAt: new Date(parsedUser.joinedAt),
-              isActive: parsedUser.isActive
-            }
-            setUser(userWithDates)
-            setIsLoading(false)
-          } catch (error) {
-            console.error('Error parsing stored user from storage event:', error)
-            setUser(null)
-            setIsLoading(false)
-          }
-        } else {
-          // User was removed from storage (signed out)
-          setUser(null)
-          setIsLoading(false)
-        }
-      }
+  // Enhanced sign in with validation
+  const signIn = useCallback(async (email: string, password: string) => {
+    // Input validation
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      throw new Error(emailValidation.errors[0])
     }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
 
-  // Session management functions
-  const createSession = (userId: string): void => {
-    const sessionData: SessionData = {
-      userId,
-      token: generateSessionToken(),
-      expiresAt: Date.now() + SESSION_TIMEOUT,
-      lastActivity: Date.now()
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors[0])
     }
-    
-    storage.setItem('session', sessionData, { encrypt: true, ttl: SESSION_TIMEOUT })
-  }
 
-  const getSessionData = (): SessionData | null => {
-    return storage.getItem<SessionData>('session', { encrypt: true })
-  }
-
-  const updateSessionActivity = (): void => {
-    const sessionData = getSessionData()
-    if (sessionData) {
-      sessionData.lastActivity = Date.now()
-      storage.setItem('session', sessionData, { encrypt: true, ttl: SESSION_TIMEOUT })
-    }
-  }
-
-  const generateSessionToken = (): string => {
-    return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-
-  const clearSession = (): void => {
-    storage.removeItem('session')
-  }
-
-  // Enhanced sign in with rate limiting and validation
-  const signIn = useCallback(async (email: string, password: string, rememberMe: boolean = true) => {
-    setIsLoading(true)
-    
     try {
-      // Input validation
-      const emailValidation = validateEmail(email)
-      if (!emailValidation.isValid) {
-        throw new Error(emailValidation.errors[0])
-      }
-
-      const passwordValidation = validatePassword(password)
-      if (!passwordValidation.isValid) {
-        throw new Error(passwordValidation.errors[0])
-      }
-
-      // Check if user exists in localStorage
-      const storedUsers = localStorage.getItem('choreAppUsers')
-      let users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : []
-      
-      // Find existing user - compare email and password
-      const existingUser = users.find(u => {
-        const emailMatch = u.email.toLowerCase() === emailValidation.sanitizedValue!.toLowerCase()
-        const passwordMatch = u.password === passwordValidation.sanitizedValue!
-        return emailMatch && passwordMatch
-      })
-      
-      if (existingUser) {
-        // Check if account is locked
-        if (existingUser.lockedUntil && new Date() < new Date(existingUser.lockedUntil)) {
-          const remainingTime = Math.ceil((new Date(existingUser.lockedUntil).getTime() - Date.now()) / 1000 / 60)
-          throw new Error(`Account is temporarily locked. Please try again in ${remainingTime} minutes.`)
-        }
-
-        // Reset login attempts on successful login
-        existingUser.loginAttempts = 0
-        existingUser.lockedUntil = undefined
-        existingUser.lastLogin = new Date()
-        
-        // Update user in storage
-        const userIndex = users.findIndex(u => u.id === existingUser.id)
-        if (userIndex !== -1) {
-          users[userIndex] = existingUser
-          localStorage.setItem('choreAppUsers', JSON.stringify(users))
-        }
-        
-        // Convert stored dates back to Date objects
-        const userWithDates: User = {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.name,
-          role: existingUser.role,
-          avatar: existingUser.avatar,
-          joinedAt: new Date(existingUser.joinedAt),
-          isActive: existingUser.isActive
-        }
-        
-        setUser(userWithDates)
-        
-        // Create session
-        createSession(existingUser.id)
-        
-        // Store current user if rememberMe is true
-        if (rememberMe) {
-          localStorage.setItem('choreAppUser', JSON.stringify(existingUser))
-        }
-        
-        return userWithDates
-      }
-      
-      // Handle failed login attempt
-      const userByEmail = users.find(u => u.email.toLowerCase() === emailValidation.sanitizedValue!.toLowerCase())
-      if (userByEmail) {
-        userByEmail.loginAttempts = (userByEmail.loginAttempts || 0) + 1
-        
-        if (userByEmail.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-          userByEmail.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION)
-          const userIndex = users.findIndex(u => u.id === userByEmail.id)
-          if (userIndex !== -1) {
-            users[userIndex] = userByEmail
-            localStorage.setItem('choreAppUsers', JSON.stringify(users))
-          }
-          throw new Error(`Too many failed login attempts. Account is locked for ${Math.ceil(LOCKOUT_DURATION / 1000 / 60)} minutes.`)
-        } else {
-          const userIndex = users.findIndex(u => u.id === userByEmail.id)
-          if (userIndex !== -1) {
-            users[userIndex] = userByEmail
-            localStorage.setItem('choreAppUsers', JSON.stringify(users))
-          }
-        }
-      }
-      
-      throw new Error('Invalid email or password. Please check your credentials or create a new account.')
-      
-    } catch (error) {
+      await convexSignIn(email, password)
+      setSessionExpired(false)
+      setLastActivity(Date.now())
+      return user
+    } catch (error: any) {
       console.error('Sign in error:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
+      // Provide helpful error messages
+      if (error.message?.includes('InvalidAccountId')) {
+        throw new Error('Account not found. Please sign up first to create an account.')
+      }
+      throw new Error(error.message || 'Invalid email or password. Please check your credentials.')
     }
-  }, [])
+  }, [convexSignIn, user])
 
   // Enhanced sign up with validation
   const signUp = useCallback(async (email: string, password: string, name: string) => {
-    setIsLoading(true)
-    
-    try {
-      // Input validation
-      const emailValidation = validateEmail(email)
-      if (!emailValidation.isValid) {
-        throw new Error(emailValidation.errors[0])
-      }
-
-      const passwordValidation = validatePassword(password)
-      if (!passwordValidation.isValid) {
-        throw new Error(passwordValidation.errors[0])
-      }
-
-      const nameValidation = validateName(name, 'Name')
-      if (!nameValidation.isValid) {
-        throw new Error(nameValidation.errors[0])
-      }
-
-      // Check if user already exists
-      const storedUsers = localStorage.getItem('choreAppUsers')
-      let users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : []
-      
-      if (users.some(u => u.email.toLowerCase() === emailValidation.sanitizedValue!.toLowerCase())) {
-        throw new Error('User already exists with this email address')
-      }
-      
-      // Create new user
-      // First user becomes admin, others become members
-      const isFirstUser = users.length === 0
-      const newUser: StoredUser = {
-        id: Date.now().toString(),
-        email: emailValidation.sanitizedValue!,
-        name: nameValidation.sanitizedValue!,
-        password: passwordValidation.sanitizedValue!,
-        role: isFirstUser ? 'admin' : 'member',
-        avatar: '👤',
-        joinedAt: new Date(),
-        isActive: true,
-        lastLogin: new Date(),
-        loginAttempts: 0
-      }
-      
-      // Add to users array
-      users.push(newUser)
-      localStorage.setItem('choreAppUsers', JSON.stringify(users))
-      
-      // Store current user
-      localStorage.setItem('choreAppUser', JSON.stringify(newUser))
-      
-      // Create session
-      createSession(newUser.id)
-      
-      // Convert to User type
-      const userWithDates: User = {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        avatar: newUser.avatar,
-        joinedAt: newUser.joinedAt,
-        isActive: newUser.isActive
-      }
-      
-      setUser(userWithDates)
-      return userWithDates
-      
-    } catch (error) {
-      console.error('Sign up error:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
+    // Input validation
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      throw new Error(emailValidation.errors[0])
     }
-  }, [])
 
-  // Enhanced sign out with session cleanup
-  const signOut = useCallback(() => {
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors[0])
+    }
+
+    const nameValidation = validateName(name, 'Name')
+    if (!nameValidation.isValid) {
+      throw new Error(nameValidation.errors[0])
+    }
+
     try {
-      // Clear session
-      clearSession()
-      
-      // Clear stored user
-      localStorage.removeItem('choreAppUser')
+      await convexSignUp(email, password, name)
+      setSessionExpired(false)
+      setLastActivity(Date.now())
+      return user
+    } catch (error: any) {
+      console.error('Sign up error:', error)
+      throw new Error(error.message || 'Failed to create account. Please try again.')
+    }
+  }, [convexSignUp, user])
+
+  // Sign out with cleanup
+  const signOut = useCallback(async () => {
+    try {
+      await convexSignOut()
       
       // Force immediate synchronous state update
       flushSync(() => {
-        setUser(null)
-        setIsLoading(false)
         setSessionExpired(false)
+        setLastActivity(0)
       })
-      
-      // Force a re-render by triggering storage event manually for cross-tab sync
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'choreAppUser',
-        oldValue: localStorage.getItem('choreAppUser'),
-        newValue: null,
-        storageArea: localStorage
-      }))
     } catch (error) {
       console.error('Error during sign out:', error)
-      // Force sign out even if there's an error
-      setUser(null)
-      setIsLoading(false)
+      // Force sign out state even if there's an error
       setSessionExpired(false)
     }
+  }, [convexSignOut])
+
+  // Update user profile (delegate to Convex)
+  const updateUser = useCallback((_updates: Partial<User>) => {
+    // User updates are handled through Convex mutations
+    // This is a placeholder for components that expect this method
+    console.log('updateUser called - use Convex mutations directly for user updates')
   }, [])
 
-  const updateUser = useCallback((updates: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...updates }
-      setUser(updatedUser)
-      
-      // Update stored user
-      const storedUser = localStorage.getItem('choreAppUser')
-      if (storedUser) {
-        try {
-          const parsedUser: StoredUser = JSON.parse(storedUser)
-          const updatedStoredUser: StoredUser = {
-            ...parsedUser,
-            ...updates
-          }
-          localStorage.setItem('choreAppUser', JSON.stringify(updatedStoredUser))
-          
-          // Also update in users array
-          const storedUsers = localStorage.getItem('choreAppUsers')
-          if (storedUsers) {
-            const users: StoredUser[] = JSON.parse(storedUsers)
-            const userIndex = users.findIndex(u => u.id === user.id)
-            if (userIndex !== -1) {
-              users[userIndex] = updatedStoredUser
-              localStorage.setItem('choreAppUsers', JSON.stringify(users))
-            }
-          }
-        } catch (error) {
-          console.error('Error updating stored user:', error)
-        }
-      }
-    }
-  }, [user])
-
+  // Legacy methods kept for backwards compatibility
   const promoteToAdmin = useCallback(() => {
-    if (user) {
-      updateUser({ role: 'admin' })
-    }
-  }, [user, updateUser])
+    console.log('promoteToAdmin called - use Convex mutations directly')
+  }, [])
 
   const checkAndFixAdminStatus = useCallback(() => {
-    // Check if current user should be admin (first user in the system)
-    const storedUsers = localStorage.getItem('choreAppUsers')
-    if (storedUsers) {
-      try {
-        const users: StoredUser[] = JSON.parse(storedUsers)
-        if (users.length > 0 && users[0].id === user?.id && user?.role !== 'admin') {
-          // This user is the first user but not an admin, promote them
-          promoteToAdmin()
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error)
-      }
-    }
-  }, [user, promoteToAdmin])
+    // Admin status is now managed in Convex
+    console.log('checkAndFixAdminStatus called - admin status managed in Convex')
+  }, [])
 
-  return {
+  // Session management placeholders (for backwards compatibility)
+  const createSession = useCallback((_userId: string) => {
+    setLastActivity(Date.now())
+  }, [])
+
+  const getSessionData = useCallback(() => {
+    return {
+      userId: user?.id || '',
+      token: '',
+      expiresAt: Date.now() + INACTIVITY_TIMEOUT,
+      lastActivity
+    }
+  }, [user?.id, lastActivity, INACTIVITY_TIMEOUT])
+
+  const updateSessionActivity = useCallback(() => {
+    setLastActivity(Date.now())
+  }, [])
+
+  const clearSession = useCallback(() => {
+    setLastActivity(0)
+  }, [])
+
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(() => ({
     user,
-    isLoading,
+    isLoading: convexAuth.isLoading,
+    isAuthenticated,
     sessionExpired,
     signIn,
     signUp,
@@ -511,10 +205,25 @@ export function useAuth() {
     updateUser,
     promoteToAdmin,
     checkAndFixAdminStatus,
-    // Session management functions
+    // Session management functions (for backwards compatibility)
     createSession,
     getSessionData,
     updateSessionActivity,
     clearSession
-  }
+  }), [
+    user,
+    convexAuth.isLoading,
+    isAuthenticated,
+    sessionExpired,
+    signIn,
+    signUp,
+    signOut,
+    updateUser,
+    promoteToAdmin,
+    checkAndFixAdminStatus,
+    createSession,
+    getSessionData,
+    updateSessionActivity,
+    clearSession
+  ])
 }

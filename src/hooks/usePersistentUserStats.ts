@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { UserStats } from '../types/user'
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * User stats are now stored in Convex in the `userStats` table.
+ * Use the Convex query `api.stats.getHouseholdStats` instead.
+ * 
+ * This hook is kept only for backward compatibility during the migration period.
+ */
 export const usePersistentUserStats = () => {
   const [persistentStats, setPersistentStats] = useState<Record<string, UserStats>>(() => {
     // Initialize from localStorage immediately to prevent loss on refresh

@@ -1,26 +1,55 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  // Include Convex Auth tables (authAccounts, authSessions, authRefreshTokens, authVerificationCodes, authVerifiers, authRateLimits)
+  ...authTables,
+
   // Users table - stores user profiles and authentication info
+  // Note: This extends/replaces the default users table from authTables
   users: defineTable({
-    email: v.string(),
-    name: v.string(),
+    // Fields from Convex Auth (optional, for compatibility)
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    // Custom fields for our app
+    name: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
-    points: v.number(),
-    level: v.number(),
-    lastActive: v.number(), // timestamp
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    points: v.optional(v.number()),
+    level: v.optional(v.number()),
+    role: v.optional(
+      v.union(
+        v.literal("admin"),
+        v.literal("parent"),
+        v.literal("teen"),
+        v.literal("kid"),
+        v.literal("member")
+      )
+    ),
+    lastActive: v.optional(v.number()), // timestamp
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
+    .index("email", ["email"])
+    .index("phone", ["phone"])
     .index("by_level", ["level"])
     .index("by_points", ["points"]),
 
   // Households table - groups of users (families)
   households: defineTable({
     name: v.string(),
+    description: v.optional(v.string()),
     createdBy: v.id("users"),
+    settings: v.optional(
+      v.object({
+        allowInvites: v.boolean(),
+        requireApproval: v.boolean(),
+        maxMembers: v.number(),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -30,8 +59,16 @@ export default defineSchema({
   householdMembers: defineTable({
     householdId: v.id("households"),
     userId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("member")),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("parent"),
+      v.literal("teen"),
+      v.literal("kid"),
+      v.literal("member")
+    ),
     joinedAt: v.number(),
+    parentId: v.optional(v.id("users")), // For kids/teens to link to their parent
+    canApproveRedemptions: v.optional(v.boolean()),
   })
     .index("by_household", ["householdId"])
     .index("by_user", ["userId"])
@@ -121,13 +158,53 @@ export default defineSchema({
     email: v.string(),
     householdId: v.id("households"),
     invitedBy: v.id("users"),
-    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired")
+    ),
     token: v.string(),
-    expiresAt: v.number(),
+    expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_email", ["email"])
     .index("by_household", ["householdId"])
     .index("by_status", ["status"])
     .index("by_token", ["token"]),
+
+  // Redemption requests - for point redemption
+  redemptionRequests: defineTable({
+    userId: v.id("users"),
+    householdId: v.id("households"),
+    pointsRequested: v.number(),
+    cashAmount: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    requestedAt: v.number(),
+    processedAt: v.optional(v.number()),
+    processedBy: v.optional(v.id("users")),
+    adminNotes: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_household", ["householdId"])
+    .index("by_status", ["status"])
+    .index("by_user_status", ["userId", "status"]),
+
+  // Point deductions - track point deductions for redemptions
+  pointDeductions: defineTable({
+    userId: v.id("users"),
+    householdId: v.id("households"),
+    pointsDeducted: v.number(),
+    reason: v.string(),
+    redemptionRequestId: v.optional(v.id("redemptionRequests")),
+    deductedAt: v.number(),
+    deductedBy: v.optional(v.id("users")),
+  })
+    .index("by_user", ["userId"])
+    .index("by_household", ["householdId"])
+    .index("by_redemption_request", ["redemptionRequestId"]),
 });

@@ -1,5 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Level persistence is now stored in Convex in the `userStats.levelPersistenceInfo` field.
+ * Use the Convex mutations `api.stats.setLevelPersistenceInStats` and 
+ * `api.stats.clearLevelPersistenceFromStats` instead.
+ * 
+ * This hook is kept only for backward compatibility during the migration period.
+ */
 export const useLevelPersistence = () => {
   const [levelPersistence, setLevelPersistence] = useState<Record<string, { level: number; expiresAt: number; pointsAtRedemption: number }>>(() => {
     try {

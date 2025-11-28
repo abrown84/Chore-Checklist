@@ -6,8 +6,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const getUser = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -22,8 +22,8 @@ export const getUser = query({
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
-      points: user.points,
-      level: user.level,
+      points: user.points || 0,
+      level: user.level || 1,
       lastActive: user.lastActive,
     };
   },
@@ -33,12 +33,14 @@ export const getUser = query({
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       return null;
     }
 
-    const user = await ctx.db.get(identity);
+    // With Convex Auth, getAuthUserId returns the user's _id directly
+    const user = await ctx.db.get(userId);
+    
     if (!user) {
       return null;
     }
@@ -48,8 +50,10 @@ export const getCurrentUser = query({
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
-      points: user.points,
-      level: user.level,
+      points: user.points || 0,
+      level: user.level || 1,
+      role: user.role,
+      createdAt: user.createdAt,
       lastActive: user.lastActive,
     };
   },
@@ -59,15 +63,15 @@ export const getCurrentUser = query({
 export const getUsersByHousehold = query({
   args: { householdId: v.id("households") },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
     // Verify user is member of household
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", currentUserId))
       .first();
 
     if (!membership) {
@@ -89,8 +93,8 @@ export const getUsersByHousehold = query({
           email: user.email,
           name: user.name,
           avatarUrl: user.avatarUrl,
-          points: user.points,
-          level: user.level,
+          points: user.points || 0,
+          level: user.level || 1,
           lastActive: user.lastActive,
           role: member.role,
           joinedAt: member.joinedAt,
@@ -102,46 +106,70 @@ export const getUsersByHousehold = query({
   },
 });
 
-// Mutation: Create or update user
+// Mutation: Create or update user profile (called after signup)
 export const createOrUpdateUser = mutation({
   args: {
     email: v.string(),
     name: v.string(),
     avatarUrl: v.optional(v.string()),
+    role: v.optional(
+      v.union(
+        v.literal("admin"),
+        v.literal("parent"),
+        v.literal("teen"),
+        v.literal("kid"),
+        v.literal("member")
+      )
+    ),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const existingUser = await ctx.db.get(identity);
+    // Get existing user (created by Convex Auth)
+    const existingUser = await ctx.db.get(userId);
     const now = Date.now();
 
     if (existingUser) {
-      // Update existing user
-      await ctx.db.patch(identity, {
+      // Update existing user with profile data
+      const updateData: Record<string, any> = {
         email: args.email,
         name: args.name,
-        avatarUrl: args.avatarUrl,
+        avatarUrl: args.avatarUrl || existingUser.avatarUrl || "👤",
         lastActive: now,
         updatedAt: now,
-      });
-      return identity;
-    } else {
-      // Create new user
-      const userId = await ctx.db.insert("users", {
-        email: args.email,
-        name: args.name,
-        avatarUrl: args.avatarUrl,
-        points: 0,
-        level: 1,
-        lastActive: now,
-        createdAt: now,
-        updatedAt: now,
-      });
+      };
+      
+      // Set default points/level if not set
+      if (existingUser.points === undefined) {
+        updateData.points = 0;
+      }
+      if (existingUser.level === undefined) {
+        updateData.level = 1;
+      }
+      if (existingUser.createdAt === undefined) {
+        updateData.createdAt = now;
+      }
+      
+      if (args.role !== undefined) {
+        updateData.role = args.role;
+      } else if (!existingUser.role) {
+        // Check if this is the first user with a role (make them admin)
+        const usersWithRole = await ctx.db
+          .query("users")
+          .filter((q) => q.neq(q.field("role"), undefined))
+          .collect();
+        updateData.role = usersWithRole.length === 0 ? "admin" : "member";
+      }
+      
+      await ctx.db.patch(userId, updateData);
       return userId;
     }
+    
+    // This shouldn't happen with Convex Auth (user should exist)
+    throw new Error("User not found - authentication may have failed");
   },
 });
 
@@ -152,23 +180,23 @@ export const updateUserProfile = mutation({
     avatarUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db.get(identity);
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
 
-    await ctx.db.patch(identity, {
+    await ctx.db.patch(userId, {
       ...args,
       lastActive: Date.now(),
       updatedAt: Date.now(),
     });
 
-    return identity;
+    return userId;
   },
 });
 
@@ -179,8 +207,8 @@ export const updateUserPoints = mutation({
     pointsChange: v.number(),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -189,7 +217,8 @@ export const updateUserPoints = mutation({
       throw new Error("User not found");
     }
 
-    const newPoints = Math.max(0, user.points + args.pointsChange);
+    const currentPoints = user.points || 0;
+    const newPoints = Math.max(0, currentPoints + args.pointsChange);
     const now = Date.now();
 
     await ctx.db.patch(args.userId, {
@@ -200,7 +229,7 @@ export const updateUserPoints = mutation({
 
     return {
       userId: args.userId,
-      oldPoints: user.points,
+      oldPoints: currentPoints,
       newPoints,
       pointsChange: args.pointsChange,
     };
@@ -213,8 +242,8 @@ export const updateUserLevel = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -222,6 +251,9 @@ export const updateUserLevel = mutation({
     if (!user) {
       throw new Error("User not found");
     }
+
+    const userPoints = user.points || 0;
+    const currentLevel = user.level || 1;
 
     // Level calculation based on points
     const LEVELS = [
@@ -239,13 +271,13 @@ export const updateUserLevel = mutation({
 
     let newLevel = 1;
     for (let i = LEVELS.length - 1; i >= 0; i--) {
-      if (user.points >= LEVELS[i].pointsRequired) {
+      if (userPoints >= LEVELS[i].pointsRequired) {
         newLevel = LEVELS[i].level;
         break;
       }
     }
 
-    if (newLevel !== user.level) {
+    if (newLevel !== currentLevel) {
       await ctx.db.patch(args.userId, {
         level: newLevel,
         updatedAt: Date.now(),
@@ -254,9 +286,9 @@ export const updateUserLevel = mutation({
 
     return {
       userId: args.userId,
-      oldLevel: user.level,
+      oldLevel: currentLevel,
       newLevel,
-      points: user.points,
+      points: userPoints,
     };
   },
 });
@@ -270,8 +302,8 @@ export const setLevelPersistence = mutation({
     gracePeriodDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 
@@ -300,8 +332,8 @@ export const clearLevelPersistence = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
       throw new Error("Not authenticated");
     }
 

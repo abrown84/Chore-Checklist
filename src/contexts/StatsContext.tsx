@@ -1,11 +1,12 @@
-import React, { createContext, useMemo, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useMemo, useState, useCallback } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { Id } from '../../convex/_generated/dataModel'
 import { Chore, LEVELS } from '../types/chore'
 import { User, UserStats } from '../types/user'
-import { usePersistentUserStats } from '../hooks/usePersistentUserStats'
-import { usePersistentPointDeductions } from '../hooks/usePersistentPointDeductions'
-import { useLevelPersistence } from '../hooks/useLevelPersistence'
 import { calculateUserLevel, calculateEfficiencyScore } from '../utils/statsCalculations'
 import { calculateStreaks } from '../utils/streakCalculations'
+import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 
 interface StatsContextType {
   getUserStats: (userId: string) => UserStats | undefined
@@ -32,10 +33,43 @@ interface StatsProviderProps {
 }
 
 export const StatsProvider = ({ children, chores, members }: StatsProviderProps) => {
-  // Custom hooks for data persistence
-  const { updateStats } = usePersistentUserStats()
-  const { pointDeductions, updateDeductions } = usePersistentPointDeductions()
-  const { levelPersistence, setLevelPersistenceForUser, clearLevelPersistence } = useLevelPersistence()
+  // Convex queries and mutations
+  const householdId = useCurrentHousehold()
+  
+  // Get point deductions from Convex for all household members
+  const householdDeductions = useQuery(
+    api.redemptions.getHouseholdPointDeductions,
+    householdId ? { householdId } : "skip"
+  )
+  
+  // Build point deductions map from Convex data
+  const pointDeductions = useMemo(() => {
+    return householdDeductions || {}
+  }, [householdDeductions])
+  
+  // Get user stats from Convex (for each member)
+  const convexStats = useQuery(
+    api.stats.getHouseholdStats,
+    householdId ? { householdId } : "skip"
+  )
+  
+  // Build level persistence map from Convex stats
+  const levelPersistence = useMemo(() => {
+    const persistenceMap: Record<string, { level: number; expiresAt: number; pointsAtRedemption: number }> = {}
+    if (convexStats) {
+      convexStats.forEach(stat => {
+        if (stat.levelPersistenceInfo) {
+          persistenceMap[stat.userId] = stat.levelPersistenceInfo
+        }
+      })
+    }
+    return persistenceMap
+  }, [convexStats])
+  
+  // Mutations
+  const setLevelPersistenceMutation = useMutation(api.stats.setLevelPersistenceInStats)
+  const clearLevelPersistenceMutation = useMutation(api.stats.clearLevelPersistenceFromStats)
+  const recalculateStatsMutation = useMutation(api.stats.recalculateUserStats)
   
   // Refresh trigger for force refreshes
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -228,12 +262,8 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     })
   }, [members, choreDistribution, pointDeductions, levelPersistence, refreshTrigger])
 
-  // Update persistent storage after stats are calculated
-  useEffect(() => {
-    userStats.forEach(stats => {
-      updateStats(stats.userId, stats)
-    })
-  }, [userStats, updateStats])
+  // Stats are now stored in Convex, no need to persist to localStorage
+  // The stats are recalculated server-side when chores are completed
 
   // Memoized efficiency leaderboard
   const efficiencyLeaderboard = useMemo(() => {
@@ -274,21 +304,70 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     return efficiencyLeaderboard[0]
   }, [efficiencyLeaderboard])
 
-  const updateUserPoints = useCallback((userId: string, pointsToDeduct: number) => {
-    updateDeductions(userId, pointsToDeduct)
-  }, [updateDeductions])
+  const updateUserPoints = useCallback(async (_userId: string, _pointsToDeduct: number) => {
+    // Point deductions are now handled through redemption requests in Convex
+    // This method is kept for backward compatibility but doesn't directly update deductions
+    // Instead, deductions are tracked through the pointDeductions table
+    console.log('updateUserPoints called - deductions are now tracked in Convex')
+  }, [])
 
   const refreshStats = useCallback(() => {
     // Stats will automatically recalculate due to memoization
-  }, [])
+    // In Convex mode, stats are recalculated server-side
+    if (householdId && members.length > 0) {
+      members.forEach(member => {
+        recalculateStatsMutation({
+          userId: member.id as Id<"users">,
+          householdId,
+        }).catch(err => console.error('Error recalculating stats:', err))
+      })
+    }
+  }, [householdId, members, recalculateStatsMutation])
 
   const forceRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1)
-  }, [])
+    refreshStats()
+  }, [refreshStats])
 
-  const persistUserStats = useCallback((userId: string, stats: UserStats) => {
-    updateStats(userId, stats)
-  }, [updateStats])
+  const persistUserStats = useCallback((_userId: string, _stats: UserStats) => {
+    // Stats are now stored in Convex, no need to persist manually
+    // The stats are recalculated server-side when chores are completed
+    console.log('persistUserStats called - stats are now stored in Convex')
+  }, [])
+  
+  const setLevelPersistenceForUser = useCallback(async (
+    userId: string, 
+    level: number, 
+    pointsAtRedemption: number, 
+    gracePeriodDays: number = 30
+  ) => {
+    if (!householdId) return
+    
+    try {
+      await setLevelPersistenceMutation({
+        userId: userId as Id<"users">,
+        householdId,
+        level,
+        pointsAtRedemption,
+        gracePeriodDays,
+      })
+    } catch (error) {
+      console.error('Error setting level persistence:', error)
+    }
+  }, [householdId, setLevelPersistenceMutation])
+  
+  const clearLevelPersistenceForUser = useCallback(async (userId: string) => {
+    if (!householdId) return
+    
+    try {
+      await clearLevelPersistenceMutation({
+        userId: userId as Id<"users">,
+        householdId,
+      })
+    } catch (error) {
+      console.error('Error clearing level persistence:', error)
+    }
+  }, [householdId, clearLevelPersistenceMutation])
 
   // Memoized context value
   const contextValue = useMemo(() => ({
@@ -302,7 +381,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     refreshStats,
     forceRefresh,
     setLevelPersistence: setLevelPersistenceForUser,
-    clearLevelPersistence,
+    clearLevelPersistence: clearLevelPersistenceForUser,
     getLevelPersistence: (userId: string) => levelPersistence[userId],
     persistUserStats
   }), [
@@ -316,7 +395,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     refreshStats,
     forceRefresh,
     setLevelPersistenceForUser,
-    clearLevelPersistence,
+    clearLevelPersistenceForUser,
     levelPersistence,
     persistUserStats
   ])

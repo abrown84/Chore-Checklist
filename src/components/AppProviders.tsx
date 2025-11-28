@@ -1,5 +1,6 @@
 import React from 'react'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { ChoreProvider, useChores } from '../contexts/ChoreContext'
 import { UserProvider, useUsers } from '../contexts/UserContext'
 import { StatsProvider } from '../contexts/StatsContext'
@@ -7,26 +8,20 @@ import { ThemeProvider } from '../contexts/ThemeContext'
 import { DemoProvider, useDemo } from '../contexts/DemoContext'
 import { RedemptionProvider } from '../contexts/RedemptionContext'
 import { useAuth } from '../hooks/useAuth'
+import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import ProtectedRoute from './ProtectedRoute'
 
 // Initialize Convex client
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
 
-// Wrapper component to provide stats context with data from other contexts
-function StatsWrapper({ children }: { children: React.ReactNode }) {
-  const { state: choreState } = useChores()
-  const { state: userState } = useUsers()
-  
-  return (
-    <StatsProvider chores={choreState.chores} members={userState.members}>
-      {children}
-    </StatsProvider>
-  )
-}
-
 // Demo stats provider that works independently
 function DemoStatsProvider({ children }: { children: React.ReactNode }) {
   const { isDemoMode } = useDemo()
+  
+  // IMPORTANT: Always call hooks unconditionally, even if we conditionally render
+  // This ensures consistent hook order across renders
+  const choreState = useChores()
+  const userState = useUsers()
   
   // In demo mode, we don't need the main StatsProvider
   // The demo components will use getDemoStats() directly
@@ -35,17 +30,28 @@ function DemoStatsProvider({ children }: { children: React.ReactNode }) {
   }
   
   // In regular mode, use the main StatsProvider
-  return <StatsWrapper>{children}</StatsWrapper>
+  // Pass the already-fetched state to avoid re-fetching
+  return (
+    <StatsProvider chores={choreState.state.chores} members={userState.state.members}>
+      {children}
+    </StatsProvider>
+  )
 }
 
 // Demo mode wrapper that provides demo context
 function DemoModeWrapperWithDemo({ children }: { children: React.ReactNode }) {
   const { isDemoMode, getDemoChores } = useDemo()
   const { user } = useAuth()
+  const householdId = useCurrentHousehold()
   
   return (
     <UserProvider isDemoMode={isDemoMode}>
-      <ChoreProvider currentUserId={user?.id} isDemoMode={isDemoMode} getDemoChores={getDemoChores}>
+      <ChoreProvider 
+        currentUserId={user?.id} 
+        isDemoMode={isDemoMode} 
+        getDemoChores={getDemoChores}
+        householdId={householdId || undefined}
+      >
         <DemoStatsProvider>
           <RedemptionProvider>
             {children}
@@ -63,15 +69,17 @@ interface AppProvidersProps {
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <ConvexProvider client={convex}>
-      <ThemeProvider>
-        <DemoProvider>
-          <ProtectedRoute>
-            <DemoModeWrapperWithDemo>
-              {children}
-            </DemoModeWrapperWithDemo>
-          </ProtectedRoute>
-        </DemoProvider>
-      </ThemeProvider>
+      <ConvexAuthProvider client={convex}>
+        <ThemeProvider>
+          <DemoProvider>
+            <ProtectedRoute>
+              <DemoModeWrapperWithDemo>
+                {children}
+              </DemoModeWrapperWithDemo>
+            </ProtectedRoute>
+          </DemoProvider>
+        </ThemeProvider>
+      </ConvexAuthProvider>
     </ConvexProvider>
   )
 }

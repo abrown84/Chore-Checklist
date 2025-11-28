@@ -8,10 +8,14 @@ export const migrateLocalStorageData = mutation({
     chores: v.array(v.any()),
     users: v.array(v.any()),
     userStats: v.any(),
+    levelPersistence: v.optional(v.any()),
+    pointDeductions: v.optional(v.any()),
+    redemptionRequests: v.optional(v.array(v.any())),
   },
   handler: async (ctx, args) => {
-    const identity = await getAuthUserId(ctx);
-    if (!identity) {
+    // With Convex Auth, getAuthUserId returns the user's _id directly
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -19,30 +23,31 @@ export const migrateLocalStorageData = mutation({
     let migratedCount = 0;
 
     try {
-      // 1. Create or update user
-      const user = await ctx.db.get(identity);
-      if (!user) {
-        // Create user from localStorage data
-        const localStorageUser = args.users.find((u: any) => u.id === identity) || args.users[0];
+      // 1. Update user profile with migrated data
+      const existingUser = await ctx.db.get(userId);
+      
+      if (existingUser) {
+        // Get localStorage user data to merge
+        const localStorageUser = args.users[0];
         if (localStorageUser) {
-          await ctx.db.insert("users", {
-            email: localStorageUser.email || "migrated@example.com",
-            name: localStorageUser.name || "Migrated User",
-            avatarUrl: localStorageUser.avatarUrl,
-            points: localStorageUser.points || 0,
-            level: localStorageUser.level || 1,
+          await ctx.db.patch(userId, {
+            name: localStorageUser.name || existingUser.name || "Migrated User",
+            avatarUrl: localStorageUser.avatarUrl || existingUser.avatarUrl || "👤",
+            points: localStorageUser.points || existingUser.points || 0,
+            level: localStorageUser.level || existingUser.level || 1,
+            role: localStorageUser.role || existingUser.role || "admin",
             lastActive: now,
-            createdAt: now,
             updatedAt: now,
+            createdAt: existingUser.createdAt || now,
           });
           migratedCount++;
         }
       }
-
+      
       // 2. Create a default household for the user
       const householdId = await ctx.db.insert("households", {
         name: "My Household",
-        createdBy: identity,
+        createdBy: userId as any,
         createdAt: now,
         updatedAt: now,
       });
@@ -50,7 +55,7 @@ export const migrateLocalStorageData = mutation({
       // Add user as admin member
       await ctx.db.insert("householdMembers", {
         householdId,
-        userId: identity,
+        userId: userId as any,
         role: "admin",
         joinedAt: now,
       });
@@ -66,11 +71,11 @@ export const migrateLocalStorageData = mutation({
             category: chore.category || "daily",
             priority: chore.priority || "medium",
             householdId,
-            assignedTo: identity, // Assign to current user
+            assignedTo: userId as any, // Assign to current user
             status: chore.completed ? "completed" : "pending",
             dueDate: chore.dueDate ? new Date(chore.dueDate).getTime() : undefined,
             completedAt: chore.completedAt ? new Date(chore.completedAt).getTime() : undefined,
-            completedBy: chore.completedBy ? identity : undefined,
+            completedBy: chore.completedBy ? userId as any : undefined,
             finalPoints: chore.finalPoints || chore.points,
             bonusMessage: chore.bonusMessage,
             createdAt: chore.createdAt ? new Date(chore.createdAt).getTime() : now,
@@ -81,7 +86,7 @@ export const migrateLocalStorageData = mutation({
           if (chore.completed && chore.completedAt) {
             await ctx.db.insert("choreCompletions", {
               choreId,
-              userId: identity,
+              userId: userId,
               householdId,
               completedAt: new Date(chore.completedAt).getTime(),
               pointsEarned: chore.finalPoints || chore.points,
@@ -103,8 +108,23 @@ export const migrateLocalStorageData = mutation({
       if (args.userStats) {
         const stats = Object.values(args.userStats)[0] as any;
         if (stats) {
+          // Check if levelPersistenceInfo should come from separate levelPersistence arg
+          let levelPersistenceInfo = stats.levelPersistenceInfo;
+          // Try to find level persistence by any key (we don't know the old localStorage key format)
+          if (args.levelPersistence) {
+            const lpValues = Object.values(args.levelPersistence);
+            if (lpValues.length > 0) {
+              const lp = lpValues[0] as any;
+              levelPersistenceInfo = {
+                level: lp.level,
+                expiresAt: lp.expiresAt,
+                pointsAtRedemption: lp.pointsAtRedemption,
+              };
+            }
+          }
+
           await ctx.db.insert("userStats", {
-            userId: identity,
+            userId: userId,
             householdId,
             totalChores: stats.totalChores || 0,
             completedChores: stats.completedChores || 0,
@@ -117,9 +137,46 @@ export const migrateLocalStorageData = mutation({
             pointsToNextLevel: stats.pointsToNextLevel || 100,
             efficiencyScore: stats.efficiencyScore || 0,
             lastActive: stats.lastActive ? new Date(stats.lastActive).getTime() : now,
-            levelPersistenceInfo: stats.levelPersistenceInfo,
+            levelPersistenceInfo,
             updatedAt: now,
           });
+        }
+      }
+
+      // 5. Migrate point deductions (assign all to current user since we can't map old IDs)
+      if (args.pointDeductions) {
+        const deductions = args.pointDeductions as Record<string, number>;
+        for (const [_oldUserId, pointsDeducted] of Object.entries(deductions)) {
+          if (pointsDeducted > 0) {
+            await ctx.db.insert("pointDeductions", {
+              userId: userId, // Assign to current user
+              householdId,
+              pointsDeducted,
+              reason: "Migrated from localStorage",
+              deductedAt: now,
+            });
+          }
+        }
+      }
+
+      // 6. Migrate redemption requests
+      if (args.redemptionRequests && Array.isArray(args.redemptionRequests)) {
+        for (const request of args.redemptionRequests) {
+          try {
+            await ctx.db.insert("redemptionRequests", {
+              userId: request.userId as any,
+              householdId,
+              pointsRequested: request.pointsRequested || 0,
+              cashAmount: request.cashAmount || 0,
+              status: request.status || "pending",
+              requestedAt: request.requestedAt ? new Date(request.requestedAt).getTime() : now,
+              processedAt: request.processedAt ? new Date(request.processedAt).getTime() : undefined,
+              processedBy: request.processedBy as any,
+              adminNotes: request.adminNotes,
+            });
+          } catch (error) {
+            console.error("Error migrating redemption request:", error);
+          }
         }
       }
 

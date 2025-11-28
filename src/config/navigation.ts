@@ -10,7 +10,7 @@ export const navigationItems: NavigationItem[] = [
   { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', color: 'text-warning' },
   { id: 'household', label: 'Household', icon: '👥', color: 'text-success' },
   { id: 'profile', label: 'Profile & Rewards', icon: '🎨', color: 'text-chart-4' },
-  { id: 'redemption', label: 'Redemption', icon: '💰', color: 'text-success' }
+  { id: 'redemption', label: 'Redemption', icon: '💰', color: 'text-success' },
 ]
 
 

@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import { Chore, ChoreStats, LEVELS } from '../types/chore'
 import { resetChoresToDefaults } from '../utils/defaultChores'
+import { convexChoreToChore, choreToConvexArgs } from '../utils/convexHelpers'
+import { Id } from '../../convex/_generated/dataModel'
 
 interface ChoreState {
   chores: Chore[]
@@ -25,6 +29,7 @@ interface ChoreProviderProps {
   currentUserId?: string
   isDemoMode: boolean
   getDemoChores?: () => Chore[]
+  householdId?: Id<"households">
 }
 
 // Calculate stats from chores
@@ -75,121 +80,182 @@ const calculateStats = (chores: Chore[]): ChoreStats => {
 export const ChoreProvider: React.FC<ChoreProviderProps> = ({ 
   children,
   isDemoMode,
-  getDemoChores
+  getDemoChores,
+  householdId
 }) => {
-  // Initialize chores from localStorage or demo
+  // Convex queries and mutations
+  const convexChores = useQuery(
+    api.chores.getChoresByHousehold,
+    !isDemoMode && householdId ? { householdId } : "skip"
+  );
+  const addChoreMutation = useMutation(api.chores.addChore);
+  const completeChoreMutation = useMutation(api.chores.completeChore);
+  const updateChoreMutation = useMutation(api.chores.updateChore);
+  const deleteChoreMutation = useMutation(api.chores.deleteChore);
+
+  // Initialize chores: from demo function in demo mode, empty in Convex mode (will be populated by query)
   const [chores, setChores] = useState<Chore[]>(() => {
     if (isDemoMode && getDemoChores) {
       return getDemoChores()
     }
-    
-    if (!isDemoMode) {
-      try {
-        const stored = localStorage.getItem('chores')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          return parsed.map((chore: any) => ({
-            ...chore,
-            createdAt: new Date(chore.createdAt),
-            dueDate: chore.dueDate ? new Date(chore.dueDate) : null,
-            completedAt: chore.completedAt ? new Date(chore.completedAt) : null
-          }))
-        }
-      } catch (error) {
-        console.error('Error loading chores:', error)
-      }
-    }
+    // In Convex mode, start empty - the useEffect will populate from Convex query
     return []
   })
+
+  // Update chores from Convex when data is available
+  useEffect(() => {
+    if (!isDemoMode && convexChores && householdId) {
+      const convertedChores = convexChores.map(convexChoreToChore);
+      setChores(convertedChores);
+    } else if (!isDemoMode && convexChores === null && householdId) {
+      // No chores found in Convex - clear local state
+      setChores([]);
+    }
+  }, [convexChores, isDemoMode, householdId]);
   
   // Calculate stats whenever chores change
   const stats = useMemo(() => calculateStats(chores), [chores])
   
-  // Save to localStorage (debounced) - FIXED: moved outside of useEffect
-  const saveToLocalStorage = useCallback((choresToSave: Chore[]) => {
-    if (isDemoMode) {
-      // Save demo chores to a separate key
+  // Save demo chores to localStorage (only for demo mode)
+  useEffect(() => {
+    if (isDemoMode && chores.length > 0) {
       try {
-        localStorage.setItem('demoChores', JSON.stringify(choresToSave))
+        localStorage.setItem('demoChores', JSON.stringify(chores))
       } catch (error) {
         console.error('Error saving demo chores:', error)
       }
-    } else {
-      // Save regular chores
-      try {
-        localStorage.setItem('chores', JSON.stringify(choresToSave))
-      } catch (error) {
-        console.error('Error saving chores:', error)
-      }
     }
-  }, [isDemoMode])
-  
-  // Save chores when they change (with simple debouncing via useEffect)
-  useEffect(() => {
-    if (chores.length > 0) {
-      const timeout = setTimeout(() => {
-        saveToLocalStorage(chores)
-      }, 500) // 500ms debounce
-      
-      return () => clearTimeout(timeout)
-    }
-  }, [chores, saveToLocalStorage])
+  }, [chores, isDemoMode])
   
   // Actions - all defined at top level with useCallback
-  const addChore = useCallback((choreData: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => {
-    const newChore: Chore = {
-      ...choreData,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
-      completed: false,
+  const addChore = useCallback(async (choreData: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => {
+    if (isDemoMode) {
+      // Demo mode: use local state
+      const newChore: Chore = {
+        ...choreData,
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        createdAt: new Date(),
+        completed: false,
+      }
+      setChores(prev => [...prev, newChore])
+    } else if (householdId) {
+      // Convex mode: use mutation
+      try {
+        const args = choreToConvexArgs(choreData, householdId);
+        await addChoreMutation(args);
+        // The query will automatically update chores via useEffect
+      } catch (error) {
+        console.error('Error adding chore:', error);
+        throw error;
+      }
+    } else {
+      // No household ID - cannot add chore
+      throw new Error('Cannot add chore: no household ID. Please ensure you are logged in and have a household.');
     }
-    setChores(prev => [...prev, newChore])
-  }, [])
+  }, [isDemoMode, householdId, addChoreMutation])
   
-  const completeChore = useCallback((id: string, completedBy: string) => {
-    setChores(prev => prev.map(chore => {
-      if (chore.id !== id) return chore
-      
-      let finalPoints = chore.points
-      let bonusMessage = ''
-      
-      // Calculate bonus/penalty
-      if (chore.dueDate) {
-        const now = new Date()
-        const dueDate = new Date(chore.dueDate)
-        const hoursDiff = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+  const completeChore = useCallback(async (id: string, completedBy: string) => {
+    if (isDemoMode) {
+      // Demo mode: use local state
+      setChores(prev => prev.map(chore => {
+        if (chore.id !== id) return chore
         
-        if (hoursDiff > 0) {
-          const bonus = Math.round(chore.points * 0.2)
-          finalPoints += bonus
-          bonusMessage = `+${bonus} early bonus`
-        } else if (hoursDiff < 0) {
-          const penalty = Math.round(chore.points * 0.1)
-          finalPoints = Math.max(1, finalPoints - penalty)
-          bonusMessage = `-${penalty} late penalty`
+        let finalPoints = chore.points
+        let bonusMessage = ''
+        
+        // Calculate bonus/penalty
+        if (chore.dueDate) {
+          const now = new Date()
+          const dueDate = new Date(chore.dueDate)
+          const hoursDiff = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+          
+          if (hoursDiff > 0) {
+            const bonus = Math.round(chore.points * 0.2)
+            finalPoints += bonus
+            bonusMessage = `+${bonus} early bonus`
+          } else if (hoursDiff < 0) {
+            const penalty = Math.round(chore.points * 0.1)
+            finalPoints = Math.max(1, finalPoints - penalty)
+            bonusMessage = `-${penalty} late penalty`
+          }
         }
+        
+        return {
+          ...chore,
+          completed: true,
+          completedAt: new Date(),
+          completedBy,
+          finalPoints,
+          bonusMessage
+        }
+      }))
+    } else if (householdId) {
+      // Convex mode: use mutation
+      try {
+        await completeChoreMutation({
+          choreId: id as Id<"chores">,
+          completedBy: completedBy as Id<"users">,
+        });
+        // The query will automatically update chores via useEffect
+      } catch (error) {
+        console.error('Error completing chore:', error);
+        throw error;
       }
-      
-      return {
-        ...chore,
-        completed: true,
-        completedAt: new Date(),
-        completedBy,
-        finalPoints,
-        bonusMessage
+    } else {
+      // No household ID - cannot complete chore
+      throw new Error('Cannot complete chore: no household ID. Please ensure you are logged in and have a household.');
+    }
+  }, [isDemoMode, householdId, completeChoreMutation])
+  
+  const deleteChore = useCallback(async (id: string) => {
+    if (isDemoMode) {
+      // Demo mode: use local state
+      setChores(prev => prev.filter(chore => chore.id !== id))
+    } else if (householdId) {
+      // Convex mode: use mutation
+      try {
+        await deleteChoreMutation({ choreId: id as Id<"chores"> });
+        // The query will automatically update chores via useEffect
+      } catch (error) {
+        console.error('Error deleting chore:', error);
+        throw error;
       }
-    }))
-  }, [])
+    } else {
+      // No household ID - cannot delete chore
+      throw new Error('Cannot delete chore: no household ID. Please ensure you are logged in and have a household.');
+    }
+  }, [isDemoMode, householdId, deleteChoreMutation])
   
-  const deleteChore = useCallback((id: string) => {
-    setChores(prev => prev.filter(chore => chore.id !== id))
-  }, [])
-  
-  const updateChore = useCallback((updatedChore: Chore) => {
-    setChores(prev => prev.map(chore => 
-      chore.id === updatedChore.id ? updatedChore : chore
-    ))
-  }, [])
+  const updateChore = useCallback(async (updatedChore: Chore) => {
+    if (isDemoMode) {
+      // Demo mode: use local state
+      setChores(prev => prev.map(chore => 
+        chore.id === updatedChore.id ? updatedChore : chore
+      ))
+    } else if (householdId) {
+      // Convex mode: use mutation
+      try {
+        await updateChoreMutation({
+          choreId: updatedChore.id as Id<"chores">,
+          title: updatedChore.title,
+          description: updatedChore.description || undefined,
+          points: updatedChore.points,
+          difficulty: updatedChore.difficulty,
+          category: updatedChore.category,
+          priority: updatedChore.priority,
+          assignedTo: updatedChore.assignedTo as Id<"users"> | undefined,
+          dueDate: updatedChore.dueDate ? updatedChore.dueDate.getTime() : undefined,
+        });
+        // The query will automatically update chores via useEffect
+      } catch (error) {
+        console.error('Error updating chore:', error);
+        throw error;
+      }
+    } else {
+      // No household ID - cannot update chore
+      throw new Error('Cannot update chore: no household ID. Please ensure you are logged in and have a household.');
+    }
+  }, [isDemoMode, householdId, updateChoreMutation])
   
   const resetChores = useCallback(() => {
     const defaultChores = resetChoresToDefaults()

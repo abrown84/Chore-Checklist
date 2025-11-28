@@ -1,5 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Point deductions are now stored in Convex in the `pointDeductions` table.
+ * Use the Convex query `api.redemptions.getHouseholdPointDeductions` instead.
+ * 
+ * This hook is kept only for backward compatibility during the migration period.
+ */
 export const usePersistentPointDeductions = () => {
   const [pointDeductions, setPointDeductions] = useState<Record<string, number>>(() => {
     // Initialize from localStorage immediately to prevent loss on refresh

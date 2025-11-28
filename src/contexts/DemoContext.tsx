@@ -35,17 +35,6 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
 
   const enterDemoMode = () => {
     try {
-
-      
-      // Clear any existing user data to prevent conflicts
-      try {
-        localStorage.removeItem('choreAppUser')
-        localStorage.removeItem('choreAppUsers')
-
-      } catch (storageError) {
-        console.warn('Could not clear localStorage:', storageError)
-      }
-      
       // Generate demo data once and store it
       const generatedChores = getDemoChores()
       const generatedStats = getDemoStatsFromChores(generatedChores)
@@ -54,13 +43,16 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
       setDemoStats(generatedStats)
       
       setIsDemoMode(true)
-      // Store demo mode in localStorage so it persists across page refreshes
-      localStorage.setItem('demoMode', 'true')
-
-      
+      // Store demo mode flag in localStorage so it persists across page refreshes
+      // Note: Demo mode is a UI state only - it doesn't affect Convex Auth or real data
+      try {
+        localStorage.setItem('demoMode', 'true')
+      } catch {
+        // localStorage not available, demo mode still works in memory
+      }
     } catch (error) {
       console.error('Error entering demo mode:', error)
-      // If localStorage fails, still set demo mode in state
+      // If demo data generation fails, still set demo mode in state
       setIsDemoMode(true)
     }
   }
@@ -84,18 +76,15 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
 
   const resetDemoMode = () => {
     try {
-      // Clear all demo-related data
+      // Clear only demo-specific localStorage data
+      // Note: Real user data is in Convex, not localStorage
       localStorage.removeItem('demoMode')
       localStorage.removeItem('demoChores')
-      localStorage.removeItem('chores')
-      localStorage.removeItem('userStats')
-      localStorage.removeItem('levelPersistence')
       
       // Reset state
       setIsDemoMode(false)
       setDemoStats([])
       setDemoChores([])
-      
       
       // Force a page refresh to ensure clean state
       window.location.reload()

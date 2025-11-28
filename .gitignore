@@ -40,3 +40,7 @@ coverage/
 
 # Vercel
 .vercel
+
+# Convex
+.convex/
+dev-dist/

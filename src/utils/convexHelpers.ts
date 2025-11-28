@@ -1,0 +1,55 @@
+// Helper functions to convert between Convex types and frontend types
+import type { Id } from "../../convex/_generated/dataModel";
+import { Chore } from "../types/chore";
+import { User } from "../types/user";
+
+// Convert Convex chore to frontend Chore type
+export function convexChoreToChore(convexChore: any): Chore {
+  return {
+    id: convexChore._id,
+    title: convexChore.title,
+    description: convexChore.description || "",
+    difficulty: convexChore.difficulty,
+    points: convexChore.points,
+    category: convexChore.category,
+    priority: convexChore.priority,
+    completed: convexChore.status === "completed",
+    completedAt: convexChore.completedAt ? new Date(convexChore.completedAt) : undefined,
+    completedBy: convexChore.completedBy,
+    createdAt: new Date(convexChore.createdAt),
+    dueDate: convexChore.dueDate ? new Date(convexChore.dueDate) : undefined,
+    assignedTo: convexChore.assignedTo,
+    finalPoints: convexChore.finalPoints,
+    bonusMessage: convexChore.bonusMessage,
+  };
+}
+
+// Convert frontend Chore type to Convex mutation args
+export function choreToConvexArgs(chore: Omit<Chore, "id" | "createdAt" | "completed">, householdId: Id<"households">) {
+  return {
+    title: chore.title,
+    description: chore.description || undefined,
+    points: chore.points,
+    difficulty: chore.difficulty,
+    category: chore.category,
+    priority: chore.priority,
+    householdId,
+    assignedTo: chore.assignedTo as Id<"users"> | undefined,
+    dueDate: chore.dueDate ? chore.dueDate.getTime() : undefined,
+  };
+}
+
+// Convert Convex household member to frontend User type
+export function convexMemberToUser(member: any): User {
+  return {
+    id: member.userId,
+    email: member.user.email || "",
+    name: member.user.name || "",
+    avatar: member.user.avatarUrl || "👤",
+    role: (member.role as User['role']) || 'member',
+    joinedAt: new Date(member.joinedAt),
+    isActive: true,
+    canApproveRedemptions: member.role === 'admin' || member.role === 'parent' || member.canApproveRedemptions === true,
+  };
+}
+

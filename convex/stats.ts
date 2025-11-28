@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUserId } from "./authHelpers";
 
 // Query: Get user stats for a household
 export const getUserStats = query({
@@ -15,9 +16,14 @@ export const getUserStats = query({
     }
 
     // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -49,9 +55,14 @@ export const getHouseholdStats = query({
     }
 
     // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -79,9 +90,14 @@ export const getEfficiencyLeaderboard = query({
     }
 
     // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -112,9 +128,14 @@ export const getRecentActivity = query({
     }
 
     // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -167,9 +188,14 @@ export const recalculateUserStats = mutation({
     }
 
     // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
     const membership = await ctx.db
       .query("householdMembers")
-      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", identity))
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
       .first();
 
     if (!membership) {
@@ -178,6 +204,108 @@ export const recalculateUserStats = mutation({
 
     const newStats = await calculateUserStats(ctx, args.userId, args.householdId);
     return newStats;
+  },
+});
+
+// Mutation: Set level persistence in userStats
+export const setLevelPersistenceInStats = mutation({
+  args: {
+    userId: v.id("users"),
+    householdId: v.id("households"),
+    level: v.number(),
+    pointsAtRedemption: v.number(),
+    gracePeriodDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await getAuthUserId(ctx);
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership) {
+      throw new Error("Not a member of this household");
+    }
+
+    const gracePeriod = args.gracePeriodDays || 30;
+    const expiresAt = Date.now() + (gracePeriod * 24 * 60 * 60 * 1000);
+
+    // Get or create user stats
+    let userStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q) => q.eq("userId", args.userId).eq("householdId", args.householdId))
+      .first();
+
+    if (!userStats) {
+      // Create stats if they don't exist
+      userStats = await calculateUserStats(ctx, args.userId, args.householdId);
+    }
+
+    // Update level persistence info
+    await ctx.db.patch(userStats._id, {
+      levelPersistenceInfo: {
+        level: args.level,
+        expiresAt,
+        pointsAtRedemption: args.pointsAtRedemption,
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, expiresAt };
+  },
+});
+
+// Mutation: Clear level persistence from userStats
+export const clearLevelPersistenceFromStats = mutation({
+  args: {
+    userId: v.id("users"),
+    householdId: v.id("households"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await getAuthUserId(ctx);
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user is member of household
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership) {
+      throw new Error("Not a member of this household");
+    }
+
+    // Get user stats
+    const userStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q) => q.eq("userId", args.userId).eq("householdId", args.householdId))
+      .first();
+
+    if (userStats) {
+      await ctx.db.patch(userStats._id, {
+        levelPersistenceInfo: undefined,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return { success: true };
   },
 });
 
