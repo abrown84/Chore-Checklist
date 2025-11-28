@@ -61,26 +61,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // More conservative chunking to avoid circular dependencies
-          if (id.includes('node_modules')) {
-            // React core - must be first
-            if (id.includes('react/') || id.includes('react-dom/') || id.includes('scheduler/')) {
-              return 'vendor-react'
-            }
-            // Large libraries that are independent
-            if (id.includes('framer-motion')) {
-              return 'vendor-animation'
-            }
-            // Convex - large and independent
-            if (id.includes('convex') || id.includes('@convex-dev')) {
-              return 'vendor-convex'
-            }
-            // Keep everything else together to avoid circular deps
-            // Vite will handle the rest automatically
-          }
-        },
-        // Optimize chunk file names
+        // Let Vite handle chunking automatically to avoid circular dependencies
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
