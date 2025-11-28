@@ -12,10 +12,7 @@
     "test": "jest --config jest.config.mjs",
     "test:watch": "jest --config jest.config.mjs --watch",
     "test:coverage": "jest --config jest.config.mjs --coverage",
-    "test:ci": "jest --config jest.config.mjs --ci --coverage --watchAll=false",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:ci": "jest --config jest.config.mjs --ci --coverage --watchAll=false"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
