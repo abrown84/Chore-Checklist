@@ -125,10 +125,31 @@ export const createHousehold = mutation({
 
     const now = Date.now();
     
+    // Generate unique join code (6 characters, alphanumeric)
+    const generateJoinCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+    
+    let joinCode = generateJoinCode();
+    // Ensure code is unique (very unlikely collision, but check anyway)
+    const existing = await ctx.db
+      .query("households")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
+      .first();
+    if (existing) {
+      joinCode = generateJoinCode(); // Regenerate if collision
+    }
+    
     // Create household
     const householdId = await ctx.db.insert("households", {
       name: args.name,
       createdBy: userId as any,
+      joinCode,
       createdAt: now,
       updatedAt: now,
     });
@@ -453,5 +474,202 @@ export const deleteHousehold = mutation({
     await ctx.db.delete(args.householdId);
 
     return args.householdId;
+  },
+});
+
+// Query: Search household by join code
+export const searchHouseholdByCode = query({
+  args: {
+    joinCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const household = await ctx.db
+      .query("households")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", args.joinCode.toUpperCase()))
+      .first();
+
+    if (!household) {
+      return null;
+    }
+
+    // Check if join by code is allowed
+    const settings = household.settings;
+    if (settings && settings.allowJoinByCode === false) {
+      return null; // Join by code is disabled
+    }
+
+    // Check if user is already a member
+    const existingMembership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", household._id).eq("userId", userId as any)
+      )
+      .first();
+
+    if (existingMembership) {
+      return { ...household, alreadyMember: true };
+    }
+
+    // Check member limit
+    const members = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household", (q) => q.eq("householdId", household._id))
+      .collect();
+
+    const maxMembers = settings?.maxMembers || 10;
+    if (members.length >= maxMembers) {
+      return { ...household, isFull: true };
+    }
+
+    return { ...household, alreadyMember: false, isFull: false };
+  },
+});
+
+// Mutation: Join household by code
+export const joinHouseholdByCode = mutation({
+  args: {
+    joinCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const household = await ctx.db
+      .query("households")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", args.joinCode.toUpperCase()))
+      .first();
+
+    if (!household) {
+      throw new Error("Household not found with this code");
+    }
+
+    // Check if join by code is allowed
+    const settings = household.settings;
+    if (settings && settings.allowJoinByCode === false) {
+      throw new Error("This household does not allow joining by code");
+    }
+
+    // Check if user is already a member
+    const existingMembership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", household._id).eq("userId", userId as any)
+      )
+      .first();
+
+    if (existingMembership) {
+      throw new Error("You are already a member of this household");
+    }
+
+    // Check member limit
+    const members = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household", (q) => q.eq("householdId", household._id))
+      .collect();
+
+    const maxMembers = settings?.maxMembers || 10;
+    if (members.length >= maxMembers) {
+      throw new Error("This household has reached its member limit");
+    }
+
+    // Check if approval is required
+    if (settings?.requireApproval) {
+      // Create a pending invite instead
+      const now = Date.now();
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      const user = await ctx.db.get(userId as any);
+      const userEmail = (user && 'email' in user) ? (user.email || "") : "";
+
+      const inviteId = await ctx.db.insert("userInvites", {
+        email: userEmail,
+        householdId: household._id,
+        invitedBy: household.createdBy,
+        status: "pending",
+        token,
+        expiresAt: now + 7 * 24 * 60 * 60 * 1000, // 7 days
+        createdAt: now,
+      });
+
+      return { success: true, householdId: household._id, requiresApproval: true, inviteId };
+    }
+
+    // Add user as member
+    const now = Date.now();
+    await ctx.db.insert("householdMembers", {
+      householdId: household._id,
+      userId: userId as any,
+      role: "member",
+      joinedAt: now,
+    });
+
+    return { success: true, householdId: household._id, requiresApproval: false };
+  },
+});
+
+// Mutation: Regenerate join code (admin only)
+export const regenerateJoinCode = mutation({
+  args: {
+    householdId: v.id("households"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const household = await ctx.db.get(args.householdId);
+    if (!household) {
+      throw new Error("Household not found");
+    }
+
+    // Verify user is admin of household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", args.householdId).eq("userId", userId as any)
+      )
+      .first();
+
+    if (!membership || membership.role !== "admin") {
+      throw new Error("Not authorized to regenerate join code");
+    }
+
+    // Generate unique join code
+    const generateJoinCode = () => {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Exclude confusing chars
+      let code = "";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    let joinCode = generateJoinCode();
+    // Ensure code is unique
+    const existing = await ctx.db
+      .query("households")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
+      .filter((q) => q.neq(q.field("_id"), args.householdId))
+      .first();
+    if (existing) {
+      joinCode = generateJoinCode(); // Regenerate if collision
+    }
+
+    await ctx.db.patch(args.householdId, {
+      joinCode,
+      updatedAt: Date.now(),
+    });
+
+    return { joinCode };
   },
 });

@@ -43,17 +43,20 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     createdBy: v.id("users"),
+    joinCode: v.optional(v.string()), // Unique code for joining
     settings: v.optional(
       v.object({
         allowInvites: v.boolean(),
         requireApproval: v.boolean(),
         maxMembers: v.number(),
+        allowJoinByCode: v.optional(v.boolean()), // Allow joining via code
       })
     ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_creator", ["createdBy"]),
+    .index("by_creator", ["createdBy"])
+    .index("by_join_code", ["joinCode"]),
 
   // Household members - many-to-many relationship
   householdMembers: defineTable({

@@ -53,10 +53,14 @@ export const HouseholdManager: React.FC = () => {
   const createInvite = useMutation(api.invites.createInvite)
   const acceptInviteMutation = useMutation(api.invites.acceptInvite)
   const declineInviteMutation = useMutation(api.invites.declineInvite)
+  const joinHouseholdByCode = useMutation(api.households.joinHouseholdByCode)
+  const regenerateJoinCode = useMutation(api.households.regenerateJoinCode)
   // const cancelInvite = useMutation(api.invites.cancelInvite) // Reserved for future use
   
   // Local state
   const [inviteEmail, setInviteEmail] = useState('')
+  const [joinCode, setJoinCode] = useState('')
+  const [isJoining, setIsJoining] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<Id<'users'> | null>(null)
   const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
@@ -307,11 +311,91 @@ export const HouseholdManager: React.FC = () => {
     )
   }
 
-  // No household - show create form
+  const handleJoinHousehold = async () => {
+    if (!joinCode.trim()) return
+    setIsJoining(true)
+    try {
+      const result = await joinHouseholdByCode({ joinCode: joinCode.trim().toUpperCase() })
+      if (result.requiresApproval) {
+        alert('Your request to join has been submitted and is pending approval.')
+      } else {
+        alert('Successfully joined the household!')
+        setJoinCode('')
+      }
+    } catch (error: any) {
+      console.error('Error joining household:', error)
+      alert(error.message || 'Failed to join household. Please check the code and try again.')
+    } finally {
+      setIsJoining(false)
+    }
+  }
+
+  // No household - show create/join form
   // This handles both: no householdId (null) OR householdId exists but household query returned null/undefined
   if (!householdId || !household) {
     return (
       <div className="space-y-6">
+        {/* Join Household Section */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center mb-6">
+              <UserPlus className="w-12 h-12 mx-auto mb-4 text-green-500" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Join a Household</h2>
+              <p className="text-gray-600">
+                Have a join code? Enter it below to join an existing household.
+              </p>
+            </div>
+            <div className="max-w-md mx-auto space-y-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Enter 6-character join code"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-2xl font-mono tracking-widest"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleJoinHousehold()
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Ask a household admin for the join code
+                </p>
+              </div>
+              <Button
+                onClick={handleJoinHousehold}
+                disabled={!joinCode.trim() || joinCode.length !== 6 || isJoining}
+                className="bg-green-600 hover:bg-green-700 w-full"
+              >
+                {isJoining ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Joining...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join Household
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">OR</span>
+          </div>
+        </div>
+
+        {/* Create Household Section */}
         <Card>
           <CardContent className="p-6 text-center">
             <Home className="w-12 h-12 mx-auto mb-4 text-indigo-500" />
@@ -381,6 +465,46 @@ export const HouseholdManager: React.FC = () => {
               <div className="text-sm text-gray-500">Members</div>
             </div>
           </div>
+          
+          {/* Join Code Section */}
+          {household.joinCode && (
+            <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium text-indigo-900 mb-1 block">
+                    Join Code
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <code className="text-2xl font-mono font-bold text-indigo-700 tracking-widest bg-white px-4 py-2 rounded border-2 border-indigo-300">
+                      {household.joinCode}
+                    </code>
+                    {canManageHousehold && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!householdId) return
+                          try {
+                            const result = await regenerateJoinCode({ householdId })
+                            alert(`New join code: ${result.joinCode}`)
+                          } catch (error: any) {
+                            alert(error.message || 'Failed to regenerate code')
+                          }
+                        }}
+                        className="text-xs"
+                      >
+                        <Edit3 className="w-3 h-3 mr-1" />
+                        Regenerate
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-indigo-600 mt-2">
+                    Share this code with others so they can join your household
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {!canManageHousehold && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
