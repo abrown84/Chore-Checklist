@@ -62,26 +62,22 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Split node_modules into separate chunks with proper dependency ordering
+          // More conservative chunking to avoid circular dependencies
           if (id.includes('node_modules')) {
-            // React and React DOM - must be loaded first
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+            // React core - must be first
+            if (id.includes('react/') || id.includes('react-dom/') || id.includes('scheduler/')) {
               return 'vendor-react'
             }
-            // Convex and auth libraries - depend on React
+            // Large libraries that are independent
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation'
+            }
+            // Convex - large and independent
             if (id.includes('convex') || id.includes('@convex-dev')) {
               return 'vendor-convex'
             }
-            // Animation libraries - depend on React
-            if (id.includes('framer-motion') || id.includes('motion')) {
-              return 'vendor-animation'
-            }
-            // UI libraries - depend on React
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'vendor-ui'
-            }
-            // All other vendor libraries
-            return 'vendor'
+            // Keep everything else together to avoid circular deps
+            // Vite will handle the rest automatically
           }
         },
         // Optimize chunk file names
