@@ -551,84 +551,6 @@ export const HouseholdManager: React.FC = () => {
             </div>
           )}
           
-          {/* Leave Household Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowLeaveConfirm(true)}
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
-            >
-              <UserMinus className="w-4 h-4 mr-2" />
-              Leave Household
-            </Button>
-            {showLeaveConfirm && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-3">
-                  Are you sure you want to leave this household? You will lose access to all chores and data.
-                </p>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleLeaveHousehold}
-                    className="bg-red-600 hover:bg-red-700 flex-1"
-                  >
-                    Yes, Leave
-                  </Button>
-                  <Button
-                    onClick={() => setShowLeaveConfirm(false)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Delete Household Button - Admin Only */}
-            {canManageHousehold && currentUserRole === 'admin' && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full border-red-500 text-red-700 hover:bg-red-100 font-semibold"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Household
-                </Button>
-                {showDeleteConfirm && (
-                  <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg">
-                    <p className="text-sm font-semibold text-red-900 mb-2">
-                      ⚠️ WARNING: This action cannot be undone!
-                    </p>
-                    <p className="text-sm text-red-800 mb-3">
-                      Deleting this household will permanently remove:
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>All household members and their data</li>
-                        <li>All chores and completion history</li>
-                        <li>All user stats and points</li>
-                        <li>All invites and redemption requests</li>
-                      </ul>
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={handleDeleteHousehold}
-                        className="bg-red-700 hover:bg-red-800 flex-1"
-                      >
-                        Yes, Delete Forever
-                      </Button>
-                      <Button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
         </CardContent>
       </Card>
 
@@ -1026,6 +948,98 @@ export const HouseholdManager: React.FC = () => {
                     Clear All Chores
                   </Button>
                 </div>
+              </div>
+
+              {/* Leave Household Button */}
+              <div className="mt-6 pt-6 border-t border-red-300 space-y-3">
+                <div>
+                  <h5 className="font-medium text-red-800 mb-2">Leave Household</h5>
+                  <p className="text-sm text-red-700 mb-3">
+                    Leave this household. You will lose access to all chores and data.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLeaveConfirm(true)}
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    Leave Household
+                  </Button>
+                  {showLeaveConfirm && (
+                    <div className="mt-4 p-4 bg-red-100 border border-red-300 rounded-lg">
+                      <p className="text-sm text-red-900 mb-3 font-semibold">
+                        Are you sure you want to leave this household?
+                      </p>
+                      <p className="text-sm text-red-800 mb-3">
+                        You will lose access to all chores and data associated with this household.
+                      </p>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={handleLeaveHousehold}
+                          className="bg-red-600 hover:bg-red-700 flex-1"
+                        >
+                          Yes, Leave
+                        </Button>
+                        <Button
+                          onClick={() => setShowLeaveConfirm(false)}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Delete Household Button - Admin Only */}
+                {currentUserRole === 'admin' && (
+                  <div>
+                    <h5 className="font-medium text-red-800 mb-2">Delete Household</h5>
+                    <p className="text-sm text-red-700 mb-3">
+                      Permanently delete this household and all associated data. This action cannot be undone.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="border-red-500 text-red-700 hover:bg-red-100 font-semibold"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Household
+                    </Button>
+                    {showDeleteConfirm && (
+                      <div className="mt-4 p-4 bg-red-100 border-2 border-red-400 rounded-lg">
+                        <p className="text-sm font-semibold text-red-900 mb-2">
+                          ⚠️ WARNING: This action cannot be undone!
+                        </p>
+                        <p className="text-sm text-red-800 mb-3">
+                          Deleting this household will permanently remove:
+                          <ul className="list-disc list-inside mt-2 space-y-1">
+                            <li>All household members and their data</li>
+                            <li>All chores and completion history</li>
+                            <li>All user stats and points</li>
+                            <li>All invites and redemption requests</li>
+                          </ul>
+                        </p>
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={handleDeleteHousehold}
+                            className="bg-red-700 hover:bg-red-800 flex-1"
+                          >
+                            Yes, Delete Forever
+                          </Button>
+                          <Button
+                            onClick={() => setShowDeleteConfirm(false)}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
