@@ -12,7 +12,14 @@ import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import ProtectedRoute from './ProtectedRoute'
 
 // Initialize Convex client
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
+const convexUrl = import.meta.env.VITE_CONVEX_URL
+
+if (!convexUrl) {
+  console.error('VITE_CONVEX_URL is not set. Please set this environment variable in Vercel.')
+  throw new Error('Missing required environment variable: VITE_CONVEX_URL')
+}
+
+const convex = new ConvexReactClient(convexUrl)
 
 // Demo stats provider that works independently
 function DemoStatsProvider({ children }: { children: React.ReactNode }) {
