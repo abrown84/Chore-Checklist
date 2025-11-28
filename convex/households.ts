@@ -673,3 +673,65 @@ export const regenerateJoinCode = mutation({
     return { joinCode };
   },
 });
+
+// Mutation: Leave household (user leaves themselves)
+export const leaveHousehold = mutation({
+  args: {
+    householdId: v.id("households"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const household = await ctx.db.get(args.householdId);
+    if (!household) {
+      throw new Error("Household not found");
+    }
+
+    // Find user's membership
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", args.householdId).eq("userId", userId as any)
+      )
+      .first();
+
+    if (!membership) {
+      throw new Error("You are not a member of this household");
+    }
+
+    // Prevent admin from leaving if they're the only admin
+    if (membership.role === "admin") {
+      const allMembers = await ctx.db
+        .query("householdMembers")
+        .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+        .collect();
+
+      const adminCount = allMembers.filter((m) => m.role === "admin").length;
+      if (adminCount === 1) {
+        throw new Error(
+          "Cannot leave household: You are the only admin. Please assign another admin or delete the household."
+        );
+      }
+    }
+
+    // Delete membership
+    await ctx.db.delete(membership._id);
+
+    // Clean up user stats for this household
+    const userStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q) =>
+        q.eq("userId", userId as any).eq("householdId", args.householdId)
+      )
+      .first();
+
+    if (userStats) {
+      await ctx.db.delete(userStats._id);
+    }
+
+    return { success: true };
+  },
+});

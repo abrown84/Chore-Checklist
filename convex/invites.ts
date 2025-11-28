@@ -240,3 +240,58 @@ export const cancelInvite = mutation({
   },
 });
 
+// Query: Get invites sent to current user (by email)
+export const getMyInvites = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    // Get current user's email
+    const user = await ctx.db.get(userId as any);
+    if (!user || !('email' in user) || !user.email) {
+      return [];
+    }
+
+    // Find all pending invites for this email
+    const invites = await ctx.db
+      .query("userInvites")
+      .withIndex("by_email", (q) => q.eq("email", user.email as string))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    // Filter out expired invites and enrich with household info
+    const now = Date.now();
+    const validInvites = await Promise.all(
+      invites
+        .filter((invite) => !invite.expiresAt || invite.expiresAt > now)
+        .map(async (invite) => {
+          const household = await ctx.db.get(invite.householdId);
+          const inviter = await ctx.db.get(invite.invitedBy);
+          
+          return {
+            ...invite,
+            household: household
+              ? {
+                  _id: household._id,
+                  name: household.name,
+                  description: household.description,
+                }
+              : null,
+            inviter: inviter
+              ? {
+                  _id: inviter._id,
+                  name: inviter.name,
+                  email: inviter.email,
+                }
+              : null,
+          };
+        })
+    );
+
+    return validInvites;
+  },
+});
+

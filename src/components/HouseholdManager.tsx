@@ -55,12 +55,17 @@ export const HouseholdManager: React.FC = () => {
   const declineInviteMutation = useMutation(api.invites.declineInvite)
   const joinHouseholdByCode = useMutation(api.households.joinHouseholdByCode)
   const regenerateJoinCode = useMutation(api.households.regenerateJoinCode)
-  // const cancelInvite = useMutation(api.invites.cancelInvite) // Reserved for future use
+  const leaveHousehold = useMutation(api.households.leaveHousehold)
+  const cancelInvite = useMutation(api.invites.cancelInvite)
+  
+  // Get invites sent to current user
+  const myInvites = useQuery(api.invites.getMyInvites, {})
   
   // Local state
   const [inviteEmail, setInviteEmail] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [isJoining, setIsJoining] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<Id<'users'> | null>(null)
   const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
@@ -140,16 +145,33 @@ export const HouseholdManager: React.FC = () => {
     }
   }
 
-  const handleAcceptInvite = async (inviteId: Id<'userInvites'>) => {
+  // Removed handleAcceptInvite and handleDeclineInvite - not used for pending invites (those are for canceling)
+
+  const handleLeaveHousehold = async () => {
+    if (!householdId) return
     try {
-      await acceptInviteMutation({ inviteId })
+      await leaveHousehold({ householdId })
+      setShowLeaveConfirm(false)
+      alert('You have left the household.')
+    } catch (error: any) {
+      console.error('Error leaving household:', error)
+      alert(error.message || 'Failed to leave household. Please try again.')
+    }
+  }
+
+  const handleAcceptMyInvite = async (inviteId: Id<'userInvites'>) => {
+    try {
+      const result = await acceptInviteMutation({ inviteId })
+      if (result.success) {
+        alert('Successfully joined the household!')
+      }
     } catch (error: any) {
       console.error('Error accepting invite:', error)
       alert(error.message || 'Failed to accept invite. Please try again.')
     }
   }
 
-  const handleDeclineInvite = async (inviteId: Id<'userInvites'>) => {
+  const handleDeclineMyInvite = async (inviteId: Id<'userInvites'>) => {
     try {
       await declineInviteMutation({ inviteId })
     } catch (error: any) {
@@ -513,6 +535,40 @@ export const HouseholdManager: React.FC = () => {
               </p>
             </div>
           )}
+          
+          {/* Leave Household Button */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <Button
+              variant="outline"
+              onClick={() => setShowLeaveConfirm(true)}
+              className="w-full border-red-300 text-red-600 hover:bg-red-50"
+            >
+              <UserMinus className="w-4 h-4 mr-2" />
+              Leave Household
+            </Button>
+            {showLeaveConfirm && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 mb-3">
+                  Are you sure you want to leave this household? You will lose access to all chores and data.
+                </p>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={handleLeaveHousehold}
+                    className="bg-red-600 hover:bg-red-700 flex-1"
+                  >
+                    Yes, Leave
+                  </Button>
+                  <Button
+                    onClick={() => setShowLeaveConfirm(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -583,6 +639,65 @@ export const HouseholdManager: React.FC = () => {
         </Card>
       ) : null}
 
+      {/* My Invites - Invites sent to current user */}
+      {myInvites && myInvites.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Mail className="w-6 h-6 text-purple-500" />
+              <span>Invitations Received</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {myInvites.map((invite) => (
+                <div
+                  key={invite._id}
+                  className="flex items-center justify-between p-4 bg-purple-50 border border-purple-200 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Home className="w-4 h-4 text-purple-600" />
+                      <p className="font-medium text-gray-900">
+                        {invite.household?.name || 'Unknown Household'}
+                      </p>
+                    </div>
+                    {invite.inviter && (
+                      <p className="text-sm text-gray-600">
+                        Invited by {invite.inviter.name || invite.inviter.email || 'Unknown'}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {invite.expiresAt
+                        ? `Expires ${new Date(invite.expiresAt).toLocaleDateString()}`
+                        : 'No expiration'}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2 ml-4">
+                    <Button
+                      onClick={() => handleAcceptMyInvite(invite._id)}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => handleDeclineMyInvite(invite._id)}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Invites - Admin/Parent Only */}
       {canManageHousehold && pendingInvites.length > 0 && (
         <Card>
@@ -607,17 +722,17 @@ export const HouseholdManager: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     <Button
-                      onClick={() => handleAcceptInvite(invite._id)}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Check className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => handleDeclineInvite(invite._id)}
+                      onClick={async () => {
+                        try {
+                          await cancelInvite({ inviteId: invite._id })
+                        } catch (error: any) {
+                          alert(error.message || 'Failed to cancel invite')
+                        }
+                      }}
                       size="sm"
                       variant="outline"
-                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                      title="Cancel invite"
                     >
                       <X className="w-4 h-4" />
                     </Button>
