@@ -62,25 +62,25 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Split node_modules into separate chunks
+          // Split node_modules into separate chunks with proper dependency ordering
           if (id.includes('node_modules')) {
-            // Convex and auth libraries
+            // React and React DOM - must be loaded first
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'vendor-react'
+            }
+            // Convex and auth libraries - depend on React
             if (id.includes('convex') || id.includes('@convex-dev')) {
               return 'vendor-convex'
             }
-            // React and React DOM
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react'
-            }
-            // UI libraries (Radix UI, etc.)
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'vendor-ui'
-            }
-            // Animation libraries
+            // Animation libraries - depend on React
             if (id.includes('framer-motion') || id.includes('motion')) {
               return 'vendor-animation'
             }
-            // Other vendor libraries
+            // UI libraries - depend on React
+            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+              return 'vendor-ui'
+            }
+            // All other vendor libraries
             return 'vendor'
           }
         },
