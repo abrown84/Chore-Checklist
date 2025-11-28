@@ -487,32 +487,32 @@ export const HouseholdManager: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">{household.name}</h3>
+              <h3 className="font-semibold text-foreground mb-2">{household.name}</h3>
               {household.description && (
-                <p className="text-gray-600 text-sm">{household.description}</p>
+                <p className="text-muted-foreground text-sm">{household.description}</p>
               )}
-              <p className="text-gray-500 text-xs mt-2">
+              <p className="text-muted-foreground text-xs mt-2">
                 Created {new Date(household.createdAt).toLocaleDateString()}
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-indigo-600">
+              <div className="text-2xl font-bold text-primary">
                 {transformedMembers.length}
               </div>
-              <div className="text-sm text-gray-500">Members</div>
+              <div className="text-sm text-muted-foreground">Members</div>
             </div>
           </div>
           
           {/* Join Code Section */}
           {household.joinCode && (
-            <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <div className="mt-6 p-4 bg-card/40 backdrop-blur-sm border border-border rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-indigo-900 mb-1 block">
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-foreground mb-2 block">
                     Join Code
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <code className="text-2xl font-mono font-bold text-indigo-700 tracking-widest bg-white px-4 py-2 rounded border-2 border-indigo-300">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <code className="text-2xl font-mono font-bold text-primary tracking-widest bg-primary/10 px-4 py-2.5 rounded-md border border-primary/20 shadow-sm">
                       {household.joinCode}
                     </code>
                     {canManageHousehold && (
@@ -535,7 +535,7 @@ export const HouseholdManager: React.FC = () => {
                       </Button>
                     )}
                   </div>
-                  <p className="text-xs text-indigo-600 mt-2">
+                  <p className="text-xs text-muted-foreground mt-3">
                     Share this code with others so they can join your household
                   </p>
                 </div>
@@ -543,8 +543,8 @@ export const HouseholdManager: React.FC = () => {
             </div>
           )}
           {!canManageHousehold && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
+            <div className="mt-4 p-3 bg-card/40 backdrop-blur-sm border border-border rounded-lg">
+              <p className="text-sm text-muted-foreground">
                 ℹ️ You can view household information here. Contact a parent or admin to make
                 changes to household settings.
               </p>
@@ -552,7 +552,7 @@ export const HouseholdManager: React.FC = () => {
           )}
           
           {/* Leave Household Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+          <div className="mt-6 pt-6 border-t border-border space-y-3">
             <Button
               variant="outline"
               onClick={() => setShowLeaveConfirm(true)}
