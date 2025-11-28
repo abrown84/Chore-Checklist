@@ -34,6 +34,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
   
   const passwordRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
   // Help browsers with autofill by checking for autofilled values
   useEffect(() => {
@@ -44,12 +45,15 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
       if (passwordRef.current && passwordRef.current.value !== password) {
         setPassword(passwordRef.current.value)
       }
+      if (nameRef.current && nameRef.current.value !== name) {
+        setName(nameRef.current.value)
+      }
     }
 
     // Check for autofill after a short delay
     const timer = setTimeout(checkAutofill, 100)
     return () => clearTimeout(timer)
-  }, [email, password])
+  }, [email, password, name])
 
   // Clear errors when switching modes
   useEffect(() => {
@@ -216,6 +220,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
                         <User className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <Input
+                        ref={nameRef}
                         id="name"
                         name="name"
                         type="text"

@@ -1,4 +1,4 @@
-import { useQuery } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { api } from '../../convex/_generated/api'
 import { User } from '../types/user'
@@ -11,6 +11,7 @@ import { useMemo, useCallback } from 'react'
 export function useConvexAuth() {
   // Get auth actions (signIn, signOut)
   const { signIn: signInAction, signOut: signOutAction } = useAuthActions()
+  const createOrUpdateUser = useMutation(api.users.createOrUpdateUser)
   
   // Check authentication state by querying for current user ID
   const authUserId = useQuery(api.auth.getCurrentUser, {})
@@ -55,7 +56,7 @@ export function useConvexAuth() {
       console.error('Sign in error:', error)
       throw new Error(error.message || 'Failed to sign in')
     }
-  }, [signInAction])
+  }, [signInAction, createOrUpdateUser])
 
   // Memoize signUp function
   const signUp = useCallback(async (email: string, password: string, name: string) => {
@@ -72,12 +73,24 @@ export function useConvexAuth() {
       // automatically sets up the user profile with default values
       await signInAction('password', formData)
       
+      // After successful signup, save the name to the user profile
+      // This ensures the name is properly stored in the database
+      try {
+        await createOrUpdateUser({
+          email,
+          name,
+        })
+      } catch (updateError) {
+        // Log but don't fail signup if name update fails
+        console.warn('Failed to update user name after signup:', updateError)
+      }
+      
       return { success: true }
     } catch (error: any) {
       console.error('Sign up error:', error)
       throw new Error(error.message || 'Failed to sign up')
     }
-  }, [signInAction])
+  }, [signInAction, createOrUpdateUser])
 
   // Memoize signOut function
   const signOut = useCallback(async () => {

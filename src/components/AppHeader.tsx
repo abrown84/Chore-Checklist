@@ -1,7 +1,6 @@
 import React from 'react'
 import { Button } from './ui/button'
 import { ThemeToggle } from './ThemeToggle'
-import { PWAStatus } from './PWAStatus'
 import { LogOut, Trash2, Menu, X } from 'lucide-react'
 import newLogo from '../brand_assets/DGlogo.png'
 
@@ -56,7 +55,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <PWAStatus />
               <ThemeToggle />
               {isDemoMode && (
                 <>

@@ -8,6 +8,7 @@ import { APP_CONFIG } from '../../config/constants'
 interface LeaderboardMember {
   id: string
   name: string
+  email?: string
   avatar: string
   currentLevel: number
   currentLevelData?: any
@@ -62,7 +63,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 <span className="text-xl">{member.avatar}</span>
                 <div>
                   <h4 className="font-semibold text-foreground flex items-center">
-                    {member.name}
+                    {member.name || member.email || 'Unknown User'}
                     {member.isCurrentUser && (
                       <span className="ml-2 text-xs bg-indigo-100/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-700">
                         You
