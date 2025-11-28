@@ -10,7 +10,7 @@ import { useDemo } from '../contexts/DemoContext'
 import { PageWrapper } from './PageWrapper'
 import { useAuth } from '../hooks/useAuth'
 import { useState, useRef, useEffect } from 'react'
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ShieldCheck, X } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, X } from 'lucide-react'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
 import {
 	Users,
@@ -145,7 +145,7 @@ export default function LandingPage() {
 			if (isSignUp) {
 				await signUp(email, password, name)
 			} else {
-				await signIn(email, password, rememberMe)
+				await signIn(email, password)
 			}
 			// Close modal on success
 			setShowAuthModal(false)
