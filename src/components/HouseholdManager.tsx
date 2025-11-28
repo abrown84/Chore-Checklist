@@ -24,6 +24,7 @@ import {
   GraduationCap,
   Home,
   Loader2,
+  Trash2,
 } from 'lucide-react'
 
 export const HouseholdManager: React.FC = () => {
@@ -56,6 +57,7 @@ export const HouseholdManager: React.FC = () => {
   const joinHouseholdByCode = useMutation(api.households.joinHouseholdByCode)
   const regenerateJoinCode = useMutation(api.households.regenerateJoinCode)
   const leaveHousehold = useMutation(api.households.leaveHousehold)
+  const deleteHousehold = useMutation(api.households.deleteHousehold)
   const cancelInvite = useMutation(api.invites.cancelInvite)
   
   // Get invites sent to current user
@@ -66,6 +68,7 @@ export const HouseholdManager: React.FC = () => {
   const [joinCode, setJoinCode] = useState('')
   const [isJoining, setIsJoining] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<Id<'users'> | null>(null)
   const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
@@ -156,6 +159,18 @@ export const HouseholdManager: React.FC = () => {
     } catch (error: any) {
       console.error('Error leaving household:', error)
       alert(error.message || 'Failed to leave household. Please try again.')
+    }
+  }
+
+  const handleDeleteHousehold = async () => {
+    if (!householdId) return
+    try {
+      await deleteHousehold({ householdId })
+      setShowDeleteConfirm(false)
+      alert('Household has been deleted.')
+    } catch (error: any) {
+      console.error('Error deleting household:', error)
+      alert(error.message || 'Failed to delete household. Please try again.')
     }
   }
 
@@ -537,7 +552,7 @@ export const HouseholdManager: React.FC = () => {
           )}
           
           {/* Leave Household Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
             <Button
               variant="outline"
               onClick={() => setShowLeaveConfirm(true)}
@@ -547,7 +562,7 @@ export const HouseholdManager: React.FC = () => {
               Leave Household
             </Button>
             {showLeaveConfirm && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800 mb-3">
                   Are you sure you want to leave this household? You will lose access to all chores and data.
                 </p>
@@ -567,6 +582,51 @@ export const HouseholdManager: React.FC = () => {
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* Delete Household Button - Admin Only */}
+            {canManageHousehold && currentUserRole === 'admin' && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full border-red-500 text-red-700 hover:bg-red-100 font-semibold"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Household
+                </Button>
+                {showDeleteConfirm && (
+                  <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+                    <p className="text-sm font-semibold text-red-900 mb-2">
+                      ⚠️ WARNING: This action cannot be undone!
+                    </p>
+                    <p className="text-sm text-red-800 mb-3">
+                      Deleting this household will permanently remove:
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>All household members and their data</li>
+                        <li>All chores and completion history</li>
+                        <li>All user stats and points</li>
+                        <li>All invites and redemption requests</li>
+                      </ul>
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={handleDeleteHousehold}
+                        className="bg-red-700 hover:bg-red-800 flex-1"
+                      >
+                        Yes, Delete Forever
+                      </Button>
+                      <Button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </CardContent>

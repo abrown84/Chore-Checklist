@@ -470,7 +470,47 @@ export const deleteHousehold = mutation({
       await ctx.db.delete(stat._id);
     }
 
-    // 4. Delete household
+    // 4. Delete invites
+    const invites = await ctx.db
+      .query("userInvites")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const invite of invites) {
+      await ctx.db.delete(invite._id);
+    }
+
+    // 5. Delete redemption requests
+    const redemptionRequests = await ctx.db
+      .query("redemptionRequests")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const request of redemptionRequests) {
+      // Delete associated point deductions
+      const deductions = await ctx.db
+        .query("pointDeductions")
+        .withIndex("by_redemption_request", (q) => q.eq("redemptionRequestId", request._id))
+        .collect();
+
+      for (const deduction of deductions) {
+        await ctx.db.delete(deduction._id);
+      }
+
+      await ctx.db.delete(request._id);
+    }
+
+    // 6. Delete point deductions (any remaining)
+    const pointDeductions = await ctx.db
+      .query("pointDeductions")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const deduction of pointDeductions) {
+      await ctx.db.delete(deduction._id);
+    }
+
+    // 7. Delete household
     await ctx.db.delete(args.householdId);
 
     return args.householdId;
@@ -702,20 +742,7 @@ export const leaveHousehold = mutation({
       throw new Error("You are not a member of this household");
     }
 
-    // Prevent admin from leaving if they're the only admin
-    if (membership.role === "admin") {
-      const allMembers = await ctx.db
-        .query("householdMembers")
-        .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
-        .collect();
-
-      const adminCount = allMembers.filter((m) => m.role === "admin").length;
-      if (adminCount === 1) {
-        throw new Error(
-          "Cannot leave household: You are the only admin. Please assign another admin or delete the household."
-        );
-      }
-    }
+    // Allow admins to leave (they can delete the household if needed)
 
     // Delete membership
     await ctx.db.delete(membership._id);
