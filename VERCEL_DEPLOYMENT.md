@@ -22,9 +22,16 @@
    - Vercel will automatically detect this as a Vite project
 
 2. **Configure Build Settings**:
+   - Framework Preset: Vite (auto-detected)
    - Build Command: `npm run build`
    - Output Directory: `dist`
    - Install Command: `npm install`
+   - Root Directory: `.` (leave as default)
+   
+   **Note**: The `vercel.json` file is already configured with:
+   - SPA routing (all routes redirect to index.html)
+   - PWA service worker headers
+   - Manifest file headers
 
 3. **Set Environment Variables**:
    - In Vercel dashboard, go to your project settings
@@ -33,6 +40,13 @@
 4. **Deploy**:
    - Vercel will automatically deploy on every push to main branch
    - Or trigger a manual deployment from the dashboard
+   - Wait for the build to complete (usually 1-2 minutes)
+
+5. **Post-Deployment**:
+   - After deployment, copy your Vercel URL (e.g., `https://your-app.vercel.app`)
+   - Update `CONVEX_SITE_URL` in your Convex dashboard with this URL
+   - Test the app to ensure authentication works
+   - (Optional) Seed default chores using the `chores:adminSeedChores` mutation in Convex dashboard
 
 ## Convex Environment Variables
 
@@ -60,7 +74,26 @@ node -e "const { generateKeyPair, exportPKCS8, exportJWK } = require('jose'); (a
 
 ## Troubleshooting
 
-- If build fails, check that all environment variables are set
-- Ensure Convex deployment is active and accessible
-- Check Vercel function logs for any runtime errors
-- Verify PWA manifest is accessible at `/manifest.webmanifest`
+### Build Issues
+- **Build fails**: Check that all environment variables are set in Vercel
+- **TypeScript errors**: Ensure `npm run build` works locally first
+- **Missing dependencies**: Check that `package.json` includes all required packages
+
+### Runtime Issues
+- **Convex connection fails**: Verify `VITE_CONVEX_URL` is correct in Vercel
+- **Authentication not working**: 
+  - Check that `CONVEX_SITE_URL` in Convex matches your Vercel URL exactly
+  - Verify JWT keys are set correctly in Convex dashboard
+  - Check browser console for auth errors
+- **Chores not loading**: Ensure Convex deployment is active and functions are deployed
+
+### PWA Issues
+- **Service worker not registering**: Check browser console for errors
+- **Manifest not loading**: Verify `/manifest.webmanifest` is accessible
+- **App not installable**: Check that manifest.json is properly configured
+
+### Common Solutions
+- Clear browser cache and hard refresh (Ctrl+Shift+R)
+- Check Vercel deployment logs for build errors
+- Check Convex dashboard logs for function errors
+- Verify all environment variables are set for the correct environment (Production/Preview)
