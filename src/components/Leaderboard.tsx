@@ -264,25 +264,27 @@ export const Leaderboard: React.FC = React.memo(() => {
         {/* Leaderboard Section */}
         <div className="xl:col-span-2 space-y-6">
           <div className="bg-card p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-              <h3 className="text-xl font-semibold text-foreground flex items-center">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mr-3">
-                  <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                Leaderboard
-              </h3>
-              
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                {/* View Toggle (Household vs Global) */}
-                <LeaderboardViewToggle 
-                  view={leaderboardView}
-                  onViewChange={setLeaderboardView}
-                />
+            <div className="mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h3 className="text-xl font-semibold text-foreground flex items-center">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mr-3">
+                    <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  Leaderboard
+                </h3>
                 
                 {/* Ranking Mode Toggle */}
                 <RankingModeToggle 
                   rankingMode={rankingMode}
                   onRankingModeChange={handleRankingModeChange}
+                />
+              </div>
+              
+              {/* View Toggle (Household vs Global) - More Prominent */}
+              <div className="flex items-center justify-center sm:justify-start">
+                <LeaderboardViewToggle 
+                  view={leaderboardView}
+                  onViewChange={setLeaderboardView}
                 />
               </div>
             </div>

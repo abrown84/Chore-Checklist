@@ -13,12 +13,12 @@ export const LeaderboardViewToggle: React.FC<LeaderboardViewToggleProps> = React
   onViewChange,
 }) => {
   return (
-    <div className="bg-muted p-1 rounded-lg flex items-center">
+    <div className="bg-muted/50 dark:bg-muted p-1.5 rounded-lg flex items-center border border-border shadow-sm">
       <button
         onClick={() => onViewChange('household')}
-        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center ${
+        className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center ${
           view === 'household'
-            ? 'bg-card text-foreground shadow-sm animate-scale-in'
+            ? 'bg-primary text-primary-foreground shadow-md'
             : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent'
         }`}
       >
@@ -27,9 +27,9 @@ export const LeaderboardViewToggle: React.FC<LeaderboardViewToggleProps> = React
       </button>
       <button
         onClick={() => onViewChange('global')}
-        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center ${
+        className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center ${
           view === 'global'
-            ? 'bg-card text-foreground shadow-sm animate-scale-in'
+            ? 'bg-primary text-primary-foreground shadow-md'
             : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent'
         }`}
       >
