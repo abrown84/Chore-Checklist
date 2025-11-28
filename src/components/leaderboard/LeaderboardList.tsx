@@ -15,6 +15,7 @@ interface LeaderboardMember {
   efficiencyScore: number
   completedChores: number
   isCurrentUser: boolean
+  householdName?: string
 }
 
 interface LeaderboardListProps {
@@ -68,6 +69,11 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                       </span>
                     )}
                   </h4>
+                  {member.householdName && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {member.householdName}
+                    </p>
+                  )}
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                     <span className="flex items-center">
                       <span className="mr-1">{member.currentLevelData?.icon || '🌱'}</span>

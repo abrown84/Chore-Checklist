@@ -6,6 +6,7 @@ import { useStats } from '../hooks/useStats'
 import { useChores } from '../contexts/ChoreContext'
 import { RANKING_MODES, RankingMode } from '../config/constants'
 import { useLeaderboardData } from '../hooks/useLeaderboardData'
+import { LEVELS } from '../types/chore'
 import { useRedemption } from '../contexts/RedemptionContext'
 import { PersonalProgress } from './leaderboard/PersonalProgress'
 import { HouseholdStats } from './leaderboard/HouseholdStats'
@@ -14,22 +15,32 @@ import { LeaderboardList } from './leaderboard/LeaderboardList'
 import { RecentActivity } from './leaderboard/RecentActivity'
 import { LevelOverview } from './leaderboard/LevelOverview'
 import { AchievementsPreview } from './leaderboard/AchievementsPreview'
+import { LeaderboardViewToggle, LeaderboardView } from './leaderboard/LeaderboardViewToggle'
 import { Button } from '../components/ui/button'
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 
 export const Leaderboard: React.FC = React.memo(() => {
   const { state: userState } = useUsers()
   const { getAllUserStats } = useStats()
   const { state: choreState } = useChores()
   const [rankingMode, setRankingMode] = useState<RankingMode>(RANKING_MODES.POINTS)
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>('household')
   
   // Get unified stats from StatsContext (single source of truth)
   const memberStats = getAllUserStats()
   
+  // Fetch global leaderboard data
+  const globalLeaderboardData = useQuery(
+    api.stats.getGlobalLeaderboard,
+    leaderboardView === 'global' ? {} : 'skip'
+  )
+  
   // Use redemption context
   const { conversionRate, getHouseholdRedemptionSummary, getPendingRedemptionPoints, getTotalRedeemedValue } = useRedemption()
 
-  // Use custom hook for leaderboard data processing
-  const { processedLeaderboard, currentUserStats } = useLeaderboardData({
+  // Process household leaderboard data
+  const { processedLeaderboard: householdLeaderboard, currentUserStats } = useLeaderboardData({
     memberStats,
     members: userState.members,
     currentUserId: userState.currentUser?.id,
@@ -39,6 +50,55 @@ export const Leaderboard: React.FC = React.memo(() => {
       getTotalRedeemedValue
     }
   })
+
+  // Process global leaderboard data
+  const processedGlobalLeaderboard = React.useMemo(() => {
+    if (!globalLeaderboardData || leaderboardView !== 'global') return []
+    
+    return globalLeaderboardData
+      .map((stat) => {
+        const currentLevelData = LEVELS.find((level) => level.level === stat.currentLevel)
+        const nextLevelData = LEVELS.find((level) => level.level === (stat.currentLevel || 1) + 1)
+        
+        const progressToNextLevel = nextLevelData
+          ? ((stat.earnedPoints - (currentLevelData?.pointsRequired || 0)) /
+              (nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) *
+            100
+          : 100
+
+        return {
+          ...stat,
+          id: stat.userId,
+          name: stat.userName,
+          avatar: '👤',
+          currentLevelData,
+          nextLevelData,
+          levelProgress: Math.min(Math.max(progressToNextLevel, 0), 100),
+          efficiencyScore: stat.efficiencyScore || 0,
+          completionRate: stat.totalChores > 0 ? (stat.completedChores / stat.totalChores) * 100 : 0,
+          isCurrentUser: stat.userId === userState.currentUser?.id,
+          householdName: stat.householdName,
+        }
+      })
+      .sort((a, b) => {
+        if (rankingMode === RANKING_MODES.POINTS) {
+          return b.earnedPoints - a.earnedPoints
+        } else if (rankingMode === RANKING_MODES.EFFICIENCY) {
+          return b.efficiencyScore - a.efficiencyScore
+        } else if (rankingMode === RANKING_MODES.LIFETIME && getTotalRedeemedValue) {
+          const aLifetimePoints = a.earnedPoints + (getTotalRedeemedValue(a.id) * conversionRate)
+          const bLifetimePoints = b.earnedPoints + (getTotalRedeemedValue(b.id) * conversionRate)
+          return bLifetimePoints - aLifetimePoints
+        } else {
+          return b.completedChores - a.completedChores
+        }
+      })
+  }, [globalLeaderboardData, leaderboardView, rankingMode, userState.currentUser?.id, getTotalRedeemedValue, conversionRate])
+
+  // Select the appropriate leaderboard based on view
+  const processedLeaderboard = leaderboardView === 'global' 
+    ? processedGlobalLeaderboard 
+    : householdLeaderboard
 
   const handleRankingModeChange = (mode: RankingMode) => {
     setRankingMode(mode)
@@ -212,11 +272,19 @@ export const Leaderboard: React.FC = React.memo(() => {
                 Leaderboard
               </h3>
               
-              {/* Ranking Mode Toggle */}
-              <RankingModeToggle 
-                rankingMode={rankingMode}
-                onRankingModeChange={handleRankingModeChange}
-              />
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                {/* View Toggle (Household vs Global) */}
+                <LeaderboardViewToggle 
+                  view={leaderboardView}
+                  onViewChange={setLeaderboardView}
+                />
+                
+                {/* Ranking Mode Toggle */}
+                <RankingModeToggle 
+                  rankingMode={rankingMode}
+                  onRankingModeChange={handleRankingModeChange}
+                />
+              </div>
             </div>
 
             {/* Leaderboard List */}

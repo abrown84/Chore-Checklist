@@ -115,6 +115,44 @@ export const getEfficiencyLeaderboard = query({
   },
 });
 
+// Query: Get global leaderboard (all households)
+export const getGlobalLeaderboard = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await getAuthUserId(ctx);
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get all user stats across all households
+    const allStats = await ctx.db
+      .query("userStats")
+      .collect();
+
+    // Get household info for each stat
+    const statsWithHousehold = await Promise.all(
+      allStats.map(async (stat) => {
+        const household = await ctx.db.get(stat.householdId);
+        const user = await ctx.db.get(stat.userId);
+        return {
+          ...stat,
+          householdName: household?.name || "Unknown Household",
+          userName: user?.name || "Unknown User",
+          userEmail: user?.email,
+        };
+      })
+    );
+
+    // Sort by earned points (descending)
+    return statsWithHousehold.sort((a, b) => b.earnedPoints - a.earnedPoints);
+  },
+});
+
 // Query: Get recent activity
 export const getRecentActivity = query({
   args: {
