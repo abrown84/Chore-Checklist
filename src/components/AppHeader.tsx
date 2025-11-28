@@ -67,23 +67,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   >
                     Exit Demo
                   </Button>
-                  <Button 
-                    onClick={() => {
-                      if (confirm('Reset demo mode? This will clear all demo data and refresh the page.')) {
-                        localStorage.removeItem('demoMode')
-                        localStorage.removeItem('chores')
-                        localStorage.removeItem('userStats')
-                        localStorage.removeItem('levelPersistence')
-                        window.location.reload()
-                      }
-                    }}
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                    title="Reset Demo"
-                  >
-                    Reset Demo
-                  </Button>
                 </>
               )}
               {!isDemoMode && (
@@ -132,23 +115,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 >
                   Exit
                 </Button>
-                <Button 
-                  onClick={() => {
-                    if (confirm('Reset demo mode? This will clear all demo data and refresh the page.')) {
-                      localStorage.removeItem('demoMode')
-                      localStorage.removeItem('chores')
-                      localStorage.removeItem('userStats')
-                      localStorage.removeItem('levelPersistence')
-                      window.location.reload()
-                    }
-                  }}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                  title="Reset Demo"
-                >
-                  Reset
-                </Button>
               </>
             ) : (
               <Button 
@@ -192,23 +158,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   title="Exit Demo"
                 >
                   Exit
-                </Button>
-                <Button 
-                  onClick={() => {
-                    if (confirm('Reset demo mode? This will clear all demo data and refresh the page.')) {
-                      localStorage.removeItem('demoMode')
-                      localStorage.removeItem('chores')
-                      localStorage.removeItem('userStats')
-                      localStorage.removeItem('levelPersistence')
-                      window.location.reload()
-                    }
-                  }}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                  title="Reset Demo"
-                >
-                  Reset
                 </Button>
               </>
             ) : (

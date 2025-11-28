@@ -130,3 +130,4 @@ If issues occur:
 - Session data can remain in localStorage (acceptable)
 - Demo mode continues to use localStorage (by design)
 
+

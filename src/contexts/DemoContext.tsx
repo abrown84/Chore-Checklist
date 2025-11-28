@@ -8,7 +8,6 @@ interface DemoContextType {
   isDemoMode: boolean
   enterDemoMode: () => void
   exitDemoMode: () => void
-  resetDemoMode: () => void
   getDemoChores: () => Chore[]
   getDemoUsers: () => User[]
   getDemoStats: () => UserStats[]
@@ -59,42 +58,40 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
 
   const exitDemoMode = () => {
     try {
+      // Clear all demo-specific localStorage data when exiting
+      localStorage.removeItem('demoMode')
+      localStorage.removeItem('demoChores')
+      localStorage.removeItem('chores')
+      localStorage.removeItem('userStats')
+      localStorage.removeItem('levelPersistence')
+      
+      // Reset state synchronously
       setIsDemoMode(false)
       setDemoStats([])
       setDemoChores([])
-      localStorage.removeItem('demoMode')
-      localStorage.removeItem('demoChores')
-
+      
+      // Clear hash if present
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname)
+      }
+      
+      // Reload the page to ensure clean state
+      // Using a small delay to ensure localStorage operations complete
+      setTimeout(() => {
+        window.location.reload()
+      }, 0)
     } catch (error) {
       console.error('Error exiting demo mode:', error)
-      // If localStorage fails, still exit demo mode in state
+      // If localStorage fails, still exit demo mode in state and refresh
       setIsDemoMode(false)
       setDemoStats([])
       setDemoChores([])
-    }
-  }
-
-  const resetDemoMode = () => {
-    try {
-      // Clear only demo-specific localStorage data
-      // Note: Real user data is in Convex, not localStorage
-      localStorage.removeItem('demoMode')
-      localStorage.removeItem('demoChores')
-      
-      // Reset state
-      setIsDemoMode(false)
-      setDemoStats([])
-      setDemoChores([])
-      
-      // Force a page refresh to ensure clean state
-      window.location.reload()
-    } catch (error) {
-      console.error('Error resetting demo mode:', error)
-      // If localStorage fails, still reset demo mode in state and refresh
-      setIsDemoMode(false)
-      setDemoStats([])
-      setDemoChores([])
-      window.location.reload()
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname)
+      }
+      setTimeout(() => {
+        window.location.reload()
+      }, 0)
     }
   }
 
@@ -195,21 +192,16 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
     try {
 
       
-      // Create demo chores with sample completion data
+      // Create demo chores - start fresh with no completed chores (0 points)
       const now = new Date()
       const generatedChores = defaultChores.map((chore, index) => {
-        // Increase completion rate to ensure enough points for leveling
-        const isCompleted = Math.random() > 0.3 // 70% chance of being completed (was 0.6 = 40%)
+        // Start with all chores incomplete so users begin with 0 points
+        const isCompleted = false
         const createdAt = new Date(now.getTime() - (Math.random() * 7 * 24 * 60 * 60 * 1000)) // Random date within last week
         const dueDate = new Date(now.getTime() + (Math.random() * 7 * 24 * 60 * 60 * 1000)) // Random date within next week
         
-        // Calculate proper finalPoints for leveling system
-        let finalPoints = chore.points // Start with base points
-        if (isCompleted) {
-          // Add bonus points for completed chores to enable leveling up
-          const bonusPoints = Math.floor(Math.random() * 8) + 2 // 2-9 bonus points (was 1-5)
-          finalPoints = chore.points + bonusPoints
-        }
+        // No finalPoints for incomplete chores
+        const finalPoints = undefined
         
         return {
           ...chore,
@@ -217,10 +209,10 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
           createdAt,
           dueDate,
           completed: isCompleted,
-          completedAt: isCompleted ? new Date(now.getTime() - (Math.random() * 3 * 24 * 60 * 60 * 1000)) : undefined,
-          completedBy: isCompleted ? (Math.random() > 0.5 ? 'demo-alex' : 'demo-janice') : undefined,
-          finalPoints: finalPoints, // Always set finalPoints for proper leveling calculation
-          bonusMessage: isCompleted ? `+${finalPoints - chore.points} bonus` : undefined,
+          completedAt: undefined,
+          completedBy: undefined,
+          finalPoints: finalPoints,
+          bonusMessage: undefined,
           assignedTo: Math.random() > 0.5 ? 'demo-alex' : 'demo-janice'
         }
       })
@@ -341,7 +333,6 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
     isDemoMode,
     enterDemoMode,
     exitDemoMode,
-    resetDemoMode,
     getDemoChores,
     getDemoUsers,
     getDemoStats

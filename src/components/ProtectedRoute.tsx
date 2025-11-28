@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
-import AuthForm from './AuthForm'
 import LandingPage from './LandingPage'
 
 interface ProtectedRouteProps {
@@ -9,23 +8,8 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isLoading, signIn, signUp } = useAuth()
+  const { user, isLoading } = useAuth()
   const { isDemoMode } = useDemo()
-
-  // Manage whether to show auth form or landing page (must be top-level hook usage)
-  const [showAuth, setShowAuth] = useState<boolean>(
-    typeof window !== 'undefined' && window.location.hash === '#signin'
-  )
-
-  useEffect(() => {
-    const onHashChange = () => {
-      setShowAuth(typeof window !== 'undefined' && window.location.hash === '#signin')
-    }
-    window.addEventListener('hashchange', onHashChange)
-    // sync on mount
-    onHashChange()
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
 
   // Always render the same structure, but conditionally show content
   // This ensures hooks are called in the same order every time
@@ -41,11 +25,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user && !isDemoMode) {
-    if (showAuth) {
-      return <AuthForm onSignIn={signIn} onSignUp={signUp} />
-    } else {
-      return <LandingPage />
-    }
+    // Always show LandingPage - it has the auth modal built in
+    return <LandingPage />
   }
 
   // User is authenticated or in demo mode
