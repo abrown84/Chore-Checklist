@@ -17,6 +17,15 @@ function AppContentWrapper() {
   const { syncWithAuth, resetUserState } = useUsers()
   const { isDemoMode, exitDemoMode } = useDemo()
   const [activeTab, setActiveTab] = useState('chores')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false)
+  }
 
   // Sync authentication state with UserContext when user changes
   useEffect(() => {
@@ -73,6 +82,8 @@ function AppContentWrapper() {
         onClearCredentials={handleClearCredentials}
         onExitDemo={exitDemoMode}
         onGoHome={handleGoHome}
+        onMenuToggle={toggleMobileMenu}
+        isMenuOpen={isMobileMenuOpen}
       />
 
       {/* Layout Container */}
@@ -85,6 +96,8 @@ function AppContentWrapper() {
         onExitDemo={exitDemoMode}
         onGoHome={handleGoHome}
         user={user}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onMobileMenuClose={closeMobileMenu}
       >
         <AppContent activeTab={activeTab} />
       </AppLayout>

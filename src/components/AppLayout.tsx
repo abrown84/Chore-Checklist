@@ -11,6 +11,8 @@ interface AppLayoutProps {
   onExitDemo: () => void
   onGoHome: () => void
   user: any
+  isMobileMenuOpen?: boolean
+  onMobileMenuClose?: () => void
 }
 
 export function AppLayout({
@@ -22,7 +24,9 @@ export function AppLayout({
   onClearCredentials,
   onExitDemo,
   onGoHome,
-  user
+  user,
+  isMobileMenuOpen = false,
+  onMobileMenuClose
 }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -42,6 +46,8 @@ export function AppLayout({
           onExitDemo={onExitDemo}
           onGoHome={onGoHome}
           user={user}
+          isMobileOpen={isMobileMenuOpen}
+          onMobileClose={onMobileMenuClose}
         />
         
         {/* Main Content Area */}

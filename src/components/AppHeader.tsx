@@ -2,7 +2,7 @@ import React from 'react'
 import { Button } from './ui/button'
 import { ThemeToggle } from './ThemeToggle'
 import { PWAStatus } from './PWAStatus'
-import { LogOut, Trash2 } from 'lucide-react'
+import { LogOut, Trash2, Menu, X } from 'lucide-react'
 import newLogo from '../brand_assets/DGlogo.png'
 
 interface AppHeaderProps {
@@ -12,6 +12,8 @@ interface AppHeaderProps {
   onClearCredentials: () => void
   onExitDemo: () => void
   onGoHome: () => void
+  onMenuToggle?: () => void
+  isMenuOpen?: boolean
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -20,7 +22,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSignOut,
   onClearCredentials,
   onExitDemo,
-  onGoHome
+  onGoHome,
+  onMenuToggle,
+  isMenuOpen = false
 }) => {
   return (
     <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/40 border-b border-border shadow-sm">
@@ -163,6 +167,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Mobile User Info */}
           <div className="md:hidden flex items-center space-x-1">
+            {/* Mobile Menu Button */}
+            {onMenuToggle && (
+              <Button
+                onClick={onMenuToggle}
+                variant="ghost"
+                size="sm"
+                className="flex items-center justify-center p-2 mr-1"
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </Button>
+            )}
             <ThemeToggle />
             {isDemoMode ? (
               <>

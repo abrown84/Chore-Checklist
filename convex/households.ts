@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUserId } from "./authHelpers";
+import { internal } from "./_generated/api";
 
 // Query: Get household by ID
 export const getHousehold = query({
@@ -160,6 +161,12 @@ export const createHousehold = mutation({
       userId: userId as any,
       role: "admin",
       joinedAt: now,
+    });
+
+    // Automatically seed default chores for the new household
+    // Use scheduler to run the internal mutation asynchronously
+    await ctx.scheduler.runAfter(0, internal.chores.seedDefaultChoresInternal, {
+      householdId,
     });
 
     return householdId;
