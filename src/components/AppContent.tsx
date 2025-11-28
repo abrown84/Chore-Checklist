@@ -1,14 +1,31 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { ChoreList } from './ChoreList'
 import { AddChoreForm } from './AddChoreForm'
 import { ChoreProgress } from './ChoreProgress'
 import { PointsCounter } from './PointsCounter'
-import { ProfileAndRewards } from './ProfileAndRewards'
-import { HouseholdManager } from './HouseholdManager'
-import { Leaderboard } from './Leaderboard'
-import { PointRedemption } from './PointRedemption'
 import { LevelUpCelebration } from './LevelUpCelebration'
 import { PWAInstaller } from './PWAInstaller'
+
+// Lazy load route-based components for code splitting
+const Leaderboard = lazy(() => 
+  import('./Leaderboard').then(module => ({ default: module.Leaderboard }))
+)
+const HouseholdManager = lazy(() => 
+  import('./HouseholdManager').then(module => ({ default: module.HouseholdManager }))
+)
+const ProfileAndRewards = lazy(() => 
+  import('./ProfileAndRewards').then(module => ({ default: module.ProfileAndRewards }))
+)
+const PointRedemption = lazy(() => 
+  import('./PointRedemption').then(module => ({ default: module.PointRedemption }))
+)
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+)
 
 interface AppContentProps {
   activeTab: string
@@ -35,27 +52,35 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
       )}
 
       {activeTab === 'leaderboard' && (
-        <div className="space-y-6">
-          <Leaderboard />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <Leaderboard />
+          </div>
+        </Suspense>
       )}
 
       {activeTab === 'household' && (
-        <div className="space-y-6">
-          <HouseholdManager />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <HouseholdManager />
+          </div>
+        </Suspense>
       )}
 
       {activeTab === 'profile' && (
-        <div className="space-y-6">
-          <ProfileAndRewards />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <ProfileAndRewards />
+          </div>
+        </Suspense>
       )}
 
       {activeTab === 'redemption' && (
-        <div className="space-y-6">
-          <PointRedemption />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <PointRedemption />
+          </div>
+        </Suspense>
       )}
 
       {/* Celebrations */}

@@ -57,7 +57,39 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false
+    sourcemap: false,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Split node_modules into separate chunks
+          if (id.includes('node_modules')) {
+            // Convex and auth libraries
+            if (id.includes('convex') || id.includes('@convex-dev')) {
+              return 'vendor-convex'
+            }
+            // React and React DOM
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react'
+            }
+            // UI libraries (Radix UI, etc.)
+            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+              return 'vendor-ui'
+            }
+            // Animation libraries
+            if (id.includes('framer-motion') || id.includes('motion')) {
+              return 'vendor-animation'
+            }
+            // Other vendor libraries
+            return 'vendor'
+          }
+        },
+        // Optimize chunk file names
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    }
   },
   define: {
     __dirname: JSON.stringify(__dirname)
