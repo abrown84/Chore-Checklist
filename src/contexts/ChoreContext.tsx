@@ -47,7 +47,7 @@ const calculateStats = (chores: Chore[]): ChoreStats => {
   // Calculate level based on earned points
   let currentLevel = 1
   let currentLevelPoints = earnedPoints
-  let pointsToNextLevel = 100
+  let pointsToNextLevel = 25 // Default to Level 2 requirement
   
   for (let i = 0; i < LEVELS.length; i++) {
     if (earnedPoints >= LEVELS[i].pointsRequired) {

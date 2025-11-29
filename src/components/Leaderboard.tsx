@@ -19,6 +19,7 @@ import { LeaderboardViewToggle, LeaderboardView } from './leaderboard/Leaderboar
 import { Button } from '../components/ui/button'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { getDisplayName } from '../utils/convexHelpers'
 
 export const Leaderboard: React.FC = React.memo(() => {
   const { state: userState } = useUsers()
@@ -69,7 +70,8 @@ export const Leaderboard: React.FC = React.memo(() => {
         return {
           ...stat,
           id: stat.userId,
-          name: stat.userName,
+          name: getDisplayName(stat.userName, stat.userEmail),
+          email: undefined, // Don't expose email addresses in global leaderboard
           avatar: '👤',
           currentLevelData,
           nextLevelData,
@@ -126,10 +128,10 @@ export const Leaderboard: React.FC = React.memo(() => {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center animate-fade-in">
-        <h1 className="text-4xl font-bold text-foreground mb-3 animate-slide-in bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 sm:mb-3 animate-slide-in bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           📊 Daily Grind Dashboard
         </h1>
-        <p className="text-xl text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground animate-fade-in px-2" style={{ animationDelay: '0.2s' }}>
           Track progress, compete, and celebrate achievements together!
         </p>
       </div>
@@ -150,16 +152,16 @@ export const Leaderboard: React.FC = React.memo(() => {
       />
 
       {/* Redemption Summary - Enhanced Section with Better Theming */}
-      <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 dark:from-green-950/20 dark:via-blue-950/20 dark:to-purple-950/20 border border-green-200 dark:border-green-800 rounded-xl p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 dark:from-green-950/20 dark:via-blue-950/20 dark:to-purple-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4 sm:p-6 shadow-lg">
         <div className="text-center">
-          <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center justify-center">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full mr-3">
-              <Coins className="w-6 h-6 text-green-600 dark:text-green-400" />
+          <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center justify-center flex-wrap gap-2">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+              <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
             </div>
-            Household Redemption Economy
+            <span>Household Redemption Economy</span>
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-6">
             <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
@@ -259,13 +261,13 @@ export const Leaderboard: React.FC = React.memo(() => {
       </div>
 
       {/* Main Dashboard Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
         
         {/* Leaderboard Section */}
-        <div className="xl:col-span-2 space-y-6">
-          <div className="bg-card p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="mb-6 space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="xl:col-span-2 space-y-4 md:space-y-6">
+          <div className="bg-card p-4 sm:p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="mb-4 md:mb-6 space-y-3 md:space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-semibold text-foreground flex items-center">
                     <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mr-3">
@@ -299,7 +301,7 @@ export const Leaderboard: React.FC = React.memo(() => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6 mt-6 xl:mt-0">
           {/* Recent Activity */}
           <RecentActivity chores={choreState.chores} />
 

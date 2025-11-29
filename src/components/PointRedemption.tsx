@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { useUsers } from '../contexts/UserContext'
@@ -7,6 +7,7 @@ import { useRedemption, RedemptionRequest } from '../contexts/RedemptionContext'
 import { DollarSign, Coins, Calculator, Settings, AlertCircle, CheckCircle, XCircle, Clock, UserCheck, Users, Baby, GraduationCap, TrendingUp, Shield } from 'lucide-react'
 import { LEVELS } from '../types/chore'
 import { ROLE_PERMISSIONS } from '../types/user'
+import { getDisplayName } from '../utils/convexHelpers'
 
 export const PointRedemption: React.FC = () => {
   const { state: userState } = useUsers()
@@ -31,6 +32,13 @@ export const PointRedemption: React.FC = () => {
   const memberStats = getAllUserStats()
   const currentUser = userState.currentUser
   const currentUserStats = memberStats.find(s => s.userId === currentUser?.id)
+  
+  // Get current user's household membership role (this is what determines admin permissions)
+  const currentUserHouseholdRole = useMemo(() => {
+    if (!currentUser) return null
+    const currentUserMember = userState.members.find(m => m.id === currentUser.id)
+    return (currentUserMember?.role || currentUser?.role || 'member') as 'admin' | 'parent' | 'teen' | 'kid' | 'member'
+  }, [currentUser, userState.members])
 
   // Helper function to calculate user level based on points
   const calculateUserLevel = (earnedPoints: number): number => {
@@ -80,11 +88,10 @@ export const PointRedemption: React.FC = () => {
   }
 
   useEffect(() => {
-    // Check if current user can approve redemptions based on their role
-    const userRole = currentUser?.role || 'member'
-    const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS.member
-    setCanApproveRedemptions(permissions.canApproveRedemptions)
-  }, [currentUser])
+    // Check if current user can approve redemptions based on their household membership role
+    // Only admins can approve redemptions (based on backend logic in convex/redemptions.ts)
+    setCanApproveRedemptions(currentUserHouseholdRole === 'admin')
+  }, [currentUserHouseholdRole])
 
   const saveConversionRate = () => {
     const rate = parseInt(newConversionRate)
@@ -112,7 +119,7 @@ export const PointRedemption: React.FC = () => {
     const newRequest: RedemptionRequest = {
       id: Date.now().toString(),
       userId: currentUser.id,
-      userName: currentUser.name || currentUser.email,
+      userName: getDisplayName(currentUser.name, currentUser.email),
       userRole: currentUser.role,
       pointsRequested: points,
       cashAmount,
@@ -136,7 +143,7 @@ export const PointRedemption: React.FC = () => {
       updateRedemptionRequest(requestId, {
         status,
         processedAt: new Date(),
-        processedBy: currentUser?.name || currentUser?.email,
+        processedBy: getDisplayName(currentUser?.name, currentUser?.email),
         adminNotes: status === 'rejected' ? adminNotes : undefined
       })
       
@@ -194,8 +201,8 @@ export const PointRedemption: React.FC = () => {
   const getPendingRequestsForApproval = () => {
     if (!currentUser || !canApproveRedemptions) return []
     
-    // If user is admin or parent, they can see all pending requests
-    if (currentUser.role === 'admin' || currentUser.role === 'parent') {
+    // Only admins can approve redemptions (based on backend logic in convex/redemptions.ts)
+    if (currentUserHouseholdRole === 'admin') {
       return redemptionRequests.filter(req => req.status === 'pending')
     }
     
@@ -206,17 +213,17 @@ export const PointRedemption: React.FC = () => {
   const userRequests = redemptionRequests.filter(req => req.userId === currentUser?.id)
 
   return (
-    <div className="space-y-6" id="point-redemption">
+    <div className="space-y-4 sm:space-y-6" id="point-redemption">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
           💰 Point Redemption
         </h1>
-        <p className="text-muted-foreground">Convert your hard-earned points into cash!</p>
-        <div className="mt-4 p-4 rounded-lg border bg-card/80 backdrop-blur-sm">
+        <p className="text-sm sm:text-base text-muted-foreground">Convert your hard-earned points into cash!</p>
+        <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-lg border bg-card/80 backdrop-blur-sm">
           <div className="flex items-center justify-center space-x-2 text-foreground">
-            <Calculator className="w-5 h-5 text-primary" />
-            <span className="font-medium">
+            <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="text-sm sm:text-base font-medium">
               Current Rate: {conversionRate} points = $1.00
             </span>
           </div>
@@ -226,18 +233,18 @@ export const PointRedemption: React.FC = () => {
       {/* Available Points Display */}
       {currentUserStats && (
         <Card className="bg-gradient-to-br from-success/10 via-primary/10 to-accent/10 border-success/20 dark:from-success/20 dark:via-primary/20 dark:to-accent/20 dark:border-success/800">
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="text-center">
-              <div className="flex items-center justify-center space-x-3 mb-3">
-                <div className="p-3 bg-success/20 dark:bg-success/30 rounded-full">
-                  <Coins className="w-8 h-8 text-success" />
+              <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3">
+                <div className="p-2 sm:p-3 bg-success/20 dark:bg-success/30 rounded-full">
+                  <Coins className="w-6 h-6 sm:w-8 sm:h-8 text-success" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Your Available Points</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Your Available Points</h2>
               </div>
-              <div className="text-4xl font-bold text-success mb-2">
+              <div className="text-3xl sm:text-4xl font-bold text-success mb-2">
                 {currentUserStats.earnedPoints.toLocaleString()}
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground px-2">
                 You can redeem these points for cash at the current rate of {conversionRate} points = $1.00
               </p>
               
@@ -256,8 +263,8 @@ export const PointRedemption: React.FC = () => {
                 </div>
               )}
               
-              <div className="mt-3 p-3 bg-primary/10 dark:bg-primary/20 rounded-lg border border-success/20 dark:border-success-800">
-                <span className="text-lg font-medium text-foreground">
+              <div className="mt-3 p-2 sm:p-3 bg-primary/10 dark:bg-primary/20 rounded-lg border border-success/20 dark:border-success-800">
+                <span className="text-base sm:text-lg font-medium text-foreground">
                   Maximum Cash Value: ${((currentUserStats.earnedPoints / conversionRate)).toFixed(2)}
                 </span>
               </div>
@@ -274,43 +281,40 @@ export const PointRedemption: React.FC = () => {
               <div className="p-2 bg-primary/20 dark:bg-primary/30 rounded-full">
                 <Settings className="w-5 h-5 text-primary" />
               </div>
-              <span>{currentUser?.role === 'parent' ? 'Parent Controls' : 'Admin Controls'}</span>
+              <span>Admin Controls</span>
             </CardTitle>
             <CardDescription>
-              {currentUser?.role === 'parent' 
-                ? 'Review and approve redemption requests from your kids'
-                : 'Manage conversion rates and approve redemption requests'
-              }
+              Manage conversion rates and approve redemption requests
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Admin Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{pendingRequests.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100">{pendingRequests.length}</p>
               </div>
               <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                   <span className="text-sm font-medium text-green-800 dark:text-green-200">Approved</span>
                 </div>
-                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{redemptionRequests.filter(req => req.status === 'approved').length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-900 dark:text-green-100">{redemptionRequests.filter(req => req.status === 'approved').length}</p>
               </div>
               <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                   <span className="text-sm font-medium text-red-800 dark:text-red-200">Rejected</span>
                 </div>
-                <p className="text-2xl font-bold text-red-900 dark:text-red-100">{redemptionRequests.filter(req => req.status === 'rejected').length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-red-900 dark:text-red-100">{redemptionRequests.filter(req => req.status === 'rejected').length}</p>
               </div>
             </div>
             
             {/* Conversion Rate Settings - Admin Only */}
-            {currentUser?.role === 'admin' && (
+            {canApproveRedemptions && (
               <>
                 <div className="flex items-center space-x-4">
                   <Button
@@ -378,22 +382,21 @@ export const PointRedemption: React.FC = () => {
                 <Clock className="w-5 h-5 text-orange-500" />
                 <h3 className="font-medium text-foreground">
                   Pending Redemption Requests ({pendingRequests.length})
-                  {currentUser?.role === 'parent' && ' - From Your Kids'}
                 </h3>
               </div>
               
               {pendingRequests.length > 0 ? (
                 pendingRequests.map((request) => (
-                  <div key={request.id} className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
+                  <div key={request.id} className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-2 mb-2">
                           {getRoleIcon(request.userRole)}
-                          <p className="font-medium text-foreground">{request.userName}</p>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleColor(request.userRole)}`}>
+                          <p className="font-medium text-foreground truncate">{request.userName}</p>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getRoleColor(request.userRole)}`}>
                             {request.userRole.charAt(0).toUpperCase() + request.userRole.slice(1)}
                           </span>
-                          <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full border border-orange-200 dark:border-orange-700">
+                          <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full border border-orange-200 dark:border-orange-700 flex-shrink-0">
                             Pending
                           </span>
                         </div>
@@ -401,10 +404,10 @@ export const PointRedemption: React.FC = () => {
                           <span className="font-medium">{request.pointsRequested} points</span> = <span className="font-bold text-green-600 dark:text-green-400">${request.cashAmount}</span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Requested: {request.requestedAt.toLocaleDateString()} at {request.requestedAt.toLocaleTimeString()}
+                          Requested: {request.requestedAt.toLocaleDateString()}<span className="hidden sm:inline"> at {request.requestedAt.toLocaleTimeString()}</span>
                         </p>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2 flex-shrink-0">
                         <Button
                           onClick={() => handleConfirmAction(request.id, 'approve')}
                           size="sm"
@@ -444,10 +447,7 @@ export const PointRedemption: React.FC = () => {
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
                   <p className="text-foreground font-medium">No pending redemption requests</p>
                   <p className="text-sm text-muted-foreground">
-                    {currentUser?.role === 'parent' 
-                      ? 'Your kids haven\'t requested any redemptions yet!'
-                      : 'All requests have been processed!'
-                    }
+                    All requests have been processed!
                   </p>
                 </div>
               )}
@@ -520,8 +520,8 @@ export const PointRedemption: React.FC = () => {
             You have {currentUserStats?.earnedPoints || 0} points available
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="pointsToRedeem" className="block text-sm font-medium text-foreground mb-2">
                 Points to Redeem

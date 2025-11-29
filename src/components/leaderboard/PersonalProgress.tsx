@@ -5,6 +5,7 @@ import { UserStats } from '../../types/user'
 import { useUserProgress } from '../../hooks/useUserProgress'
 import { useAnimationDelays } from '../../hooks/useAnimationDelays'
 import { APP_CONFIG } from '../../config/constants'
+import { getDisplayName } from '../../utils/convexHelpers'
 
 interface PersonalProgressProps {
   currentUser: User
@@ -32,7 +33,7 @@ export const PersonalProgress: React.FC<PersonalProgressProps> = React.memo(({
             <span className="text-6xl animate-float">{currentUser.avatar}</span>
             <div>
               <h2 className="text-3xl font-bold text-foreground animate-slide-in">
-                {currentUser.name}
+                {getDisplayName(currentUser.name, currentUser.email)}
               </h2>
               <div className="flex items-center justify-center lg:justify-start space-x-2 mt-2">
                 <span className="text-2xl animate-float">{currentLevelData?.icon || '🌱'}</span>

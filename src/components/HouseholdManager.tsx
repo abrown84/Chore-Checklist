@@ -8,6 +8,7 @@ import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useAuth } from '../hooks/useAuth'
 import { useChores } from '../contexts/ChoreContext'
 import { ROLE_PERMISSIONS } from '../types/user'
+import { getDisplayName } from '../utils/convexHelpers'
 import {
   Users,
   UserPlus,
@@ -680,7 +681,7 @@ export const HouseholdManager: React.FC = () => {
                     </div>
                     {invite.inviter && (
                       <p className="text-sm text-gray-600">
-                        Invited by {invite.inviter.name || invite.inviter.email || 'Unknown'}
+                        Invited by {getDisplayName(invite.inviter.name, invite.inviter.email)}
                       </p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">

@@ -27,7 +27,7 @@ export const ChoreProgress: React.FC = () => {
     // Calculate level based on earned points
     let currentLevel = 1
     let currentLevelPoints = earnedPoints
-    let pointsToNextLevel = 100
+    let pointsToNextLevel = 25 // Default to Level 2 requirement
     
     for (let i = 0; i < LEVELS.length; i++) {
       if (earnedPoints >= LEVELS[i].pointsRequired) {
@@ -68,7 +68,7 @@ export const ChoreProgress: React.FC = () => {
       longestStreak: 0,
       currentLevel: 1,
       currentLevelPoints: 0,
-      pointsToNextLevel: 100,
+      pointsToNextLevel: 25, // Default to Level 2 requirement
       lastActive: new Date()
     }
   }

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../hooks/useStats'
@@ -28,13 +30,32 @@ export const ProfileAndRewards: React.FC = () => {
   const { state: { currentUser }, updateCurrentUser } = useUsers()
   const { getUserStats } = useStats()
   
+  // Convex mutation for updating user profile
+  const updateUserProfile = useMutation(api.users.updateUserProfile)
+  
   // Access chore repair function
   const repairDefaultUserChores = choreContext?.repairDefaultUserChores
 
   // State management
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Initialize avatar from current user's saved avatar
+  const getInitialAvatar = useCallback(() => {
+    if (!currentUser?.avatar) return 'default'
+    // If avatar is a data URL (custom avatar), return 'custom'
+    if (currentUser.avatar.startsWith('data:image/')) {
+      return 'custom'
+    }
+    // If avatar is a dicebear identifier (e.g., 'avatar_2'), return it
+    if (currentUser.avatar.startsWith('avatar_')) {
+      return currentUser.avatar
+    }
+    // Otherwise return the saved value or default
+    return currentUser.avatar || 'default'
+  }, [currentUser?.avatar])
+  
   const [selectedCustomizations, setSelectedCustomizations] = useState<ProfileCustomization>({
-    avatar: 'default',
+    avatar: getInitialAvatar(),
     theme: 'default',
     border: 'none',
     background: 'default',
@@ -43,8 +64,34 @@ export const ProfileAndRewards: React.FC = () => {
     font: 'default',
     effect: 'none'
   })
-  const [customAvatar, setCustomAvatar] = useState<string | null>(null)
+  
+  // Initialize custom avatar if user has one saved
+  const getInitialCustomAvatar = useCallback(() => {
+    if (!currentUser?.avatar) return null
+    // If avatar is a data URL, return it
+    if (currentUser.avatar.startsWith('data:image/')) {
+      return currentUser.avatar
+    }
+    return null
+  }, [currentUser?.avatar])
+  
+  const [customAvatar, setCustomAvatar] = useState<string | null>(getInitialCustomAvatar())
   const [avatarName, setAvatarName] = useState<string>('')
+  
+  // Update avatar state when currentUser changes
+  React.useEffect(() => {
+    const newAvatar = getInitialAvatar()
+    const newCustomAvatar = getInitialCustomAvatar()
+    setSelectedCustomizations(prev => {
+      if (prev.avatar !== newAvatar) {
+        return { ...prev, avatar: newAvatar }
+      }
+      return prev
+    })
+    if (newCustomAvatar !== customAvatar) {
+      setCustomAvatar(newCustomAvatar)
+    }
+  }, [currentUser?.avatar])
 
   // Derived state
   const userStats = currentUser ? getUserStats(currentUser.id) : undefined
@@ -105,11 +152,45 @@ export const ProfileAndRewards: React.FC = () => {
     }
   }, [repairDefaultUserChores])
 
-  const handleCustomizationChange = (category: keyof ProfileCustomization, value: string) => {
+  const handleCustomizationChange = async (category: keyof ProfileCustomization, value: string) => {
     setSelectedCustomizations(prev => ({
       ...prev,
       [category]: value
     }))
+    
+    // Persist avatar changes to Convex database
+    if (category === 'avatar') {
+      try {
+        // Convert avatar selection to avatarUrl format
+        // For dicebear avatars, store the identifier (e.g., 'avatar_2')
+        // For custom avatars, store the base64 data URL
+        // For default, store 'default' or empty string
+        let avatarUrl: string | undefined
+        if (value === 'custom' && customAvatar) {
+          // Store the base64 custom avatar
+          avatarUrl = customAvatar
+        } else if (value === 'default') {
+          // Store 'default' or empty to use default avatar
+          avatarUrl = 'default'
+        } else if (value.startsWith('avatar_')) {
+          // Store the dicebear avatar identifier
+          avatarUrl = value
+        }
+        
+        if (avatarUrl !== undefined) {
+          await updateUserProfile({ avatarUrl })
+          // Also update local state for immediate UI feedback
+          updateCurrentUser({ avatar: avatarUrl })
+        }
+      } catch (error) {
+        console.error('Failed to update avatar:', error)
+        // Revert the local state change on error
+        setSelectedCustomizations(prev => ({
+          ...prev,
+          [category]: currentUser?.avatar || 'default'
+        }))
+      }
+    }
   }
 
   // Avatar upload handlers
@@ -132,22 +213,40 @@ export const ProfileAndRewards: React.FC = () => {
       }
 
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const result = e.target?.result as string
         setCustomAvatar(result)
         setAvatarName(file.name)
         setSelectedCustomizations(prev => ({ ...prev, avatar: 'custom' }))
+        
+        // Persist custom avatar to Convex database
+        try {
+          await updateUserProfile({ avatarUrl: result })
+          // Also update local state for immediate UI feedback
+          updateCurrentUser({ avatar: result })
+        } catch (error) {
+          console.error('Failed to save custom avatar:', error)
+        }
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const removeCustomAvatar = () => {
+  const removeCustomAvatar = async () => {
     setCustomAvatar(null)
     setAvatarName('')
     setSelectedCustomizations(prev => ({ ...prev, avatar: 'default' }))
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+    
+    // Persist default avatar to Convex database
+    try {
+      await updateUserProfile({ avatarUrl: 'default' })
+      // Also update local state for immediate UI feedback
+      updateCurrentUser({ avatar: 'default' })
+    } catch (error) {
+      console.error('Failed to remove custom avatar:', error)
     }
   }
 
@@ -166,8 +265,15 @@ export const ProfileAndRewards: React.FC = () => {
         currentUser={currentUser}
         userStats={userStats}
         onUpdateUser={async (updates: any) => {
-          updateCurrentUser(updates)
-          return Promise.resolve()
+          try {
+            // Update in Convex database (this will trigger reactive updates in leaderboard)
+            await updateUserProfile(updates)
+            // Also update local state for immediate UI feedback
+            updateCurrentUser(updates)
+          } catch (error) {
+            console.error('Failed to update user profile:', error)
+            throw error
+          }
         }}
         onRepairLevels={handleRepairLevels}
       />

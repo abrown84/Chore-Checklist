@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { useUsers } from '../contexts/UserContext'
 import { Users, Baby, GraduationCap, Crown, UserCheck, ArrowRight } from 'lucide-react'
 import { ROLE_PERMISSIONS } from '../types/user'
+import { getDisplayName } from '../utils/convexHelpers'
 
 export const RoleSystemDemo: React.FC = () => {
   const { state, updateMemberRole } = useUsers()
@@ -78,14 +79,11 @@ export const RoleSystemDemo: React.FC = () => {
               <h3 className="font-semibold mb-2">Current User</h3>
               <div className="flex items-center space-x-2 mb-2">
                 {currentUser && getRoleIcon(currentUser.role)}
-                <span className="font-medium">{currentUser?.name || 'None'}</span>
+                <span className="font-medium">{getDisplayName(currentUser?.name, currentUser?.email)}</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(currentUser?.role || 'member')}`}>
                   {currentUser?.role || 'member'}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {currentUser?.email || 'No email'}
-              </p>
             </div>
             
             <div className="p-4 border rounded-lg">
@@ -120,16 +118,15 @@ export const RoleSystemDemo: React.FC = () => {
                   <div className="text-2xl">{member.avatar}</div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold">{member.name}</h3>
+                      <h3 className="font-semibold">{getDisplayName(member.name, member.email)}</h3>
                       {getRoleIcon(member.role)}
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
                         {member.role}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
                     {member.parentId && (
                       <p className="text-xs text-blue-600">
-                        Parent: {members.find(m => m.id === member.parentId)?.name || 'Unknown'}
+                        Parent: {getDisplayName(members.find(m => m.id === member.parentId)?.name, members.find(m => m.id === member.parentId)?.email)}
                       </p>
                     )}
                   </div>

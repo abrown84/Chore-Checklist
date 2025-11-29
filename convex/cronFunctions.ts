@@ -221,23 +221,23 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
   // Calculate streaks
   const { currentStreak, longestStreak } = calculateStreaks(completions);
 
-  // Calculate level
+  // Calculate level - MUST MATCH frontend LEVELS in src/types/chore.ts
   const LEVELS = [
     { level: 1, pointsRequired: 0 },
-    { level: 2, pointsRequired: 100 },
-    { level: 3, pointsRequired: 250 },
-    { level: 4, pointsRequired: 500 },
-    { level: 5, pointsRequired: 1000 },
-    { level: 6, pointsRequired: 2000 },
-    { level: 7, pointsRequired: 3500 },
-    { level: 8, pointsRequired: 5500 },
-    { level: 9, pointsRequired: 8000 },
-    { level: 10, pointsRequired: 12000 },
+    { level: 2, pointsRequired: 25 },
+    { level: 3, pointsRequired: 75 },
+    { level: 4, pointsRequired: 150 },
+    { level: 5, pointsRequired: 300 },
+    { level: 6, pointsRequired: 500 },
+    { level: 7, pointsRequired: 1000 },
+    { level: 8, pointsRequired: 2000 },
+    { level: 9, pointsRequired: 3500 },
+    { level: 10, pointsRequired: 5000 },
   ];
 
   let currentLevel = 1;
   let currentLevelPoints = earnedPoints;
-  let pointsToNextLevel = 100;
+  let pointsToNextLevel = 25; // Default to Level 2 requirement (25 points)
 
   for (let i = LEVELS.length - 1; i >= 0; i--) {
     if (earnedPoints >= LEVELS[i].pointsRequired) {
@@ -252,8 +252,8 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     }
   }
 
-  // Calculate efficiency score
-  const efficiencyScore = calculateEfficiencyScore(userChores, completedChores);
+  // Calculate efficiency score - pass completions and longestStreak for accurate calculation
+  const efficiencyScore = calculateEfficiencyScore(userChores, completedChores, completions, longestStreak);
 
   const now = Date.now();
   const stats = {
@@ -324,12 +324,102 @@ function calculateStreaks(completions: any[]) {
 }
 
 // Helper function: Calculate efficiency score
-function calculateEfficiencyScore(userChores: any[], completedChores: any[]) {
+// MUST MATCH frontend calculateEfficiencyScore in src/utils/statsCalculations.ts
+function calculateEfficiencyScore(userChores: any[], completedChores: any[], completions: any[] = [], longestStreak: number = 0) {
   if (userChores.length === 0) return 0;
-  
+
+  // 1. Lifetime Completion Rate (30% weight) - Most important factor
   const completionRate = completedChores.length / userChores.length;
-  const averagePoints = completedChores.reduce((sum, chore) => sum + (chore.finalPoints || chore.points), 0) / Math.max(completedChores.length, 1);
   
-  // Efficiency score combines completion rate and average points
-  return Math.round((completionRate * 50) + (averagePoints / 10));
+  // 2. Lifetime Timeliness Score (25% weight) - Rewards consistent early completion over time
+  let timelinessScore = 0;
+  let totalTimeliness = 0;
+  let validTimelinessChores = 0;
+  
+  // Use completions table if available for more accurate timeliness data
+  if (completions.length > 0) {
+    completions.forEach((completion: any) => {
+      const chore = userChores.find((c: any) => c._id === completion.choreId);
+      if (chore && chore.dueDate) {
+        const completedDate = completion.completedAt;
+        const dueDate = chore.dueDate;
+        const timeDiff = dueDate - completedDate;
+        const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+        
+        // Reward early completion, penalize late completion
+        if (daysDiff > 0) {
+          // Completed early - reward up to +1
+          totalTimeliness += Math.min(1, daysDiff / 7); // Cap at 1 week early
+        } else if (daysDiff < 0) {
+          // Completed late - penalize up to -1
+          totalTimeliness += Math.max(-1, daysDiff / 7); // Cap at 1 week late
+        }
+        validTimelinessChores++;
+      }
+    });
+  } else {
+    // Fallback to using chore data directly
+    completedChores.forEach((chore: any) => {
+      if (chore.completedAt && chore.dueDate) {
+        const completedDate = chore.completedAt;
+        const dueDate = chore.dueDate;
+        const timeDiff = dueDate - completedDate;
+        const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+        
+        if (daysDiff > 0) {
+          totalTimeliness += Math.min(1, daysDiff / 7);
+        } else if (daysDiff < 0) {
+          totalTimeliness += Math.max(-1, daysDiff / 7);
+        }
+        validTimelinessChores++;
+      }
+    });
+  }
+  
+  timelinessScore = validTimelinessChores > 0 ? totalTimeliness / validTimelinessChores : 0;
+  
+  // 3. Difficulty Balance (20% weight) - Rewards tackling harder chores
+  const difficultyDistribution: Record<string, number> = {};
+  completedChores.forEach((chore: any) => {
+    const difficulty = chore.difficulty || 'medium';
+    difficultyDistribution[difficulty] = (difficultyDistribution[difficulty] || 0) + 1;
+  });
+  
+  const totalCompleted = completedChores.length;
+  const difficultyBalance = totalCompleted > 0 ? (
+    ((difficultyDistribution.hard || 0) * 1.5 + 
+     (difficultyDistribution.medium || 0) * 1.0 + 
+     (difficultyDistribution.easy || 0) * 0.5) / totalCompleted
+  ) : 0;
+  
+  // 4. Streak Consistency (15% weight) - Rewards maintaining streaks
+  const streakConsistency = totalCompleted > 0 ? Math.min(1, longestStreak / totalCompleted) : 0;
+  
+  // 5. Points Efficiency (10% weight) - Rewards earning more points from available chores
+  const baseEarnedPoints = completedChores.reduce((sum: number, c: any) => {
+    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points;
+    return sum + earnedPoints;
+  }, 0);
+  
+  const resetChoresPoints = userChores.reduce((sum: number, c: any) => {
+    if (c.status !== "completed" && c.finalPoints !== undefined) {
+      return sum + c.finalPoints;
+    }
+    return sum;
+  }, 0);
+  
+  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints;
+  const totalPotentialPoints = userChores.reduce((sum: number, c: any) => sum + (c.points || 0), 0);
+  const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0;
+  
+  // Calculate weighted lifetime efficiency score (0-100 scale)
+  const efficiencyScore = (
+    completionRate * 30 +
+    (timelinessScore + 1) * 12.5 + // Normalize timeliness to 0-2 range, then scale
+    difficultyBalance * 20 +
+    streakConsistency * 15 +
+    pointsEfficiency * 10
+  );
+  
+  return Math.round(efficiencyScore * 100) / 100;
 }

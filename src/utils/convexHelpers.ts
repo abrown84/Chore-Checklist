@@ -39,6 +39,22 @@ export function choreToConvexArgs(chore: Omit<Chore, "id" | "createdAt" | "compl
   };
 }
 
+// Helper function to get a safe display name (never exposes email addresses)
+export function getDisplayName(name?: string | null, email?: string | null): string {
+  // Only use name if it exists and is non-empty
+  if (name && name.trim().length > 0) {
+    return name.trim();
+  }
+  // For privacy, never expose email addresses in the UI
+  // Extract a friendly display name from email if available, otherwise use generic fallback
+  if (email) {
+    const emailName = email.split('@')[0];
+    // Capitalize first letter and make it more friendly
+    return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  }
+  return 'Unknown User';
+}
+
 // Convert Convex household member to frontend User type
 export function convexMemberToUser(member: any): User {
   return {

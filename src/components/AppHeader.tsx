@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { ThemeToggle } from './ThemeToggle'
 import { LogOut, Trash2, Menu, X } from 'lucide-react'
 import newLogo from '../brand_assets/DGlogo.png'
+import { getDisplayName } from '../utils/convexHelpers'
 
 interface AppHeaderProps {
   user: any
@@ -27,8 +28,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/40 border-b border-border shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
             <div 
@@ -51,7 +52,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               {isDemoMode ? (
                 <span className="text-amber-600 font-medium">Demo Mode</span>
               ) : (
-                <>Welcome, <span className="font-medium text-foreground">{user?.name || user?.email}</span></>
+                <>Welcome, <span className="font-medium text-foreground">{getDisplayName(user?.name, user?.email)}</span></>
               )}
             </div>
             <div className="flex items-center space-x-2">
@@ -100,7 +101,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               {isDemoMode ? (
                 <span className="text-amber-600 font-medium">Demo Mode</span>
               ) : (
-                <span className="font-medium text-foreground">{user?.name || user?.email}</span>
+                <span className="font-medium text-foreground">{getDisplayName(user?.name, user?.email)}</span>
               )}
             </div>
             <ThemeToggle />

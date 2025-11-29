@@ -255,18 +255,18 @@ export const updateUserLevel = mutation({
     const userPoints = user.points || 0;
     const currentLevel = user.level || 1;
 
-    // Level calculation based on points
+    // Level calculation based on points - MUST MATCH frontend LEVELS in src/types/chore.ts
     const LEVELS = [
       { level: 1, pointsRequired: 0 },
-      { level: 2, pointsRequired: 100 },
-      { level: 3, pointsRequired: 250 },
-      { level: 4, pointsRequired: 500 },
-      { level: 5, pointsRequired: 1000 },
-      { level: 6, pointsRequired: 2000 },
-      { level: 7, pointsRequired: 3500 },
-      { level: 8, pointsRequired: 5500 },
-      { level: 9, pointsRequired: 8000 },
-      { level: 10, pointsRequired: 12000 },
+      { level: 2, pointsRequired: 25 },
+      { level: 3, pointsRequired: 75 },
+      { level: 4, pointsRequired: 150 },
+      { level: 5, pointsRequired: 300 },
+      { level: 6, pointsRequired: 500 },
+      { level: 7, pointsRequired: 1000 },
+      { level: 8, pointsRequired: 2000 },
+      { level: 9, pointsRequired: 3500 },
+      { level: 10, pointsRequired: 5000 },
     ];
 
     let newLevel = 1;

@@ -5,6 +5,7 @@ import { UserStats } from '../../types/user'
 import { LEVELS } from '../../types/chore'
 import { APP_CONFIG } from '../../config/constants'
 import { useAnimationDelays } from '../../hooks/useAnimationDelays'
+import { getDisplayName } from '../../utils/convexHelpers'
 
 interface LevelOverviewProps {
   members: User[]
@@ -39,7 +40,7 @@ export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members
               <div className="flex items-center space-x-3">
                 <span className="text-lg animate-float">{member.avatar}</span>
                 <div>
-                  <p className="font-medium text-foreground text-sm">{member.name || member.email || 'Unknown User'}</p>
+                  <p className="font-medium text-foreground text-sm">{getDisplayName(member.name, member.email)}</p>
                   <div className="flex items-center space-x-1">
                     <span className="text-sm animate-float">{levelData?.icon || '🌱'}</span>
                     <span className="text-xs text-muted-foreground">Lv {stats?.currentLevel || 1}</span>

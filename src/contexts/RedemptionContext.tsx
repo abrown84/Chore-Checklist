@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api'
 import { Id } from '../../convex/_generated/dataModel'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useUsers } from './UserContext'
+import { getDisplayName } from '../utils/convexHelpers'
 
 export interface RedemptionRequest {
   id: string
@@ -78,7 +79,7 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
       return {
         id: req._id,
         userId: req.userId,
-        userName: user?.name || 'Unknown',
+        userName: getDisplayName(user?.name, user?.email),
         userRole: user?.role || 'member',
         pointsRequested: req.pointsRequested,
         cashAmount: req.cashAmount,
