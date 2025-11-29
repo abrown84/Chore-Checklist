@@ -9,6 +9,8 @@ import { ThemeToggle } from './ThemeToggle'
 import { useDemo } from '../contexts/DemoContext'
 import { PageWrapper } from './PageWrapper'
 import { useAuth } from '../hooks/useAuth'
+import { usePWAInstall } from '../hooks/usePWAInstall'
+import { PWAInstallGuide } from './PWAInstallGuide'
 import { useState, useRef, useEffect } from 'react'
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, X } from 'lucide-react'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
@@ -52,6 +54,7 @@ const demoLeaders = [
 export default function LandingPage() {
 	const { enterDemoMode } = useDemo()
 	const { signIn, signUp } = useAuth()
+	const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
 	const [showAuthModal, setShowAuthModal] = useState(false)
 	const [isSignUp, setIsSignUp] = useState(false)
 	const [email, setEmail] = useState('')
@@ -64,6 +67,7 @@ export default function LandingPage() {
 	const [showPassword, setShowPassword] = useState(false)
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+	const [showInstallGuide, setShowInstallGuide] = useState(false)
 	
 	const passwordRef = useRef<HTMLInputElement>(null)
 	const emailRef = useRef<HTMLInputElement>(null)
@@ -190,6 +194,49 @@ export default function LandingPage() {
 			window.history.replaceState(null, '', window.location.pathname)
 		}
 	}
+
+	const handleGetAppClick = async () => {
+		console.log('Get app clicked', { 
+			isInstallable, 
+			isInstalled,
+			userAgent: navigator.userAgent,
+			standalone: window.matchMedia('(display-mode: standalone)').matches
+		});
+		
+		// If already installed, just open auth
+		if (isInstalled) {
+			openAuthModal()
+			return
+		}
+		
+		// Try to install if available
+		if (isInstallable) {
+			try {
+				console.log('Attempting to prompt for installation');
+				const installed = await promptInstall()
+				if (!installed) {
+					console.log('User dismissed installation prompt');
+					// If user dismissed, show install guide instead
+					setShowInstallGuide(true)
+				} else {
+					console.log('Installation accepted');
+				}
+				// If installed successfully, the app will reload
+			} catch (error) {
+				console.error('Error during installation:', error)
+				// Show install guide on error
+				setShowInstallGuide(true)
+			}
+		} else {
+			console.log('Installation prompt not available', {
+				reason: 'beforeinstallprompt event not captured - showing manual install guide',
+				isInstallable,
+				isInstalled
+			});
+			// Show installation guide instead of auth modal
+			setShowInstallGuide(true)
+		}
+	}
 	
 	return (
 		<PageWrapper showBackground={true}>
@@ -218,8 +265,8 @@ export default function LandingPage() {
 						<Button variant="ghost" className="hidden lg:inline-flex" size="sm" onClick={openAuthModal}>
 							Sign in
 						</Button>
-						<Button className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm" onClick={openAuthModal}>
-							Get the app
+						<Button className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm" onClick={handleGetAppClick}>
+							{isInstallable && !isInstalled ? 'Install app' : 'Get the app'}
 						</Button>
 					</div>
 				</div>
@@ -715,6 +762,73 @@ export default function LandingPage() {
 										</div>
 									</div>
 								</CardContent>
+							</Card>
+						</motion.div>
+					</>
+				)}
+			</AnimatePresence>
+
+			{/* Install Guide Modal */}
+			<AnimatePresence>
+				{showInstallGuide && (
+					<>
+						{/* Backdrop */}
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							onClick={() => setShowInstallGuide(false)}
+							className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+						/>
+						{/* Modal */}
+						<motion.div
+							initial={{ opacity: 0, scale: 0.95, y: 20 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.95, y: 20 }}
+							className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+							onClick={(e) => e.stopPropagation()}
+						>
+							<Card className="w-full max-w-2xl border-border bg-card/95 backdrop-blur-md shadow-xl my-8">
+								<CardHeader className="pb-4">
+									<div className="flex items-center justify-between">
+										<div>
+											<h2 className="text-xl font-heading font-semibold">
+												Install The Daily Grind
+											</h2>
+											<p className="text-sm text-muted-foreground mt-1">
+												Follow these steps to install the app on your device
+											</p>
+										</div>
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => setShowInstallGuide(false)}
+											className="h-8 w-8"
+										>
+											<X className="h-4 w-4" />
+										</Button>
+									</div>
+								</CardHeader>
+								<CardContent className="max-h-[70vh] overflow-y-auto">
+									<PWAInstallGuide />
+								</CardContent>
+								<CardFooter className="flex justify-between">
+									<Button
+										variant="outline"
+										onClick={() => setShowInstallGuide(false)}
+									>
+										Close
+									</Button>
+									<Button
+										onClick={() => {
+											setShowInstallGuide(false)
+											openAuthModal()
+										}}
+										className="bg-amber-400 text-slate-900 hover:bg-amber-300"
+									>
+										Sign In Instead
+									</Button>
+								</CardFooter>
 							</Card>
 						</motion.div>
 					</>

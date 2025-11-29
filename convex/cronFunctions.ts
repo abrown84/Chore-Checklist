@@ -20,10 +20,10 @@ export const resetDailyChores = internalMutation({
 
     // Reset completed daily chores to pending
     for (const chore of completedDailyChores) {
-      // Set new due date for tomorrow
+      // Set new due date for tomorrow at 6:00 PM
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(23, 59, 59, 999); // End of tomorrow
+      tomorrow.setHours(18, 0, 0, 0); // 6:00 PM tomorrow
 
       await ctx.db.patch(chore._id, {
         status: "pending",
@@ -58,10 +58,10 @@ export const resetWeeklyChores = internalMutation({
 
     // Reset completed weekly chores to pending
     for (const chore of completedWeeklyChores) {
-      // Set new due date for next week
+      // Set new due date for next week at 6:00 PM
       const nextWeek = new Date(today);
       nextWeek.setDate(nextWeek.getDate() + 7);
-      nextWeek.setHours(23, 59, 59, 999); // End of next week
+      nextWeek.setHours(18, 0, 0, 0); // 6:00 PM next week
 
       await ctx.db.patch(chore._id, {
         status: "pending",
@@ -99,7 +99,7 @@ export const resetMonthlyChores = internalMutation({
       // Set new due date for next month
       const nextMonth = new Date(today);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
-      nextMonth.setHours(23, 59, 59, 999); // End of next month
+      nextMonth.setHours(18, 0, 0, 0); // 6:00 PM next month
 
       await ctx.db.patch(chore._id, {
         status: "pending",
@@ -114,6 +114,51 @@ export const resetMonthlyChores = internalMutation({
 
     console.log(`Reset ${completedMonthlyChores.length} monthly chores`);
     return { resetCount: completedMonthlyChores.length };
+  },
+});
+
+// Internal mutation: Reset seasonal chores
+export const resetSeasonalChores = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    
+    // Only run on first day of each quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+    const month = today.getMonth(); // 0 = Jan, 3 = Apr, 6 = Jul, 9 = Oct
+    if (month !== 0 && month !== 3 && month !== 6 && month !== 9) {
+      console.log(`Skipping seasonal reset - not a quarter start month (current month: ${month + 1})`);
+      return { resetCount: 0, skipped: true };
+    }
+    
+    // Get all seasonal chores that are completed
+    const completedSeasonalChores = await ctx.db
+      .query("chores")
+      .withIndex("by_category", (q) => q.eq("category", "seasonal"))
+      .filter((q) => q.eq(q.field("status"), "completed"))
+      .collect();
+
+    // Reset completed seasonal chores to pending
+    for (const chore of completedSeasonalChores) {
+      // Set new due date for next season (3 months)
+      const nextSeason = new Date(today);
+      nextSeason.setMonth(nextSeason.getMonth() + 3);
+      nextSeason.setHours(18, 0, 0, 0); // 6:00 PM next season
+
+      await ctx.db.patch(chore._id, {
+        status: "pending",
+        completedAt: undefined,
+        completedBy: undefined,
+        finalPoints: undefined,
+        bonusMessage: undefined,
+        dueDate: nextSeason.getTime(),
+        updatedAt: now,
+      });
+    }
+
+    console.log(`Reset ${completedSeasonalChores.length} seasonal chores`);
+    return { resetCount: completedSeasonalChores.length };
   },
 });
 

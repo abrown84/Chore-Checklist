@@ -7,7 +7,6 @@ interface AppLayoutProps {
   onTabChange: (tab: string) => void
   isDemoMode: boolean
   onSignOut: () => void
-  onClearCredentials: () => void
   onExitDemo: () => void
   onGoHome: () => void
   user: any
@@ -21,7 +20,6 @@ export function AppLayout({
   onTabChange,
   isDemoMode,
   onSignOut,
-  onClearCredentials,
   onExitDemo,
   onGoHome,
   user,
@@ -42,7 +40,6 @@ export function AppLayout({
           onTabChange={onTabChange}
           isDemoMode={isDemoMode}
           onSignOut={onSignOut}
-          onClearCredentials={onClearCredentials}
           onExitDemo={onExitDemo}
           onGoHome={onGoHome}
           user={user}

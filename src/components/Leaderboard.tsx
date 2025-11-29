@@ -129,10 +129,10 @@ export const Leaderboard: React.FC = React.memo(() => {
       {/* Header */}
       <div className="text-center animate-fade-in">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 sm:mb-3 animate-slide-in bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          📊 Daily Grind Dashboard
+          🏆 Leaderboard
         </h1>
         <p className="text-base sm:text-lg md:text-xl text-muted-foreground animate-fade-in px-2" style={{ animationDelay: '0.2s' }}>
-          Track progress, compete, and celebrate achievements together!
+          See how you rank against your household and compete to be at the top!
         </p>
       </div>
 

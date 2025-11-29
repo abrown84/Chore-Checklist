@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { CheckCircle, Download, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { usePWAInstall } from '../contexts/PWAInstallContext';
 
 // Conditional import for PWA registration
 let registerSW: any = null;
@@ -24,7 +25,7 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
   const [offlineReady, setOfflineReady] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   useEffect(() => {
     // Register service worker
@@ -44,26 +45,18 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Handle install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+    // Show install prompt when installable
+    if (isInstallable && !isInstalled) {
       setShowInstallPrompt(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    } else {
       setShowInstallPrompt(false);
     }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [isInstallable, isInstalled]);
 
   const handleRefresh = () => {
     setNeedRefresh(false);
@@ -71,19 +64,14 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
   };
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowInstallPrompt(false);
-        setDeferredPrompt(null);
-      }
+    const installed = await promptInstall();
+    if (installed) {
+      setShowInstallPrompt(false);
     }
   };
 
   const handleDismissInstall = () => {
     setShowInstallPrompt(false);
-    setDeferredPrompt(null);
   };
 
   if (!needRefresh && !offlineReady && !showInstallPrompt && isOnline) {

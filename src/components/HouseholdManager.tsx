@@ -7,7 +7,6 @@ import { Button } from './ui/button'
 import { Avatar } from './ui/Avatar'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useAuth } from '../hooks/useAuth'
-import { useChores } from '../contexts/ChoreContext'
 import { ROLE_PERMISSIONS } from '../types/user'
 import { getDisplayName } from '../utils/convexHelpers'
 import {
@@ -32,7 +31,6 @@ import {
 export const HouseholdManager: React.FC = () => {
   const { user: currentUser } = useAuth()
   const householdId = useCurrentHousehold()
-  const { resetChores } = useChores()
   
   // Queries
   const household = useQuery(
@@ -960,38 +958,14 @@ export const HouseholdManager: React.FC = () => {
             </div>
 
             {/* Admin Data Management */}
-            <div className="mt-6 p-4 border border-red-200 rounded-lg bg-red-50">
-              <h4 className="font-medium text-red-900 mb-3 flex items-center">
-                <Settings className="w-4 h-4 mr-2" />
-                Data Management (Admin/Parent Only)
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {currentUserRole === 'admin' && (
+              <div className="mt-6 p-4 border border-red-200 rounded-lg bg-red-50">
+                <h4 className="font-medium text-red-900 mb-3 flex items-center">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Data Management (Admin/Parent Only)
+                </h4>
                 <div>
-                  <h5 className="font-medium text-red-800 mb-2">Clear All Chores</h5>
-                  <p className="text-sm text-red-700 mb-3">
-                    This will remove all chores and reset the chore system. This action cannot be
-                    undone.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Are you sure you want to clear all chores? This action cannot be undone.'
-                        )
-                      ) {
-                        resetChores()
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    Clear All Chores
-                  </Button>
-                </div>
-                {currentUserRole === 'admin' && (
-                  <div>
-                    <h5 className="font-medium text-red-800 mb-2">Delete Household</h5>
+                  <h5 className="font-medium text-red-800 mb-2">Delete Household</h5>
                     <p className="text-sm text-red-700 mb-3">
                       This will permanently delete the entire household and all associated data. This action cannot be undone.
                     </p>
@@ -1037,10 +1011,9 @@ export const HouseholdManager: React.FC = () => {
                         </div>
                       </div>
                     )}
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

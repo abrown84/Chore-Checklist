@@ -1,15 +1,13 @@
 import React from 'react'
 import { Button } from './ui/button'
 import { ThemeToggle } from './ThemeToggle'
-import { LogOut, Trash2, Menu, X } from 'lucide-react'
-import newLogo from '../brand_assets/DGlogo.png'
+import { LogOut, Menu, X, Sparkles } from 'lucide-react'
 import { getDisplayName } from '../utils/convexHelpers'
 
 interface AppHeaderProps {
   user: any
   isDemoMode: boolean
   onSignOut: () => void
-  onClearCredentials: () => void
   onExitDemo: () => void
   onGoHome: () => void
   onMenuToggle?: () => void
@@ -20,7 +18,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   user,
   isDemoMode,
   onSignOut,
-  onClearCredentials,
   onExitDemo,
   onGoHome,
   onMenuToggle,
@@ -37,8 +34,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={onGoHome} 
               aria-label="Go to home"
             >
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
-                <img src={newLogo} alt="The Daily Grind" className="h-4 w-4 sm:h-6 sm:w-6" />
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-foreground shadow-sm">
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-brand font-bold text-foreground">
                 The Daily Grind
@@ -79,17 +76,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
-                </Button>
-              )}
-              {!isDemoMode && user?.role === 'admin' && (
-                <Button 
-                  onClick={onClearCredentials}
-                  variant="destructive"
-                  size="sm"
-                  className="flex items-center space-x-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden xl:inline">Clear Data</span>
                 </Button>
               )}
             </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
 import { useAuth } from './hooks/useAuth'
-import { useChores } from './contexts/ChoreContext'
 import { useUsers } from './contexts/UserContext'
 import { useDemo } from './contexts/DemoContext'
 import { AppHeader } from './components/AppHeader'
@@ -13,8 +12,7 @@ import { MigrationBanner } from './components/MigrationBanner'
 
 function AppContentWrapper() {
   const { user, signOut } = useAuth()
-  const { clearChoreState } = useChores()
-  const { syncWithAuth, resetUserState } = useUsers()
+  const { syncWithAuth } = useUsers()
   const { isDemoMode, exitDemoMode } = useDemo()
   const [activeTab, setActiveTab] = useState('chores')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -51,17 +49,6 @@ function AppContentWrapper() {
     }
   }
 
-  const handleClearCredentials = () => {
-    // Clear stored credentials by removing from localStorage
-    localStorage.removeItem('choreAppUser')
-    localStorage.removeItem('choreAppUsers')
-    localStorage.removeItem('chores')
-    
-    // Clear all application state - this is intentional data clearing
-    clearChoreState()
-    resetUserState()
-    signOut()
-  }
 
   const handleGoHome = () => {
     setActiveTab('chores')
@@ -79,7 +66,6 @@ function AppContentWrapper() {
         user={user}
         isDemoMode={isDemoMode}
         onSignOut={handleSignOut}
-        onClearCredentials={handleClearCredentials}
         onExitDemo={exitDemoMode}
         onGoHome={handleGoHome}
         onMenuToggle={toggleMobileMenu}
@@ -92,7 +78,6 @@ function AppContentWrapper() {
         onTabChange={setActiveTab}
         isDemoMode={isDemoMode}
         onSignOut={handleSignOut}
-        onClearCredentials={handleClearCredentials}
         onExitDemo={exitDemoMode}
         onGoHome={handleGoHome}
         user={user}

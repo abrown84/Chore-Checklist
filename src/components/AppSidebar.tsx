@@ -1,7 +1,6 @@
 import React from 'react'
 import { Button } from './ui/button'
-import { LogOut, Trash2, X } from 'lucide-react'
-import newLogo from '../brand_assets/DGlogo.png'
+import { LogOut, X, Sparkles } from 'lucide-react'
 import { navigationItems } from '../config/navigation'
 
 interface AppSidebarProps {
@@ -9,7 +8,6 @@ interface AppSidebarProps {
   onTabChange: (tab: string) => void
   isDemoMode: boolean
   onSignOut: () => void
-  onClearCredentials: () => void
   onExitDemo: () => void
   onGoHome: () => void
   user: any
@@ -22,7 +20,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onTabChange,
   isDemoMode,
   onSignOut,
-  onClearCredentials,
   onExitDemo,
   onGoHome,
   user,
@@ -47,8 +44,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               onClick={onGoHome} 
               aria-label="Go to home"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
-                <img src={newLogo} alt="The Daily Grind" className="h-5 w-5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-foreground shadow-sm">
+                <Sparkles className="h-4 w-4" />
               </div>
               <h2 className="text-base xl:text-lg font-brand font-semibold text-foreground">
                 Daily Grind
@@ -90,6 +87,22 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <span className="font-body font-medium text-sm xl:text-base">{item.label}</span>
             </button>
           ))}
+          {/* Admin Control Panel - Only visible to admins */}
+          {!isDemoMode && user?.role === 'admin' && (
+            <button
+              onClick={() => handleTabChange('admin')}
+              className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg text-left transition-all duration-200 ${
+                activeTab === 'admin'
+                  ? 'bg-amber-500/10 border border-amber-500/20 text-amber-600 shadow-sm'
+                  : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600 hover:shadow-sm'
+              }`}
+            >
+              <span className={`text-lg ${activeTab === 'admin' ? 'text-amber-600' : 'text-amber-500'}`}>
+                ⚙️
+              </span>
+              <span className="font-body font-medium text-sm xl:text-base">Admin Panel</span>
+            </button>
+          )}
         </nav>
 
         {/* Sidebar Footer */}
@@ -106,29 +119,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 Exit Demo
               </Button>
             ) : (
-              <>
-                <Button 
-                  onClick={onSignOut} 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full flex items-center justify-center text-sm border-border hover:bg-accent/50"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span>Sign Out</span>
-                </Button>
-                {user?.role === 'admin' && (
-                  <Button 
-                    onClick={onClearCredentials}
-                    variant="destructive"
-                    size="sm"
-                    className="w-full flex items-center justify-center space-x-2 text-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Clear Data</span>
-                  </Button>
-                )}
-              </>
+              <Button 
+                onClick={onSignOut} 
+                variant="outline" 
+                size="sm"
+                className="w-full flex items-center justify-center text-sm border-border hover:bg-accent/50"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                <span>Sign Out</span>
+              </Button>
             )}
           </div>
         </div>
