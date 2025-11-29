@@ -238,8 +238,11 @@ export default function LandingPage() {
 		}
 	}
 	
+	// Penguin pointing meme background from imgflip template 258651081
+	const penguinMemeUrl = '/penguin-pointing-meme.mp4'
+	
 	return (
-		<PageWrapper showBackground={true}>
+		<PageWrapper showBackground={true} backgroundImage={penguinMemeUrl} backgroundOpacity={0.4}>
 			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
 					<div className="flex items-center gap-2 sm:gap-3">
