@@ -6,7 +6,6 @@ import { useStats } from '../hooks/useStats'
 import { useRedemption, RedemptionRequest } from '../contexts/RedemptionContext'
 import { DollarSign, Coins, Calculator, Settings, AlertCircle, CheckCircle, XCircle, Clock, UserCheck, Users, Baby, GraduationCap, TrendingUp, Shield } from 'lucide-react'
 import { LEVELS } from '../types/chore'
-import { ROLE_PERMISSIONS } from '../types/user'
 import { getDisplayName } from '../utils/convexHelpers'
 
 export const PointRedemption: React.FC = () => {
