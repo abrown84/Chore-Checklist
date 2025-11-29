@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Edit, Save, X, CheckCircle } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Avatar } from '../ui/Avatar'
 import { LEVELS } from '../../types/chore'
 
 interface ProfileHeaderProps {
@@ -78,9 +79,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         {/* User Info Section */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
+            <Avatar
+              key={`header-avatar-${currentUser?.id}-${currentUser?.avatar}`}
+              avatarUrl={currentUser?.avatar}
+              userName={currentUser?.name}
+              userId={currentUser?.id}
+              size="lg"
+              showBorder
+              borderColor="border-white dark:border-gray-700"
+            />
             <div>
               {isEditingName ? (
                 <div className="flex items-center space-x-2">

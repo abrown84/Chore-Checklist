@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
-import { LEVELS } from '../types/chore'
 import { ChorePopupCelebration, usePopupCelebrations } from './ChorePopupCelebration'
-import { ChoreHeader } from './chores/ChoreHeader'
 import { ChoreFilters } from './chores/ChoreFilters'
 import { ChoreDisplay } from './chores/ChoreDisplay'
 import { useChoreList } from '../hooks/useChoreList'
@@ -11,18 +9,6 @@ import { useChoreList } from '../hooks/useChoreList'
 export const ChoreList: React.FC = memo(() => {
   const { state, completeChore, deleteChore } = useChores()
   const { state: userState } = useUsers()
-  
-  // Get current user stats from the user state
-  const currentUserStats = useMemo(() => {
-    if (!userState.currentUser) return null
-    return userState.memberStats.find(stats => stats.userId === userState.currentUser?.id) || null
-  }, [userState.currentUser, userState.memberStats])
-  
-  // Get next level data for progress display
-  const nextLevelData = useMemo(() => 
-    LEVELS.find(level => level.level === (currentUserStats?.currentLevel || 1) + 1), 
-    [currentUserStats?.currentLevel]
-  )
   
   // Animation state
   const [animatingChores, setAnimatingChores] = useState<Set<string>>(new Set())
@@ -135,17 +121,6 @@ export const ChoreList: React.FC = memo(() => {
         onRemove={removeCelebration}
       />
       
-      {/* Header with stats and controls */}
-      <ChoreHeader
-        currentLevel={currentUserStats?.currentLevel || 1}
-        currentLevelPoints={currentUserStats?.currentLevelPoints || 0}
-        nextLevelPoints={nextLevelData?.pointsRequired || 100}
-        viewMode={choreListLogic.viewMode}
-        groupByCategory={choreListLogic.groupByCategory}
-        onViewModeChange={choreListLogic.setViewMode}
-        onGroupByCategoryChange={choreListLogic.setGroupByCategory}
-      />
-
       {/* Filters */}
       <ChoreFilters
         filter={choreListLogic.filter}

@@ -1,7 +1,6 @@
 import React, { lazy, Suspense } from 'react'
 import { ChoreList } from './ChoreList'
 import { AddChoreForm } from './AddChoreForm'
-import { ChoreProgress } from './ChoreProgress'
 import { PointsCounter } from './PointsCounter'
 import { LevelUpCelebration } from './LevelUpCelebration'
 import { PWAInstaller } from './PWAInstaller'
@@ -39,9 +38,6 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
         <div className="space-y-8">
           {/* Points Counter */}
           <PointsCounter />
-          
-          {/* Chore Progress */}
-          <ChoreProgress />
           
           {/* Chore List */}
           <ChoreList />

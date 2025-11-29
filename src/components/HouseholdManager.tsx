@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api'
 import { Id } from '../../convex/_generated/dataModel'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { Avatar } from './ui/Avatar'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useAuth } from '../hooks/useAuth'
 import { useChores } from '../contexts/ChoreContext'
@@ -800,7 +801,12 @@ export const HouseholdManager: React.FC = () => {
                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{member.avatar}</div>
+                  <Avatar 
+                    avatarUrl={member.avatar}
+                    userName={member.name}
+                    userId={member.id}
+                    size="md"
+                  />
                   <div>
                     {editingMemberId === member.id ? (
                       <div className="space-y-2">

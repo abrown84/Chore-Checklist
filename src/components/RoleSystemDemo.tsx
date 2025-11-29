@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Avatar } from './ui/Avatar'
 import { useUsers } from '../contexts/UserContext'
 import { Users, Baby, GraduationCap, Crown, UserCheck, ArrowRight } from 'lucide-react'
 import { ROLE_PERMISSIONS } from '../types/user'
@@ -115,7 +116,12 @@ export const RoleSystemDemo: React.FC = () => {
             {members.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{member.avatar}</div>
+                  <Avatar 
+                    avatarUrl={member.avatar}
+                    userName={member.name}
+                    userId={member.id}
+                    size="md"
+                  />
                   <div>
                     <div className="flex items-center space-x-2">
                       <h3 className="font-semibold">{getDisplayName(member.name, member.email)}</h3>

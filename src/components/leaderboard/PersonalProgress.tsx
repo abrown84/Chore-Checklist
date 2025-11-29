@@ -6,6 +6,7 @@ import { useUserProgress } from '../../hooks/useUserProgress'
 import { useAnimationDelays } from '../../hooks/useAnimationDelays'
 import { APP_CONFIG } from '../../config/constants'
 import { getDisplayName } from '../../utils/convexHelpers'
+import { Avatar } from '../ui/Avatar'
 
 interface PersonalProgressProps {
   currentUser: User
@@ -30,7 +31,13 @@ export const PersonalProgress: React.FC<PersonalProgressProps> = React.memo(({
         {/* User Level & Avatar */}
         <div className="text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start space-x-4 mb-4">
-            <span className="text-6xl animate-float">{currentUser.avatar}</span>
+            <Avatar 
+              avatarUrl={currentUser.avatar}
+              userName={currentUser.name}
+              userId={currentUser.id}
+              size={64}
+              showBorder
+            />
             <div>
               <h2 className="text-3xl font-bold text-foreground animate-slide-in">
                 {getDisplayName(currentUser.name, currentUser.email)}

@@ -18,16 +18,17 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
   const getRewardsForLevel = (level: number) => {
     const rewards: string[] = []
     
-    if (level >= 1) rewards.push('Default Avatar', 'Default Theme', 'Default Border', 'Default Background')
-    if (level >= 2) rewards.push('Professional Avatar', 'Green Theme', 'Simple Border', 'Subtle Pattern', 'Serif Font')
-    if (level >= 3) rewards.push('Bot Style Avatar', 'Blue Theme', 'Custom Avatar Upload', 'Fade In Animation', 'Shadow Effect')
-    if (level >= 4) rewards.push('Geometric Avatar', 'Purple-Pink Theme', 'Rounded Border', 'Geometric Pattern', 'Monospace Font')
-    if (level >= 5) rewards.push('Persona Avatar', 'Yellow-Orange Theme', 'Slide In Animation', 'Glow Effect')
-    if (level >= 6) rewards.push('Lorelei Avatar', 'Red-Pink Theme', 'Gradient Border', 'Gradient Background', 'Display Font')
-    if (level >= 7) rewards.push('Micah Avatar', 'Indigo-Purple Theme', 'Bounce Animation')
-    if (level >= 8) rewards.push('Mini Avatar', 'Pink-Rose Theme', 'Animated Border', 'Animated Background', 'Handwriting Font')
-    if (level >= 9) rewards.push('Shapes Avatar', 'Emerald-Teal Theme', 'Pulse Animation', '3D Effect')
-    if (level >= 10) rewards.push('Thumbs Avatar', 'Amber-Yellow Theme')
+    // Only show actual functional rewards (emoji avatars)
+    if (level >= 1) rewards.push('Default Avatar', '🤢 Nauseated Avatar', '🤮 Vomiting Avatar')
+    if (level >= 2) rewards.push('😴 Sleepy Avatar', '🥱 Yawning Avatar')
+    if (level >= 3) rewards.push('😑 Expressionless Avatar', '😐 Neutral Avatar', 'Custom Avatar Upload')
+    if (level >= 4) rewards.push('🙂 Slight Smile Avatar', '😏 Smirking Avatar')
+    if (level >= 5) rewards.push('😊 Smiling Avatar', '🙃 Upside Down Avatar')
+    if (level >= 6) rewards.push('😄 Grinning Avatar', '😁 Beaming Avatar')
+    if (level >= 7) rewards.push('😎 Cool Avatar', '🤗 Hugging Avatar')
+    if (level >= 8) rewards.push('🤩 Star-Struck Avatar', '🥳 Partying Avatar')
+    if (level >= 9) rewards.push('😇 Angel Avatar', '🙏 Praying Avatar')
+    if (level >= 10) rewards.push('👼 Baby Angel Avatar', '🤴 Prince Avatar')
     
     return rewards
   }

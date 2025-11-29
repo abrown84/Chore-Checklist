@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Eye } from 'lucide-react'
-import { AVATAR_SOURCES } from '../../utils/mediaSources'
+import { Avatar } from '../ui/Avatar'
 
 interface ProfilePreviewProps {
   selectedCustomizations: {
@@ -29,53 +29,20 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({
   badgeOptions,
   badgeStyles
 }) => {
-  const getAvatarGradient = (name: string) => {
-    const colors = [
-      'from-blue-400 to-blue-600',
-      'from-green-400 to-green-600',
-      'from-purple-400 to-purple-600',
-      'from-pink-400 to-pink-600',
-      'from-yellow-400 to-yellow-600',
-      'from-red-400 to-red-600'
-    ]
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return colors[hash % colors.length]
-  }
-
   const getAvatarDisplay = () => {
-    if (selectedCustomizations.avatar === 'custom' && customAvatar) {
-      return (
-        <img 
-          src={customAvatar} 
-          alt="Custom Avatar" 
-          className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-        />
-      )
-    }
-    
-    if (selectedCustomizations.avatar === 'default') {
-      return (
-        <div className={`w-20 h-20 bg-gradient-to-br ${getAvatarGradient(currentUser?.name || 'default')} rounded-full flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg`}>
-          {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
-        </div>
-      )
-    }
-    
-    if (selectedCustomizations.avatar.startsWith('avatar_')) {
-      const avatarUrl = AVATAR_SOURCES.dicebear.getAvatarUrl(selectedCustomizations.avatar, 'user')
-      return (
-        <img 
-          src={avatarUrl} 
-          alt={`Avatar ${selectedCustomizations.avatar}`} 
-          className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-        />
-      )
-    }
+    const avatarUrl = selectedCustomizations.avatar === 'custom' 
+      ? customAvatar || selectedCustomizations.avatar
+      : selectedCustomizations.avatar
     
     return (
-      <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 border-4 border-white shadow-lg">
-        ?
-      </div>
+      <Avatar
+        avatarUrl={avatarUrl}
+        userName={currentUser?.name}
+        userId={currentUser?.id}
+        size="xl"
+        showBorder
+        borderColor="border-white"
+      />
     )
   }
 

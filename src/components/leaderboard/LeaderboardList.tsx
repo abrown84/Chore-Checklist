@@ -5,6 +5,7 @@ import { getEfficiencyBadge, getRankColor, getRankIcon } from '../../hooks/useLe
 import { useRedemption } from '../../contexts/RedemptionContext'
 import { APP_CONFIG } from '../../config/constants'
 import { getDisplayName } from '../../utils/convexHelpers'
+import { Avatar } from '../ui/Avatar'
 
 interface LeaderboardMember {
   id: string
@@ -61,7 +62,12 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-card dark:bg-card/80 text-sm font-bold shadow-sm border border-border flex-shrink-0">
                   {getRankIcon(index)}
                 </div>
-                <span className="text-xl flex-shrink-0">{member.avatar}</span>
+                <Avatar 
+                  avatarUrl={member.avatar}
+                  userName={member.name}
+                  userId={member.id}
+                  size="sm"
+                />
                 <div className="min-w-0 flex-1">
                   <h4 className="font-semibold text-foreground flex items-center flex-wrap gap-2">
                     <span className="truncate">{getDisplayName(member.name, member.email)}</span>
