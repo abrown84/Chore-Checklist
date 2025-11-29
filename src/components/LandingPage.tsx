@@ -1,5 +1,5 @@
 
-import newLogo from '../brand_assets/DGlogo.png'
+import { Logo } from './Logo'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from './ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
@@ -25,10 +25,6 @@ import {
 	CheckCircle,
 	ChevronRight,
 } from 'lucide-react'
-
-function Logo({ className = 'h-8 w-8' }: { className?: string }) {
-    return <img src={newLogo} alt="The Daily Grind logo" className={className} />
-}
 
 const fadeUp = {
 	hidden: { opacity: 0, y: 16 },
@@ -246,10 +242,10 @@ export default function LandingPage() {
 			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
 					<div className="flex items-center gap-2 sm:gap-3">
-						<div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
-							<Logo className="h-4 w-4 sm:h-6 sm:w-6" />
+						<div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+							<Logo className="h-8 w-8 sm:h-10 sm:w-10" />
 						</div>
-						<div className="text-sm sm:text-lg font-brand font-bold tracking-tight">THE DAILY GRIND</div>
+						<div className="text-sm sm:text-lg font-brand font-bold tracking-tight">DAILY BAG</div>
 						<Badge className="ml-1 sm:ml-2 bg-amber-400 text-slate-900 text-xs">Beta</Badge>
 					</div>
 					<nav className="hidden items-center gap-4 lg:gap-6 md:flex">
@@ -291,7 +287,7 @@ export default function LandingPage() {
 						Household management that feels like a game
 					</h1>
 					<p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground font-body">
-						The Daily Grind blends real life goals and routines with  levels, and leaderboards. Designed for families and or anyone who wants to gamify their life.
+						Daily Bag blends real life goals and routines with  levels, and leaderboards. Designed for families and or anyone who wants to gamify their life.
 					</p>
 					<div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
 						<Button 
@@ -472,10 +468,10 @@ export default function LandingPage() {
 			<footer className="border-t border-border bg-background/60">
 				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 md:flex-row">
 					<div className="flex items-center gap-3 text-muted-foreground">
-						<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-foreground">
-							<Logo className="h-5 w-5" />
+						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
+							<Logo className="h-8 w-8" />
 						</div>
-						<span className="text-sm">© {new Date().getFullYear()} The Daily Grind</span>
+						<span className="text-sm">© {new Date().getFullYear()} Daily Bag</span>
 					</div>
 					<div className="flex items-center gap-6 text-sm text-muted-foreground">
 						<a href="#" className="hover:text-foreground">Privacy</a>
@@ -796,7 +792,7 @@ export default function LandingPage() {
 									<div className="flex items-center justify-between">
 										<div>
 											<h2 className="text-xl font-heading font-semibold">
-												Install The Daily Grind
+												Install Daily Bag
 											</h2>
 											<p className="text-sm text-muted-foreground mt-1">
 												Follow these steps to install the app on your device

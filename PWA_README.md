@@ -1,6 +1,6 @@
 # Progressive Web App (PWA) Features
 
-The Daily Grind has been converted into a Progressive Web App, providing users with a native app-like experience directly from their web browser.
+Daily Bag has been converted into a Progressive Web App, providing users with a native app-like experience directly from their web browser.
 
 ## 🚀 PWA Features
 
@@ -177,4 +177,4 @@ npm run preview
 
 ---
 
-The Daily Grind PWA provides a modern, app-like experience that enhances user engagement and accessibility while maintaining the core functionality of the chore management system.
+Daily Bag PWA provides a modern, app-like experience that enhances user engagement and accessibility while maintaining the core functionality of the chore management system.

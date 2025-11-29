@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  daily-grind-app:
+  daily-bag-app:
     build: .
     ports:
       - "8080:3000"

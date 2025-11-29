@@ -1,8 +1,9 @@
 import React from 'react'
 import { Button } from './ui/button'
 import { ThemeToggle } from './ThemeToggle'
-import { LogOut, Menu, X, Sparkles } from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
 import { getDisplayName } from '../utils/convexHelpers'
+import { Logo } from './Logo'
 
 interface AppHeaderProps {
   user: any
@@ -34,11 +35,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={onGoHome} 
               aria-label="Go to home"
             >
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-foreground shadow-sm">
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+                <Logo className="h-8 w-8 sm:h-10 sm:w-10" />
               </div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-brand font-bold text-foreground">
-                The Daily Grind
+                Daily Bag
               </h1>
             </div>
           </div>

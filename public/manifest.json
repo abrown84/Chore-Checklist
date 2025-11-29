@@ -1,6 +1,6 @@
 {
-  "name": "The Daily Grind - Chore Checklist",
-  "short_name": "Daily Grind",
+  "name": "Daily Bag - Chore Checklist",
+  "short_name": "Daily Bag",
   "description": "A gamified chore checklist app to make daily tasks fun and rewarding",
   "start_url": "/",
   "display": "standalone",

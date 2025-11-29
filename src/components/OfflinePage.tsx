@@ -18,7 +18,7 @@ export const OfflinePage: React.FC<OfflinePageProps> = ({ onRetry, onGoHome }) =
           </div>
           <CardTitle className="text-2xl font-bold">You're Offline</CardTitle>
           <p className="text-muted-foreground">
-            The Daily Grind is currently offline. Some features may not be available.
+            Daily Bag is currently offline. Some features may not be available.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

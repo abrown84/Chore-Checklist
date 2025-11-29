@@ -1,7 +1,8 @@
 import React from 'react'
 import { Button } from './ui/button'
-import { LogOut, X, Sparkles } from 'lucide-react'
+import { LogOut, X } from 'lucide-react'
 import { navigationItems } from '../config/navigation'
+import { Logo } from './Logo'
 
 interface AppSidebarProps {
   activeTab: string
@@ -44,11 +45,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               onClick={onGoHome} 
               aria-label="Go to home"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-foreground shadow-sm">
-                <Sparkles className="h-4 w-4" />
+              <div className="flex h-12 w-12 xl:h-14 xl:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+                <Logo className="h-8 w-8 xl:h-10 xl:w-10" />
               </div>
               <h2 className="text-base xl:text-lg font-brand font-semibold text-foreground">
-                Daily Grind
+                Daily Bag
               </h2>
             </div>
             {/* Mobile Close Button */}

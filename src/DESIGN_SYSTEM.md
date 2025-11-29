@@ -1,6 +1,6 @@
-# Design System - The Daily Grind
+# Design System - Daily Bag
 
-This document outlines the unified design system used throughout The Daily Grind app, ensuring consistency from the landing page to the main application.
+This document outlines the unified design system used throughout Daily Bag app, ensuring consistency from the landing page to the main application.
 
 ## 🎨 Color Palette
 
@@ -238,4 +238,4 @@ export default function NewPage() {
 }
 ```
 
-This design system ensures that The Daily Grind maintains a cohesive, professional appearance across all pages and components while providing a delightful user experience.
+This design system ensures that Daily Bag maintains a cohesive, professional appearance across all pages and components while providing a delightful user experience.

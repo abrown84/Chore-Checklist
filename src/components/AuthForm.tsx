@@ -6,13 +6,9 @@ import { Input } from './ui/input'
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
 import { motion } from 'framer-motion'
-import newLogo from '../brand_assets/DGlogo.png'
+import { Logo } from './Logo'
 import { PageWrapper } from './PageWrapper'
 import { ThemeToggle } from './ThemeToggle'
-
-function Logo({ className = 'h-8 w-8' }: { className?: string }) {
-    return <img src={newLogo} alt="The Daily Grind logo" className={className} />
-}
 
 interface AuthFormProps {
   onSignIn: (email: string, password: string, rememberMe: boolean) => Promise<any>
@@ -147,10 +143,10 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
       <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
-              <Logo className="h-4 w-4 sm:h-6 sm:w-6" />
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+              <Logo className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
-            <div className="text-sm sm:text-lg font-brand font-bold tracking-tight">THE DAILY GRIND</div>
+            <div className="text-sm sm:text-lg font-brand font-bold tracking-tight">DAILY BAG</div>
             <Badge className="ml-1 sm:ml-2 bg-amber-400 text-slate-900 text-xs">Beta</Badge>
           </div>
           <nav className="hidden items-center gap-4 lg:gap-6 md:flex">
@@ -181,7 +177,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
           <div className="text-center">
             <div className="flex justify-center mb-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
-                <Logo className="h-6 w-6" />
+                <Logo className="h-8 w-8" />
               </div>
             </div>
             <h1 className="text-3xl font-heading font-bold text-foreground mb-2">

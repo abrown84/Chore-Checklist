@@ -49,8 +49,8 @@ export default defineConfig({
       },
       includeAssets: ['favicon.png', 'icon-512.png'],
       manifest: {
-        name: 'The Daily Grind - Chore Checklist',
-        short_name: 'Daily Grind',
+        name: 'Daily Bag - Chore Checklist',
+        short_name: 'Daily Bag',
         description: 'A gamified chore checklist app to make daily tasks fun and rewarding',
         theme_color: '#8b5cf6',
         background_color: '#1a1a1a',
