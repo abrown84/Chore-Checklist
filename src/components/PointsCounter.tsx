@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
 import { useChores } from '../contexts/ChoreContext'
 import { LEVELS } from '../types/chore'
+import { LevelMeme } from './profile/LevelMeme'
 import { Star, Crown, Target, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -167,7 +168,13 @@ export const PointsCounter: React.FC = () => {
             })()}
           </div>
           <p className="text-sm sm:text-base text-muted-foreground mb-1">{currentLevelData?.name}</p>
-          <div className="text-xs text-muted-foreground">{currentLevelData?.icon}</div>
+          <div className="text-xs text-muted-foreground mb-2">{currentLevelData?.icon}</div>
+          {/* Level Meme - Hidden on small screens, shown on larger */}
+          {currentLevelData && (
+            <div className="hidden sm:block max-w-[200px] mx-auto mt-2" style={{ aspectRatio: '4/3' }}>
+              <LevelMeme level={currentLevelData} className="h-full w-full" />
+            </div>
+          )}
         </div>
 
         {/* Points Display */}

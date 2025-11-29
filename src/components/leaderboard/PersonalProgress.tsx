@@ -7,6 +7,7 @@ import { useAnimationDelays } from '../../hooks/useAnimationDelays'
 import { APP_CONFIG } from '../../config/constants'
 import { getDisplayName } from '../../utils/convexHelpers'
 import { Avatar } from '../ui/Avatar'
+import { LevelMeme } from '../profile/LevelMeme'
 
 interface PersonalProgressProps {
   currentUser: User
@@ -51,6 +52,12 @@ export const PersonalProgress: React.FC<PersonalProgressProps> = React.memo(({
                   {currentLevelData?.name || 'Unknown'}
                 </span>
               </div>
+              {/* Level Meme */}
+              {currentLevelData && (
+                <div className="mt-4 max-w-[280px]" style={{ aspectRatio: '4/3' }}>
+                  <LevelMeme level={currentLevelData} className="h-full w-full" />
+                </div>
+              )}
             </div>
           </div>
         </div>

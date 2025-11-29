@@ -4,6 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Avatar } from '../ui/Avatar'
 import { LEVELS } from '../../types/chore'
+import { LevelMeme } from './LevelMeme'
 
 interface ProfileHeaderProps {
   currentUser: any
@@ -149,7 +150,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <div className="text-2xl font-bold text-blue-600">{currentLevel}</div>
             <div className="text-sm text-blue-600">Current Level</div>
             {currentLevelData && (
-              <div className="text-xs text-blue-500 mt-1">{currentLevelData.name}</div>
+              <>
+                <div className="text-xs text-blue-500 mt-1">{currentLevelData.name}</div>
+                {/* Level Meme */}
+                <div className="mt-3 w-full max-w-[200px] mx-auto" style={{ aspectRatio: '4/3' }}>
+                  <LevelMeme level={currentLevelData} className="h-full w-full" />
+                </div>
+              </>
             )}
           </div>
           

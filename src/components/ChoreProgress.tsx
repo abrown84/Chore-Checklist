@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
 import { Target, Star, Trophy, Crown, Award, CheckCircle } from 'lucide-react'
 import { LEVELS } from '../types/chore'
+import { LevelMeme } from './profile/LevelMeme'
 
 export const ChoreProgress: React.FC = () => {
   const { state, resetChores } = useChores()
@@ -125,6 +126,12 @@ export const ChoreProgress: React.FC = () => {
           <p className={`text-lg sm:text-xl font-medium mb-1 ${currentLevelData?.color}`}>
             {currentLevelData?.icon} {currentLevelData?.name}
           </p>
+          {/* Level Meme */}
+          {currentLevelData && (
+            <div className="mb-3 sm:mb-4 max-w-md mx-auto" style={{ aspectRatio: '4/3' }}>
+              <LevelMeme level={currentLevelData} className="h-full w-full" />
+            </div>
+          )}
           <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
             {stats.earnedPoints} total points earned
           </p>

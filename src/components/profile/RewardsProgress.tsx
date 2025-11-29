@@ -2,6 +2,7 @@ import React from 'react'
 import { Star, Lock, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { LEVELS } from '../../types/chore'
+import { LevelMeme } from './LevelMeme'
 
 interface RewardsProgressProps {
   currentLevel: number
@@ -151,6 +152,10 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
                   </div>
                   <div className="text-xs text-gray-600 mb-2">
                     {level.name}
+                  </div>
+                  {/* Level Meme - Smaller in overview grid */}
+                  <div className="mb-2 w-full" style={{ aspectRatio: '4/3', maxHeight: '100px' }}>
+                    <LevelMeme level={level} className="h-full w-full" />
                   </div>
                   <div className="text-xs text-gray-500">
                     {rewards.length} new rewards
