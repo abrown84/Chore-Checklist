@@ -27,7 +27,6 @@ import {
   Loader2,
   Trash2,
   Share2,
-  Copy,
 } from 'lucide-react'
 
 export const HouseholdManager: React.FC = () => {

@@ -322,7 +322,7 @@ export const sendInviteSMS = internalAction({
     joinCode: v.string(),
     inviteId: v.id("userInvites"),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     // Get Twilio credentials from environment
     // In Convex, environment variables are accessed via process.env
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;

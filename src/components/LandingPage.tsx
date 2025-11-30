@@ -9,7 +9,6 @@ import { ThemeToggle } from './ThemeToggle'
 import { useDemo } from '../contexts/DemoContext'
 import { PageWrapper } from './PageWrapper'
 import { useAuth } from '../hooks/useAuth'
-import { usePWAInstall } from '../hooks/usePWAInstall'
 import { PWAInstallGuide } from './PWAInstallGuide'
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from 'convex/react'
@@ -42,17 +41,9 @@ const features = [
 	{ icon: Sparkles, title: 'Customization', text: 'Themes, avatars, and profile perks as you level up.' },
 ]
 
-const demoLeaders = [
-	{ name: 'Alex', points: 1240, level: 12 },
-	{ name: 'Janice', points: 1190, level: 11 },
-	{ name: 'Jordan', points: 980, level: 10 },
-	{ name: 'Avery', points: 760, level: 8 },
-]
-
 export default function LandingPage() {
 	const { enterDemoMode } = useDemo()
 	const { signIn, signUp } = useAuth()
-	const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
 	const [showAuthModal, setShowAuthModal] = useState(false)
 	const [isSignUp, setIsSignUp] = useState(false)
 	const [email, setEmail] = useState('')
@@ -301,7 +292,7 @@ export default function LandingPage() {
 								globalLeaderboard.map((household, idx) => {
 									const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`
 									const avgLevel = household.members && household.members.length > 0
-										? Math.round(household.members.reduce((sum, m) => sum + (m.level || 1), 0) / household.members.length)
+										? Math.round(household.members.reduce((sum: number, m: { level?: number }) => sum + (m.level || 1), 0) / household.members.length)
 										: 1
 									return (
 										<div key={household.householdId} className="flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3">
