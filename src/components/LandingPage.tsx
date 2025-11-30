@@ -12,6 +12,8 @@ import { useAuth } from '../hooks/useAuth'
 import { usePWAInstall } from '../hooks/usePWAInstall'
 import { PWAInstallGuide } from './PWAInstallGuide'
 import { useState, useRef, useEffect } from 'react'
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, X } from 'lucide-react'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
 import {
@@ -64,6 +66,9 @@ export default function LandingPage() {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 	const [showInstallGuide, setShowInstallGuide] = useState(false)
+	
+	// Fetch public global leaderboard
+	const globalLeaderboard = useQuery(api.stats.getPublicGlobalLeaderboard, { limit: 5 })
 	
 	const passwordRef = useRef<HTMLInputElement>(null)
 	const emailRef = useRef<HTMLInputElement>(null)
@@ -191,49 +196,6 @@ export default function LandingPage() {
 		}
 	}
 
-	const handleGetAppClick = async () => {
-		console.log('Get app clicked', { 
-			isInstallable, 
-			isInstalled,
-			userAgent: navigator.userAgent,
-			standalone: window.matchMedia('(display-mode: standalone)').matches
-		});
-		
-		// If already installed, just open auth
-		if (isInstalled) {
-			openAuthModal()
-			return
-		}
-		
-		// Try to install if available
-		if (isInstallable) {
-			try {
-				console.log('Attempting to prompt for installation');
-				const installed = await promptInstall()
-				if (!installed) {
-					console.log('User dismissed installation prompt');
-					// If user dismissed, show install guide instead
-					setShowInstallGuide(true)
-				} else {
-					console.log('Installation accepted');
-				}
-				// If installed successfully, the app will reload
-			} catch (error) {
-				console.error('Error during installation:', error)
-				// Show install guide on error
-				setShowInstallGuide(true)
-			}
-		} else {
-			console.log('Installation prompt not available', {
-				reason: 'beforeinstallprompt event not captured - showing manual install guide',
-				isInstallable,
-				isInstalled
-			});
-			// Show installation guide instead of auth modal
-			setShowInstallGuide(true)
-		}
-	}
-	
 	// Penguin pointing meme background from imgflip template 258651081
 	const penguinMemeUrl = '/penguin-pointing-meme.mp4'
 	
@@ -261,11 +223,8 @@ export default function LandingPage() {
 					</nav>
 					<div className="flex items-center gap-2 sm:gap-3">
 						<ThemeToggle />
-						<Button variant="ghost" className="inline-flex" size="sm" onClick={openAuthModal}>
+						<Button className="bg-amber-500 text-slate-900 hover:bg-amber-400 inline-flex" size="sm" onClick={openAuthModal}>
 							Sign in
-						</Button>
-						<Button className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm" onClick={handleGetAppClick}>
-							{isInstallable && !isInstalled ? 'Install app' : 'Get the app'}
 						</Button>
 					</div>
 				</div>
@@ -284,10 +243,12 @@ export default function LandingPage() {
 						Turn chores into XP and real rewards
 					</div>
 					<h1 className="mt-4 sm:mt-6 text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight">
-						Household management that feels like a game
+						Get to the bag
+						<br className="hidden sm:block" />
+						<span className="text-amber-500 dark:text-amber-400">one chore at a time</span>
 					</h1>
 					<p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground font-body">
-						Daily Bag blends real life goals and routines with  levels, and leaderboards. Designed for families and or anyone who wants to gamify their life.
+						Turn your to-do list into a leaderboard. Earn points, unlock achievements, and make household chores feel like winning.
 					</p>
 					<div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
 						<Button 
@@ -302,14 +263,6 @@ export default function LandingPage() {
 					</div>
 					<div className="mt-4 sm:mt-6 text-xs text-muted-foreground">
 						Trusted by busy parents and motivated kids in 1,000+ homes
-					</div>
-					
-					{/* Demo Troubleshooting */}
-					<div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-						<div className="text-xs text-amber-800 dark:text-amber-200">
-							<strong>Demo not working?</strong> If you encounter issues, try refreshing the page or clearing your browser data. 
-							The demo creates temporary data that doesn't persist between sessions.
-						</div>
 					</div>
 				</motion.div>
 			</section>
@@ -337,27 +290,58 @@ export default function LandingPage() {
 					<Card className="border-border bg-card/40 backdrop-blur-sm">
 						<CardHeader>
 							<div className="flex items-center justify-between">
-								<h3 className="text-xl font-semibold">Live Leaderboard (demo)</h3>
-								<Badge className="bg-emerald-500 text-slate-900">Weekly</Badge>
+								<h3 className="text-xl font-semibold">Global Leaderboard</h3>
+								<Badge className="bg-amber-500 text-slate-900">Live</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-3">
-							{demoLeaders.map((u, idx) => (
-								<div key={u.name} className="flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3">
-									<div className="flex items-center gap-3">
-										<div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted font-semibold">{idx + 1}</div>
-										<div>
-											<div className="font-medium">{u.name}</div>
-											<div className="text-xs text-muted-foreground">Level {u.level}</div>
+							{globalLeaderboard === undefined ? (
+								<div className="text-center py-8 text-muted-foreground">Loading leaderboard...</div>
+							) : globalLeaderboard && globalLeaderboard.length > 0 ? (
+								globalLeaderboard.map((household, idx) => {
+									const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`
+									const avgLevel = household.members && household.members.length > 0
+										? Math.round(household.members.reduce((sum, m) => sum + (m.level || 1), 0) / household.members.length)
+										: 1
+									return (
+										<div key={household.householdId} className="flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3">
+											<div className="flex items-center gap-3">
+												<div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold">
+													{rankIcon}
+												</div>
+												<div>
+													<div className="font-medium">{household.householdName}</div>
+													<div className="text-xs text-muted-foreground">
+														{household.memberCount} {household.memberCount === 1 ? 'member' : 'members'} • Avg Lv {avgLevel}
+													</div>
+												</div>
+											</div>
+											<div className="flex items-center gap-2">
+												<Coins className="h-4 w-4 text-amber-500" />
+												<span className="font-semibold">{household.totalPoints.toLocaleString()}</span>
+											</div>
 										</div>
-									</div>
-									<div className="flex items-center gap-2"><Coins className="h-4 w-4" /><span className="font-semibold">{u.points}</span></div>
+									)
+								})
+							) : (
+								<div className="text-center py-8 text-muted-foreground">
+									<Trophy className="h-8 w-8 mx-auto mb-2 opacity-50" />
+									<p>No households yet. Be the first to join!</p>
 								</div>
-							))}
+							)}
 						</CardContent>
 						<CardFooter className="justify-between">
-							<div className="text-xs text-muted-foreground">Earn XP from chores, streaks, and goals.</div>
-							<Button variant="outline" className="border-border">Open full dashboard</Button>
+							<div className="text-xs text-muted-foreground">Top households by total points earned.</div>
+							<Button 
+								variant="outline" 
+								className="border-border"
+								onClick={() => {
+									setShowAuthModal(true)
+									window.location.hash = '#signin'
+								}}
+							>
+								Join the competition
+							</Button>
 						</CardFooter>
 					</Card>
 
@@ -419,7 +403,7 @@ export default function LandingPage() {
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button className="w-full bg-emerald-500 text-slate-900 hover:bg-emerald-400">Get started</Button>
+							<Button className="w-full bg-amber-500 text-slate-900 hover:bg-amber-400">Get started</Button>
 						</CardFooter>
 					</Card>
 

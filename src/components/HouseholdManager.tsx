@@ -26,6 +26,8 @@ import {
   Home,
   Loader2,
   Trash2,
+  Share2,
+  Copy,
 } from 'lucide-react'
 
 export const HouseholdManager: React.FC = () => {
@@ -51,7 +53,6 @@ export const HouseholdManager: React.FC = () => {
   const updateHousehold = useMutation(api.households.updateHousehold)
   const updateMemberRole = useMutation(api.households.updateMemberRole)
   const removeMember = useMutation(api.households.removeHouseholdMember)
-  const createInvite = useMutation(api.invites.createInvite)
   const acceptInviteMutation = useMutation(api.invites.acceptInvite)
   const declineInviteMutation = useMutation(api.invites.declineInvite)
   const joinHouseholdByCode = useMutation(api.households.joinHouseholdByCode)
@@ -64,8 +65,8 @@ export const HouseholdManager: React.FC = () => {
   const myInvites = useQuery(api.invites.getMyInvites, {})
   
   // Local state
-  const [inviteEmail, setInviteEmail] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [copied, setCopied] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -134,17 +135,49 @@ export const HouseholdManager: React.FC = () => {
     }
   }
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim() || !householdId) return
+  const handleShare = async () => {
+    if (!household || !household.joinCode) return
+
+    const shareText = `Join ${household.name} on Daily Bag! Use join code: ${household.joinCode}`
+
+    // Try Web Share API first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${household.name}`,
+          text: shareText,
+        })
+        return
+      } catch (error: any) {
+        // User cancelled or share failed, fall through to copy
+        if (error.name !== 'AbortError') {
+          console.error('Share failed:', error)
+        }
+      }
+    }
+
+    // Fallback: Copy to clipboard
     try {
-      await createInvite({
-        householdId,
-        email: inviteEmail.trim(),
-      })
-      setInviteEmail('')
-    } catch (error: any) {
-      console.error('Error creating invite:', error)
-      alert(error.message || 'Failed to create invite. Please try again.')
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = shareText
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        alert('Failed to copy. Please copy the join code manually.')
+      }
+      document.body.removeChild(textArea)
     }
   }
 
@@ -503,45 +536,6 @@ export const HouseholdManager: React.FC = () => {
             </div>
           </div>
           
-          {/* Join Code Section */}
-          {household.joinCode && (
-            <div className="mt-6 p-4 bg-card/40 backdrop-blur-sm border border-border rounded-lg shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Join Code
-                  </label>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <code className="text-2xl font-mono font-bold text-primary tracking-widest bg-primary/10 px-4 py-2.5 rounded-md border border-primary/20 shadow-sm">
-                      {household.joinCode}
-                    </code>
-                    {canManageHousehold && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          if (!householdId) return
-                          try {
-                            const result = await regenerateJoinCode({ householdId })
-                            alert(`New join code: ${result.joinCode}`)
-                          } catch (error: any) {
-                            alert(error.message || 'Failed to regenerate code')
-                          }
-                        }}
-                        className="text-xs"
-                      >
-                        <Edit3 className="w-3 h-3 mr-1" />
-                        Regenerate
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Share this code with others so they can join your household
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
           {!canManageHousehold && (
             <div className="mt-4 p-3 bg-card/40 backdrop-blur-sm border border-border rounded-lg">
               <p className="text-sm text-muted-foreground">
@@ -588,35 +582,71 @@ export const HouseholdManager: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Invite New Member - Admin/Parent Only */}
+      {/* Share Household - Admin/Parent Only */}
       {canManageHousehold && householdSettings.allowInvites ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <UserPlus className="w-6 h-6 text-green-500" />
+              <Share2 className="w-6 h-6 text-green-500" />
               <span>Invite New Member</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex space-x-2">
-                <input
-                  type="email"
-                  placeholder="Enter email address"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleInvite()
-                    }
-                  }}
-                />
-                <Button onClick={handleInvite} className="bg-green-600 hover:bg-green-700">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Invite
-                </Button>
-              </div>
+            <div className="space-y-4">
+              {/* Join Code Display */}
+              {household.joinCode && (
+                <div className="p-4 bg-card/40 backdrop-blur-sm border border-border rounded-lg">
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Household Join Code
+                  </label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <code className="text-2xl font-mono font-bold text-primary tracking-widest bg-primary/10 px-4 py-2.5 rounded-md border border-primary/20 shadow-sm">
+                      {household.joinCode}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleShare}
+                      className="flex items-center gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 text-green-600" />
+                          <span className="text-green-600">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-4 h-4" />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </Button>
+                    {canManageHousehold && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!householdId) return
+                          try {
+                            const result = await regenerateJoinCode({ householdId })
+                            alert(`New join code: ${result.joinCode}`)
+                          } catch (error: any) {
+                            alert(error.message || 'Failed to regenerate code')
+                          }
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Regenerate</span>
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Share this code with others so they can join your household. On mobile, use the share button to send via text, email, or other apps.
+                  </p>
+                </div>
+              )}
+              
               {householdSettings.requireApproval && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
                   ⚠️ New members will require approval before joining

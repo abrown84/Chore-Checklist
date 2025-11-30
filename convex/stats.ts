@@ -313,6 +313,110 @@ export const getGlobalLeaderboard = query({
   },
 });
 
+// Query: Get public global leaderboard (no authentication required)
+// This is used for the landing page to show top households
+export const getPublicGlobalLeaderboard = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 10; // Default to top 10
+
+    // Get all households
+    const allHouseholds = await ctx.db
+      .query("households")
+      .collect();
+
+    // Calculate total points for each household
+    const householdLeaderboard: any[] = [];
+
+    for (const household of allHouseholds) {
+      // Get all members of this household
+      const memberships = await ctx.db
+        .query("householdMembers")
+        .withIndex("by_household", (q: any) => q.eq("householdId", household._id))
+        .collect();
+      
+      if (memberships.length === 0) {
+        continue;
+      }
+
+      // Sum up points from all members
+      let totalHouseholdPoints = 0;
+      let memberCount = 0;
+      const memberDetails: any[] = [];
+
+      for (const membership of memberships) {
+        const user = await ctx.db.get(membership.userId);
+        if (!user) {
+          continue;
+        }
+
+        // Get user stats for points
+        const userStats = await ctx.db
+          .query("userStats")
+          .withIndex("by_user_household", (q: any) => 
+            q.eq("userId", membership.userId).eq("householdId", household._id))
+          .first();
+
+        let userPoints = user.points || 0;
+        
+        if (userPoints === 0 && userStats && userStats.earnedPoints > 0) {
+          userPoints = userStats.earnedPoints;
+        } else if (userPoints === 0) {
+          // Calculate from chore completions as last resort
+          const completions = await ctx.db
+            .query("choreCompletions")
+            .withIndex("by_user_household", (q: any) => 
+              q.eq("userId", membership.userId).eq("householdId", household._id))
+            .collect();
+          
+          userPoints = completions.reduce((sum, c) => sum + (c.pointsEarned || 0), 0);
+        }
+        
+        totalHouseholdPoints += userPoints;
+
+        // Extract first name from signup name
+        const getFirstName = (fullName: string | undefined | null): string => {
+          if (!fullName) return `User ${membership.userId.slice(0, 8)}`;
+          const firstName = fullName.trim().split(/\s+/)[0];
+          return firstName || `User ${membership.userId.slice(0, 8)}`;
+        };
+        
+        memberDetails.push({
+          userId: membership.userId,
+          name: getFirstName(user.name),
+          points: userPoints,
+          level: user.level || 1,
+        });
+
+        memberCount++;
+      }
+
+      // Skip households with no points
+      if (totalHouseholdPoints <= 0) {
+        continue;
+      }
+
+      householdLeaderboard.push({
+        householdId: household._id,
+        householdName: household.name,
+        totalPoints: totalHouseholdPoints,
+        earnedPoints: totalHouseholdPoints,
+        memberCount,
+        members: memberDetails.slice(0, 3), // Only show top 3 members
+      });
+    }
+
+    // Sort by total points (descending) and limit
+    const sorted = householdLeaderboard
+      .sort((a, b) => b.totalPoints - a.totalPoints)
+      .slice(0, limit);
+    
+    return sorted;
+  },
+});
+
 // Query: Debug global leaderboard (temporary - for debugging)
 // Note: This function doesn't require authentication for debugging purposes
 export const debugGlobalLeaderboard = query({

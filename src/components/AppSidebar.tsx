@@ -48,8 +48,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <div className="flex h-12 w-12 xl:h-14 xl:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
                 <Logo className="h-8 w-8 xl:h-10 xl:w-10" />
               </div>
-              <h2 className="text-base xl:text-lg font-brand font-semibold text-foreground">
-                Daily Bag
+              <h2 className="text-sm sm:text-base xl:text-lg font-brand font-bold tracking-tight text-foreground">
+                DAILY BAG
               </h2>
             </div>
             {/* Mobile Close Button */}

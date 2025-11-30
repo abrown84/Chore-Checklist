@@ -159,7 +159,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
             <Button asChild variant="ghost" className="hidden lg:inline-flex" size="sm">
               <a href="#signin">Sign in</a>
             </Button>
-            <Button asChild className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm">
+            <Button asChild className="bg-amber-500 text-slate-900 hover:bg-amber-400 text-xs sm:text-sm" size="sm">
               <a href="#signin">Get the app</a>
             </Button>
           </div>

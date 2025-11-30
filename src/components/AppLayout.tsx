@@ -49,7 +49,7 @@ export function AppLayout({
         
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
-          <div className="min-h-full p-4 sm:p-5 md:p-6 lg:p-8">
+          <div className="min-h-full mx-auto max-w-7xl px-4 sm:px-6 md:px-6 lg:px-8 py-4 sm:py-5 md:py-6 lg:py-8">
             {children}
           </div>
         </main>

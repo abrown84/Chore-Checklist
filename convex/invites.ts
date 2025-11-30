@@ -1,6 +1,7 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUserId } from "./authHelpers";
+import { internal } from "./_generated/api";
 
 // Query: Get invites for a household
 export const getHouseholdInvites = query({
@@ -73,6 +74,7 @@ export const createInvite = mutation({
   args: {
     householdId: v.id("households"),
     email: v.string(),
+    phoneNumber: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getCurrentUserId(ctx);
@@ -90,6 +92,12 @@ export const createInvite = mutation({
 
     if (!membership || membership.role !== "admin") {
       throw new Error("Not authorized to create invites");
+    }
+
+    // Get household to retrieve join code
+    const household = await ctx.db.get(args.householdId);
+    if (!household) {
+      throw new Error("Household not found");
     }
 
     // Check if invite already exists for this email
@@ -121,6 +129,17 @@ export const createInvite = mutation({
       expiresAt,
       createdAt: now,
     });
+
+    // Send SMS with household code if phone number is provided
+    if (args.phoneNumber && household.joinCode) {
+      // Schedule SMS sending as an action (non-blocking)
+      await ctx.scheduler.runAfter(0, internal.invites.sendInviteSMS, {
+        phoneNumber: args.phoneNumber,
+        householdName: household.name,
+        joinCode: household.joinCode,
+        inviteId,
+      });
+    }
 
     return inviteId;
   },
@@ -292,6 +311,76 @@ export const getMyInvites = query({
     );
 
     return validInvites;
+  },
+});
+
+// Internal action: Send SMS with household join code
+export const sendInviteSMS = internalAction({
+  args: {
+    phoneNumber: v.string(),
+    householdName: v.string(),
+    joinCode: v.string(),
+    inviteId: v.id("userInvites"),
+  },
+  handler: async (ctx, args) => {
+    // Get Twilio credentials from environment
+    // In Convex, environment variables are accessed via process.env
+    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+    // If Twilio is not configured, log and return (don't fail the invite)
+    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+      console.log("Twilio not configured. SMS not sent. Invite created successfully.");
+      return { success: false, reason: "SMS service not configured" };
+    }
+
+    try {
+      // Format phone number (ensure it starts with +)
+      let formattedPhone = args.phoneNumber.trim();
+      if (!formattedPhone.startsWith("+")) {
+        // Assume US number if no country code
+        if (formattedPhone.startsWith("1")) {
+          formattedPhone = "+" + formattedPhone;
+        } else {
+          formattedPhone = "+1" + formattedPhone.replace(/\D/g, "");
+        }
+      }
+
+      // Create SMS message
+      const message = `You've been invited to join ${args.householdName} on Daily Bag! Use join code: ${args.joinCode}`;
+
+      // Send SMS via Twilio
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+      
+      const formData = new URLSearchParams();
+      formData.append("To", formattedPhone);
+      formData.append("From", twilioPhoneNumber);
+      formData.append("Body", message);
+
+      const response = await fetch(twilioUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Twilio SMS error:", errorText);
+        return { success: false, reason: "SMS sending failed" };
+      }
+
+      const result = await response.json();
+      console.log("SMS sent successfully:", result.sid);
+      return { success: true, messageSid: result.sid };
+    } catch (error) {
+      console.error("Error sending SMS:", error);
+      // Don't throw - invite was already created, SMS failure shouldn't break the flow
+      return { success: false, reason: error instanceof Error ? error.message : "Unknown error" };
+    }
   },
 });
 

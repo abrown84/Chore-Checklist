@@ -134,3 +134,4 @@ console.log(`   1. Open the SVG files in public/memes/ to see them`)
 console.log(`   2. Replace with actual meme images (JPG/PNG)`)
 console.log(`   3. Use the same filenames but with .jpg extension`)
 
+
