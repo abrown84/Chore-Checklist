@@ -216,13 +216,11 @@ export default function LandingPage() {
 		}
 	}, [showVideoModal])
 
-	// Animated background - you can use a GIF file or leave undefined for gradient
-	// To use a GIF: add your file to public/background.gif and uncomment the line below
-	// const backgroundGifUrl = '/background.gif'
-	const backgroundGifUrl = undefined // Set to '/background.gif' when you add the file
+	// Animated background GIF from Giphy
+	const backgroundGifUrl = '/background.gif'
 	
 	return (
-		<PageWrapper showBackground={true} backgroundImage={backgroundGifUrl} backgroundOpacity={backgroundGifUrl ? 0.2 : undefined}>
+		<PageWrapper showBackground={true} backgroundImage={backgroundGifUrl} backgroundOpacity={0.2}>
 			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
 					<div className="flex items-center gap-2 sm:gap-3">
