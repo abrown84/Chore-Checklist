@@ -32,26 +32,46 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       audio.volume = audioVolume
       audio.loop = true
       
+      // Handle audio loading success
+      const handleCanPlay = () => {
+        console.log('✅ Background audio loaded successfully:', backgroundAudio)
+      }
+      
       // Handle audio loading errors (e.g., file not found)
       const handleError = () => {
-        console.log('Background audio file not found or failed to load:', backgroundAudio)
+        const error = audio.error
+        if (error) {
+          console.error('❌ Background audio error:', {
+            code: error.code,
+            message: error.message,
+            file: backgroundAudio
+          })
+          // Error codes: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
+        }
       }
+      
+      audio.addEventListener('canplay', handleCanPlay)
       audio.addEventListener('error', handleError)
       
       // Try to play audio (may require user interaction due to browser autoplay policies)
-      audio.play().catch((error) => {
+      audio.play().then(() => {
+        console.log('✅ Background audio started playing')
+      }).catch((error) => {
         // Autoplay was prevented - this is normal for background audio
         // Audio will play after user interaction
-        console.log('Background audio autoplay prevented:', error)
+        console.log('⏸️ Background audio autoplay prevented (will play on user interaction):', error.name)
       })
 
       // Handle user interaction to start audio
       const handleUserInteraction = () => {
-        if (audio.paused && audio.readyState >= 2) { // Check if audio is loaded
-          audio.play().catch((err) => {
-            // Silently fail if audio can't play (file might not exist)
-            console.log('Audio play failed:', err)
+        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          audio.play().then(() => {
+            console.log('✅ Background audio started after user interaction')
+          }).catch((err) => {
+            console.error('❌ Audio play failed after user interaction:', err)
           })
+        } else {
+          console.warn('⚠️ Audio not ready yet, readyState:', audio.readyState)
         }
         // Remove listeners after first interaction
         document.removeEventListener('click', handleUserInteraction)
@@ -65,6 +85,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 
       return () => {
         audio.pause()
+        audio.removeEventListener('canplay', handleCanPlay)
         audio.removeEventListener('error', handleError)
         document.removeEventListener('click', handleUserInteraction)
         document.removeEventListener('touchstart', handleUserInteraction)
