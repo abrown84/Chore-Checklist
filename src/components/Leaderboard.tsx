@@ -4,6 +4,7 @@ import { Trophy, DollarSign, Coins, Star, Clock, CheckCircle, ArrowRight, Trendi
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../hooks/useStats'
 import { useChores } from '../contexts/ChoreContext'
+import { useAuth } from '../hooks/useAuth'
 import { RANKING_MODES, RankingMode } from '../config/constants'
 import { useLeaderboardData } from '../hooks/useLeaderboardData'
 import { LEVELS } from '../types/chore'
@@ -19,22 +20,25 @@ import { LeaderboardViewToggle, LeaderboardView } from './leaderboard/Leaderboar
 import { Button } from '../components/ui/button'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import { getDisplayName } from '../utils/convexHelpers'
+import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 
 export const Leaderboard: React.FC = React.memo(() => {
   const { state: userState } = useUsers()
   const { getAllUserStats } = useStats()
   const { state: choreState } = useChores()
+  const currentHouseholdId = useCurrentHousehold()
   const [rankingMode, setRankingMode] = useState<RankingMode>(RANKING_MODES.POINTS)
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>('household')
   
   // Get unified stats from StatsContext (single source of truth)
   const memberStats = getAllUserStats()
   
-  // Fetch global leaderboard data
+  const { isAuthenticated } = useAuth()
+  
+  // Fetch global leaderboard data (only if authenticated and viewing global)
   const globalLeaderboardData = useQuery(
     api.stats.getGlobalLeaderboard,
-    leaderboardView === 'global' ? {} : 'skip'
+    leaderboardView === 'global' && isAuthenticated ? {} : 'skip'
   )
   
   // Use redemption context
@@ -52,34 +56,63 @@ export const Leaderboard: React.FC = React.memo(() => {
     }
   })
 
-  // Process global leaderboard data
+  // Process global leaderboard data (household-level)
   const processedGlobalLeaderboard = React.useMemo(() => {
-    if (!globalLeaderboardData || leaderboardView !== 'global') return []
+    if (leaderboardView !== 'global') return []
+    
+    // Handle loading state
+    if (globalLeaderboardData === undefined) {
+      console.log('🔍 Global leaderboard: Loading...')
+      return []
+    }
+    
+    // Handle error state
+    if (globalLeaderboardData === null) {
+      console.error('❌ Global leaderboard: Query returned null (error)')
+      return []
+    }
+    
+    console.log('🔍 Global leaderboard data received:', globalLeaderboardData)
+    
+    if (!Array.isArray(globalLeaderboardData) || globalLeaderboardData.length === 0) {
+      console.warn('⚠️ Global leaderboard: Empty array or invalid data', globalLeaderboardData)
+      return []
+    }
     
     return globalLeaderboardData
-      .map((stat) => {
-        const currentLevelData = LEVELS.find((level) => level.level === stat.currentLevel)
-        const nextLevelData = LEVELS.find((level) => level.level === (stat.currentLevel || 1) + 1)
+      .map((household) => {
+        // Calculate average level from members
+        const avgLevel = household.members.length > 0
+          ? Math.round(household.members.reduce((sum: number, m: { level: number }) => sum + m.level, 0) / household.members.length)
+          : 1
+        
+        const currentLevelData = LEVELS.find((level) => level.level === avgLevel)
+        const nextLevelData = LEVELS.find((level) => level.level === avgLevel + 1)
         
         const progressToNextLevel = nextLevelData
-          ? ((stat.earnedPoints - (currentLevelData?.pointsRequired || 0)) /
+          ? ((household.totalPoints - (currentLevelData?.pointsRequired || 0)) /
               (nextLevelData.pointsRequired - (currentLevelData?.pointsRequired || 0))) *
             100
           : 100
 
         return {
-          ...stat,
-          id: stat.userId,
-          name: getDisplayName(stat.userName, stat.userEmail),
-          email: undefined, // Don't expose email addresses in global leaderboard
-          avatar: '👤',
+          id: household.householdId,
+          name: household.householdName,
+          email: undefined,
+          avatar: '🏠', // House emoji for households
+          currentLevel: avgLevel,
           currentLevelData,
           nextLevelData,
           levelProgress: Math.min(Math.max(progressToNextLevel, 0), 100),
-          efficiencyScore: stat.efficiencyScore || 0,
-          completionRate: stat.totalChores > 0 ? (stat.completedChores / stat.totalChores) * 100 : 0,
-          isCurrentUser: stat.userId === userState.currentUser?.id,
-          householdName: stat.householdName,
+          earnedPoints: household.totalPoints,
+          efficiencyScore: household.averageEfficiency || 0,
+          completedChores: household.completedChores,
+          totalChores: household.totalChores,
+          completionRate: household.completionRate || 0,
+          isCurrentUser: household.householdId === currentHouseholdId,
+          householdName: household.householdName,
+          memberCount: household.memberCount,
+          members: household.members,
         }
       })
       .sort((a, b) => {
@@ -87,15 +120,14 @@ export const Leaderboard: React.FC = React.memo(() => {
           return b.earnedPoints - a.earnedPoints
         } else if (rankingMode === RANKING_MODES.EFFICIENCY) {
           return b.efficiencyScore - a.efficiencyScore
-        } else if (rankingMode === RANKING_MODES.LIFETIME && getTotalRedeemedValue) {
-          const aLifetimePoints = a.earnedPoints + (getTotalRedeemedValue(a.id) * conversionRate)
-          const bLifetimePoints = b.earnedPoints + (getTotalRedeemedValue(b.id) * conversionRate)
-          return bLifetimePoints - aLifetimePoints
+        } else if (rankingMode === RANKING_MODES.LIFETIME) {
+          // For households, lifetime points = current points (we'd need redemption data per household)
+          return b.earnedPoints - a.earnedPoints
         } else {
           return b.completedChores - a.completedChores
         }
       })
-  }, [globalLeaderboardData, leaderboardView, rankingMode, userState.currentUser?.id, getTotalRedeemedValue, conversionRate])
+  }, [globalLeaderboardData, leaderboardView, rankingMode, currentHouseholdId, conversionRate])
 
   // Select the appropriate leaderboard based on view
   const processedLeaderboard = leaderboardView === 'global' 
@@ -127,11 +159,11 @@ export const Leaderboard: React.FC = React.memo(() => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center animate-fade-in">
+      <div className="text-center animate-fade-in px-2">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 sm:mb-3 animate-slide-in bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           🏆 Leaderboard
         </h1>
-        <p className="text-base sm:text-lg md:text-xl text-muted-foreground animate-fade-in px-2" style={{ animationDelay: '0.2s' }}>
+        <p className="text-sm sm:text-base md:text-lg text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
           See how you rank against your household and compete to be at the top!
         </p>
       </div>
@@ -154,71 +186,71 @@ export const Leaderboard: React.FC = React.memo(() => {
       {/* Redemption Summary - Enhanced Section with Better Theming */}
       <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 dark:from-green-950/20 dark:via-blue-950/20 dark:to-purple-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4 sm:p-6 shadow-lg">
         <div className="text-center">
-          <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center justify-center flex-wrap gap-2">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center justify-center flex-wrap gap-2">
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
               <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
             </div>
             <span>Household Redemption Economy</span>
           </h3>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-6">
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-4 md:mb-6">
+            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-                  <Star className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <div className="p-1.5 sm:p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Current Points</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Current Points</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-xl sm:text-2xl font-bold text-foreground">
                 {memberStats.reduce((sum, stats) => sum + stats.earnedPoints, 0).toLocaleString()}
               </p>
             </div>
             
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <Award className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Lifetime Points</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Lifetime Points</span>
               </div>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {(memberStats.reduce((sum, stats) => sum + stats.earnedPoints, 0) + (redemptionSummary.totalApprovedValue * conversionRate)).toLocaleString()}
               </p>
             </div>
             
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <div className="p-1.5 sm:p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Available Value</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Available Value</span>
               </div>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                 ${householdRedemptionValue.toFixed(2)}
               </p>
             </div>
             
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Pending</span>
               </div>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 ${(redemptionSummary.totalPendingPoints / conversionRate).toFixed(2)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{redemptionSummary.pendingRequestsCount} requests</p>
             </div>
             
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center space-x-2 mb-2">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                  <CheckCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Redeemed</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Redeemed</span>
               </div>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
                 ${redemptionSummary.totalApprovedValue.toFixed(2)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{redemptionSummary.approvedRequestsCount} approved</p>
@@ -319,13 +351,28 @@ export const Leaderboard: React.FC = React.memo(() => {
       {/* Empty State */}
       {processedLeaderboard.length === 0 && (
         <div className="text-center py-12 animate-fade-in">
-          <div className="text-6xl mb-4 animate-float">🏠</div>
+          <div className="text-6xl mb-4 animate-float">
+            {leaderboardView === 'global' ? '🌍' : '🏠'}
+          </div>
           <h3 className="text-xl font-semibold text-foreground mb-2 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            No Household Members Yet
+            {leaderboardView === 'global' 
+              ? 'No Households Found' 
+              : 'No Household Members Yet'}
           </h3>
           <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            Add some family members to start competing on the leaderboard!
+            {leaderboardView === 'global' 
+              ? 'Households will appear here once they have points. Make sure households have members with points!'
+              : 'Add some family members to start competing on the leaderboard!'}
           </p>
+          {leaderboardView === 'global' && !isAuthenticated && (
+            <p className="text-sm text-red-500 mt-2">Please log in to view the global leaderboard.</p>
+          )}
+          {leaderboardView === 'global' && isAuthenticated && globalLeaderboardData === undefined && (
+            <p className="text-sm text-muted-foreground mt-2">Loading global leaderboard...</p>
+          )}
+          {leaderboardView === 'global' && isAuthenticated && Array.isArray(globalLeaderboardData) && globalLeaderboardData.length === 0 && (
+            <p className="text-sm text-amber-500 mt-2">No households with points found. Make sure households have members with points!</p>
+          )}
         </div>
       )}
     </div>

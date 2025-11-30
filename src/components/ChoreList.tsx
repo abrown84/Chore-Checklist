@@ -5,10 +5,16 @@ import { ChorePopupCelebration, usePopupCelebrations } from './ChorePopupCelebra
 import { ChoreFilters } from './chores/ChoreFilters'
 import { ChoreDisplay } from './chores/ChoreDisplay'
 import { useChoreList } from '../hooks/useChoreList'
+import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
+import { useDemo } from '../contexts/DemoContext'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
+import { Home, UserPlus } from 'lucide-react'
 
 export const ChoreList: React.FC = memo(() => {
   const { state, completeChore, deleteChore } = useChores()
   const { state: userState } = useUsers()
+  const householdId = useCurrentHousehold()
+  const { isDemoMode } = useDemo()
   
   // Animation state
   const [animatingChores, setAnimatingChores] = useState<Set<string>>(new Set())
@@ -112,6 +118,31 @@ export const ChoreList: React.FC = memo(() => {
   const handleFilterReset = useCallback(() => {
     choreListLogic.setFilter('all')
   }, [choreListLogic])
+
+  // Show message if user is not in a household (but skip in demo mode)
+  if (!householdId && !isDemoMode) {
+    return (
+      <Card className="border-2 border-dashed border-primary/30">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Home className="w-8 h-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Join a Household to See Chores</CardTitle>
+          <CardDescription className="text-base mt-2">
+            You need to be part of a household to view and manage chores. Join an existing household or create a new one to get started!
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex items-center justify-center text-sm text-muted-foreground">
+              <UserPlus className="w-4 h-4 mr-2" />
+              <span>Go to the <strong>Household</strong> tab to join or create a household</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">

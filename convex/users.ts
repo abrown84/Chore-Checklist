@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUserId } from "./authHelpers";
 
 // Query: Get user by ID
 export const getUser = query({
@@ -346,6 +347,115 @@ export const clearLevelPersistence = mutation({
     return {
       userId: args.userId,
       cleared: true,
+    };
+  },
+});
+
+// Mutation: Admin adjust user points (admin only)
+export const adminAdjustUserPoints = mutation({
+  args: {
+    userId: v.id("users"),
+    householdId: v.id("households"),
+    pointsChange: v.number(), // Can be positive (add) or negative (subtract)
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const currentUserId = await getCurrentUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify current user is admin of the household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", args.householdId).eq("userId", currentUserId as any)
+      )
+      .first();
+
+    if (!membership || membership.role !== "admin") {
+      throw new Error("Not authorized: Only admins can adjust user points");
+    }
+
+    // Verify target user is in the same household
+    const targetMembership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) =>
+        q.eq("householdId", args.householdId).eq("userId", args.userId as any)
+      )
+      .first();
+
+    if (!targetMembership) {
+      throw new Error("User is not a member of this household");
+    }
+
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const currentPoints = user.points || 0;
+    const newPoints = Math.max(0, currentPoints + args.pointsChange);
+    const now = Date.now();
+
+    // Update user points
+    await ctx.db.patch(args.userId, {
+      points: newPoints,
+      lastActive: now,
+      updatedAt: now,
+    });
+
+    // Calculate and update user level
+    const LEVELS = [
+      { level: 1, pointsRequired: 0 },
+      { level: 2, pointsRequired: 25 },
+      { level: 3, pointsRequired: 75 },
+      { level: 4, pointsRequired: 150 },
+      { level: 5, pointsRequired: 300 },
+      { level: 6, pointsRequired: 500 },
+      { level: 7, pointsRequired: 1000 },
+      { level: 8, pointsRequired: 2000 },
+      { level: 9, pointsRequired: 3500 },
+      { level: 10, pointsRequired: 5000 },
+    ];
+
+    let newLevel = 1;
+    for (let i = LEVELS.length - 1; i >= 0; i--) {
+      if (newPoints >= LEVELS[i].pointsRequired) {
+        newLevel = LEVELS[i].level;
+        break;
+      }
+    }
+
+    const currentLevel = user.level || 1;
+    if (newLevel !== currentLevel) {
+      await ctx.db.patch(args.userId, {
+        level: newLevel,
+        updatedAt: now,
+      });
+    }
+
+    // Create point deduction record for tracking (use negative for additions)
+    const reasonText = args.reason || `Admin adjustment: ${args.pointsChange > 0 ? '+' : ''}${args.pointsChange} points`;
+    if (args.pointsChange < 0) {
+      // Only create deduction record for subtractions
+      await ctx.db.insert("pointDeductions", {
+        userId: args.userId,
+        householdId: args.householdId,
+        pointsDeducted: Math.abs(args.pointsChange),
+        reason: reasonText,
+        deductedAt: now,
+        deductedBy: currentUserId as any,
+      });
+    }
+
+    return {
+      userId: args.userId,
+      oldPoints: currentPoints,
+      newPoints,
+      pointsChange: args.pointsChange,
+      oldLevel: currentLevel,
+      newLevel,
     };
   },
 });

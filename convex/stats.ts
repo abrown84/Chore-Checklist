@@ -115,7 +115,7 @@ export const getEfficiencyLeaderboard = query({
   },
 });
 
-// Query: Get global leaderboard (all households)
+// Query: Get global leaderboard (all households aggregated by total points)
 export const getGlobalLeaderboard = query({
   args: {},
   handler: async (ctx) => {
@@ -129,35 +129,232 @@ export const getGlobalLeaderboard = query({
       throw new Error("Not authenticated");
     }
 
-    // Get all user stats across all households
-    const allStats = await ctx.db
-      .query("userStats")
+    // Get all households
+    const allHouseholds = await ctx.db
+      .query("households")
       .collect();
 
-    // Get household info for each stat and filter out invalid entries
-    const statsWithHousehold = await Promise.all(
-      allStats.map(async (stat) => {
-        const household = await ctx.db.get(stat.householdId);
-        const user = await ctx.db.get(stat.userId);
+    console.log(`[getGlobalLeaderboard] Found ${allHouseholds.length} households`);
+
+    // Calculate total points for each household
+    const householdLeaderboard: any[] = [];
+
+    for (const household of allHouseholds) {
+      console.log(`[getGlobalLeaderboard] Processing household: ${household.name} (${household._id})`);
+      // Get all members of this household
+      const memberships = await ctx.db
+        .query("householdMembers")
+        .withIndex("by_household", (q: any) => q.eq("householdId", household._id))
+        .collect();
+
+      console.log(`[getGlobalLeaderboard] Found ${memberships.length} memberships for household ${household.name}`);
+      
+      if (memberships.length === 0) {
+        console.log(`[getGlobalLeaderboard] Skipping household ${household.name} - no members`);
+        continue;
+      }
+
+      // Sum up points from all members
+      let totalHouseholdPoints = 0;
+      let totalChores = 0;
+      let completedChores = 0;
+      let totalEfficiencyScore = 0;
+      let memberCount = 0;
+      const memberDetails: any[] = [];
+
+      for (const membership of memberships) {
+        const user = await ctx.db.get(membership.userId);
+        if (!user) {
+          console.log(`[getGlobalLeaderboard] User ${membership.userId} not found`);
+          continue;
+        }
+
+        // Get user stats first (we'll use it for points fallback and metrics)
+        const userStats = await ctx.db
+          .query("userStats")
+          .withIndex("by_user_household", (q: any) => 
+            q.eq("userId", membership.userId).eq("householdId", household._id))
+          .first();
+
+        // Try to get points from user.points first, then fall back to userStats or calculate from completions
+        let userPoints = user.points || 0;
         
-        // Only include stats where both household and user exist
-        if (!household || !user) {
-          return null;
+        // If user.points is 0, try to get from userStats
+        if (userPoints === 0 && userStats && userStats.earnedPoints > 0) {
+          userPoints = userStats.earnedPoints;
+          console.log(`[getGlobalLeaderboard] Using userStats.earnedPoints for ${user.name}: ${userPoints}`);
+        } else if (userPoints === 0) {
+          // Calculate from chore completions as last resort
+          const completions = await ctx.db
+            .query("choreCompletions")
+            .withIndex("by_user_household", (q: any) => 
+              q.eq("userId", membership.userId).eq("householdId", household._id))
+            .collect();
+          
+          const calculatedPoints = completions.reduce((sum, c) => sum + (c.pointsEarned || 0), 0);
+          if (calculatedPoints > 0) {
+            userPoints = calculatedPoints;
+            console.log(`[getGlobalLeaderboard] Calculated points from completions for ${user.name}: ${userPoints}`);
+          }
         }
         
-        return {
-          ...stat,
-          householdName: household.name,
-          userName: user.name || "Unknown User",
-          userEmail: user.email,
-        };
-      })
-    );
+        console.log(`[getGlobalLeaderboard] User ${user.name || membership.userId}: ${userPoints} points (from user.points: ${user.points || 0})`);
+        totalHouseholdPoints += userPoints;
 
-    // Filter out null entries and ensure earnedPoints is valid, then sort by earned points (descending)
-    return statsWithHousehold
-      .filter((stat): stat is NonNullable<typeof stat> => stat !== null && typeof stat.earnedPoints === 'number')
-      .sort((a, b) => b.earnedPoints - a.earnedPoints);
+        // Use user stats for additional metrics
+        if (userStats) {
+          totalChores += userStats.totalChores || 0;
+          completedChores += userStats.completedChores || 0;
+          totalEfficiencyScore += userStats.efficiencyScore || 0;
+        }
+
+        // Extract first name from signup name
+        const getFirstName = (fullName: string | undefined | null): string => {
+          if (!fullName) return `User ${membership.userId.slice(0, 8)}`;
+          // Split by space and take the first part
+          const firstName = fullName.trim().split(/\s+/)[0];
+          return firstName || `User ${membership.userId.slice(0, 8)}`;
+        };
+        
+        memberDetails.push({
+          userId: membership.userId,
+          name: getFirstName(user.name),
+          points: userPoints,
+          level: user.level || 1,
+        });
+
+        memberCount++;
+      }
+
+      // Skip households with no points
+      if (totalHouseholdPoints <= 0) {
+        console.log(`[getGlobalLeaderboard] Skipping household ${household.name} - no points (${totalHouseholdPoints})`);
+        continue;
+      }
+      
+      console.log(`[getGlobalLeaderboard] Adding household ${household.name} with ${totalHouseholdPoints} points`);
+
+      // Calculate average efficiency
+      const averageEfficiency = memberCount > 0 ? totalEfficiencyScore / memberCount : 0;
+
+      householdLeaderboard.push({
+        householdId: household._id,
+        householdName: household.name,
+        totalPoints: totalHouseholdPoints,
+        earnedPoints: totalHouseholdPoints, // For compatibility with existing code
+        memberCount,
+        totalChores,
+        completedChores,
+        averageEfficiency,
+        completionRate: totalChores > 0 ? (completedChores / totalChores) * 100 : 0,
+        members: memberDetails,
+        createdAt: household.createdAt,
+      });
+    }
+
+    // Sort by total points (descending)
+    const sorted = householdLeaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
+    console.log(`[getGlobalLeaderboard] Returning ${sorted.length} households`);
+    console.log(`[getGlobalLeaderboard] Households summary:`, sorted.map(h => ({
+      name: h.householdName,
+      points: h.totalPoints,
+      members: h.memberCount
+    })));
+    
+    // If no households found, include debug info in the response
+    if (sorted.length === 0) {
+      console.log(`[getGlobalLeaderboard] DEBUG: No households with points found.`);
+      console.log(`[getGlobalLeaderboard] DEBUG: Checked ${allHouseholds.length} total households.`);
+      
+      // Get some debug data to help diagnose
+      const allMemberships = await ctx.db
+        .query("householdMembers")
+        .collect();
+      
+      const sampleUsers = await ctx.db
+        .query("users")
+        .take(3);
+      
+      const debugInfo = {
+        totalHouseholds: allHouseholds.length,
+        totalMemberships: allMemberships.length,
+        householdNames: allHouseholds.map(h => h.name),
+        sampleUsers: sampleUsers.map(u => ({
+          name: u.name,
+          points: u.points || 0,
+          hasUserStats: false, // We'll check this
+          earnedPoints: 0 // Will be set below
+        })),
+        message: "No households with points found. Check console logs for details."
+      };
+      
+      // Check if sample users have userStats
+      for (const user of sampleUsers) {
+        const userStats = await ctx.db
+          .query("userStats")
+          .withIndex("by_user", (q: any) => q.eq("userId", user._id))
+          .first();
+        const userIndex = debugInfo.sampleUsers.findIndex(u => u.name === user.name);
+        if (userIndex >= 0) {
+          debugInfo.sampleUsers[userIndex].hasUserStats = !!userStats;
+          if (userStats) {
+            debugInfo.sampleUsers[userIndex].earnedPoints = userStats.earnedPoints || 0;
+          }
+        }
+      }
+      
+      console.log(`[getGlobalLeaderboard] DEBUG Info:`, JSON.stringify(debugInfo, null, 2));
+      
+      // Return empty array but log debug info
+      return sorted;
+    }
+    
+    return sorted;
+  },
+});
+
+// Query: Debug global leaderboard (temporary - for debugging)
+// Note: This function doesn't require authentication for debugging purposes
+export const debugGlobalLeaderboard = query({
+  args: {},
+  handler: async (ctx) => {
+    // No authentication required for debugging
+
+    // Get all households
+    const allHouseholds = await ctx.db
+      .query("households")
+      .collect();
+
+    // Get all household members
+    const allMemberships = await ctx.db
+      .query("householdMembers")
+      .collect();
+
+    // Get sample users
+    const sampleUsers = await ctx.db
+      .query("users")
+      .take(5);
+
+    const debugInfo = {
+      totalHouseholds: allHouseholds.length,
+      totalMemberships: allMemberships.length,
+      householdNames: allHouseholds.map(h => h.name),
+      sampleUsers: sampleUsers.map(u => ({
+        id: u._id,
+        name: u.name,
+        points: u.points || 0,
+        email: u.email
+      })),
+      membershipsByHousehold: {} as Record<string, number>
+    };
+
+    // Count memberships per household
+    for (const household of allHouseholds) {
+      const count = allMemberships.filter(m => m.householdId === household._id).length;
+      debugInfo.membershipsByHousehold[household.name] = count;
+    }
+
+    return debugInfo;
   },
 });
 
@@ -206,7 +403,7 @@ export const getRecentActivity = query({
         return {
           _id: completion._id,
           userId: completion.userId,
-          userName: user?.name || "Unknown",
+          userName: user?.name ? user.name.trim().split(/\s+/)[0] : `User ${user?._id?.slice(0, 8) || 'unknown'}`,
           choreTitle: chore?.title || "Unknown Chore",
           pointsEarned: completion.pointsEarned,
           completedAt: completion.completedAt,

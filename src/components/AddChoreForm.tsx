@@ -132,7 +132,7 @@ export const AddChoreForm: React.FC = () => {
               type="text"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+              className={`w-full px-3 py-3 sm:py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors text-base sm:text-sm min-h-[44px] ${
                 getFieldError('title') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
               }`}
               placeholder="e.g., Clean the kitchen"
@@ -152,7 +152,7 @@ export const AddChoreForm: React.FC = () => {
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+              className={`w-full px-3 py-3 sm:py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors text-base sm:text-sm min-h-[100px] ${
                 getFieldError('description') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
               }`}
               placeholder="Describe what needs to be done..."
@@ -172,20 +172,20 @@ export const AddChoreForm: React.FC = () => {
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Difficulty & Points
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {(['easy', 'medium', 'hard'] as const).map((difficulty) => (
                 <button
                   key={difficulty}
                   type="button"
                   onClick={() => handleChange('difficulty', difficulty)}
-                  className={`p-2 rounded-md border-2 transition-all ${
+                  className={`p-3 sm:p-2 rounded-md border-2 transition-all min-h-[60px] sm:min-h-[auto] ${
                     formData.difficulty === difficulty
                       ? `border-${DIFFICULTY_COLORS[difficulty]} bg-${DIFFICULTY_COLORS[difficulty]}/10`
                       : 'border-border hover:border-border/60'
                   }`}
                 >
-                  <div className="text-sm font-medium capitalize">{difficulty}</div>
-                  <div className={`text-xs text-${DIFFICULTY_COLORS[difficulty]}`}>
+                  <div className="text-sm sm:text-sm font-medium capitalize">{difficulty}</div>
+                  <div className={`text-xs sm:text-xs text-${DIFFICULTY_COLORS[difficulty]}`}>
                     {DIFFICULTY_POINTS[difficulty]} pts
                   </div>
                 </button>
@@ -202,7 +202,7 @@ export const AddChoreForm: React.FC = () => {
               <select
                 value={formData.category}
                 onChange={(e) => handleChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+                className="w-full px-3 py-3 sm:py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-base sm:text-sm min-h-[44px]"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -219,7 +219,7 @@ export const AddChoreForm: React.FC = () => {
               <select
                 value={formData.priority}
                 onChange={(e) => handleChange('priority', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+                className="w-full px-3 py-3 sm:py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-base sm:text-sm min-h-[44px]"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -237,7 +237,7 @@ export const AddChoreForm: React.FC = () => {
               type="date"
               value={formData.dueDate}
               onChange={(e) => handleChange('dueDate', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors ${
+              className={`w-full px-3 py-3 sm:py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background transition-colors text-base sm:text-sm min-h-[44px] ${
                 getFieldError('dueDate') ? 'border-red-300 bg-red-50' : 'border-border hover:border-border/80'
               }`}
               min={new Date().toISOString().split('T')[0]}
@@ -255,11 +255,11 @@ export const AddChoreForm: React.FC = () => {
           )}
 
           {/* Form Actions */}
-          <div className="flex space-x-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 pt-2">
             <Button
               type="submit"
               disabled={isSubmitting || hasErrors}
-              className="flex-1 bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
+              className="flex-1 bg-primary hover:bg-primary/90 text-white disabled:opacity-50 min-h-[48px] sm:min-h-[44px]"
             >
               {isSubmitting ? 'Adding...' : 'Add Chore'}
             </Button>
@@ -278,7 +278,7 @@ export const AddChoreForm: React.FC = () => {
                 })
               }}
               variant="outline"
-              className="flex-1"
+              className="flex-1 min-h-[48px] sm:min-h-[44px]"
             >
               Cancel
             </Button>

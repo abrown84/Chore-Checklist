@@ -62,11 +62,11 @@ export const ChoreItem = memo<ChoreItemProps>(({
         }`}
         onClick={(e) => !chore.completed && onComplete(chore.id, e)}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-2">
-                <h3 className={`font-semibold text-lg ${
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-2">
+                <h3 className={`font-semibold text-base sm:text-lg ${
                   chore.completed ? 'line-through text-gray-500' : 'text-gray-900'
                 }`}>
                   {chore.title}
@@ -78,11 +78,13 @@ export const ChoreItem = memo<ChoreItemProps>(({
                 )}
               </div>
               
-              <p className={`text-sm mb-3 ${
-                chore.completed ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {chore.description}
-              </p>
+              {chore.description && (
+                <p className={`text-sm mb-3 ${
+                  chore.completed ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  {chore.description}
+                </p>
+              )}
               
               <div className="flex flex-wrap gap-2 mb-3">
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -136,7 +138,7 @@ export const ChoreItem = memo<ChoreItemProps>(({
               )}
             </div>
             
-            <div className="flex flex-col items-end space-y-2 ml-4">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto space-x-2 sm:space-x-0 sm:space-y-2 sm:ml-4">
               {!chore.completed ? (
                 <Button
                   onClick={(e) => {
@@ -144,14 +146,15 @@ export const ChoreItem = memo<ChoreItemProps>(({
                     onComplete(chore.id, e)
                   }}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 min-h-[44px] min-w-[44px] flex-1 sm:flex-none"
                   title="Mark as complete"
                 >
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="ml-2 sm:hidden">Complete</span>
                 </Button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   <span className="text-sm text-green-600 font-medium">Completed!</span>
                 </div>
               )}
@@ -163,10 +166,11 @@ export const ChoreItem = memo<ChoreItemProps>(({
                 }}
                 size="sm"
                 variant="outline"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 min-h-[44px] min-w-[44px] flex-1 sm:flex-none"
                 title="Delete chore"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                <span className="ml-2 sm:hidden">Delete</span>
               </Button>
             </div>
           </div>

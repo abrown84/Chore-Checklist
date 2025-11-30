@@ -76,32 +76,32 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleTabChange(item.id)}
-              className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg text-left transition-all duration-200 ${
+              className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-3 xl:py-3 rounded-lg text-left transition-all duration-200 min-h-[48px] ${
                 activeTab === item.id
                   ? 'bg-primary/10 border border-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground hover:shadow-sm'
               }`}
             >
-              <span className={`text-lg ${activeTab === item.id ? 'text-primary' : item.color}`}>
+              <span className={`text-lg sm:text-xl ${activeTab === item.id ? 'text-primary' : item.color}`}>
                 {item.icon}
               </span>
-              <span className="font-body font-medium text-sm xl:text-base">{item.label}</span>
+              <span className="font-body font-medium text-sm sm:text-base xl:text-base">{item.label}</span>
             </button>
           ))}
           {/* Admin Control Panel - Only visible to admins */}
           {!isDemoMode && user?.role === 'admin' && (
             <button
               onClick={() => handleTabChange('admin')}
-              className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg text-left transition-all duration-200 ${
+              className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-3 xl:py-3 rounded-lg text-left transition-all duration-200 min-h-[48px] ${
                 activeTab === 'admin'
                   ? 'bg-amber-500/10 border border-amber-500/20 text-amber-600 shadow-sm'
                   : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600 hover:shadow-sm'
               }`}
             >
-              <span className={`text-lg ${activeTab === 'admin' ? 'text-amber-600' : 'text-amber-500'}`}>
+              <span className={`text-lg sm:text-xl ${activeTab === 'admin' ? 'text-amber-600' : 'text-amber-500'}`}>
                 ⚙️
               </span>
-              <span className="font-body font-medium text-sm xl:text-base">Admin Panel</span>
+              <span className="font-body font-medium text-sm sm:text-base xl:text-base">Admin Panel</span>
             </button>
           )}
         </nav>
@@ -114,7 +114,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 onClick={onExitDemo} 
                 variant="outline" 
                 size="sm"
-                className="w-full flex items-center justify-center text-sm border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                className="w-full flex items-center justify-center text-sm border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 min-h-[48px]"
                 title="Exit Demo"
               >
                 Exit Demo
@@ -124,7 +124,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 onClick={onSignOut} 
                 variant="outline" 
                 size="sm"
-                className="w-full flex items-center justify-center text-sm border-border hover:bg-accent/50"
+                className="w-full flex items-center justify-center text-sm border-border hover:bg-accent/50 min-h-[48px]"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4 mr-2" />

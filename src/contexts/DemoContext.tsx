@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import { Chore } from '../types/chore'
 import { User, UserStats } from '../types/user'
-import { defaultChores } from '../utils/defaultChores'
+import { convexDefaultChores } from '../utils/convexDefaultChores'
 import { LEVELS } from '../types/chore'
 
 interface DemoContextType {
@@ -193,12 +193,14 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
 
       
       // Create demo chores - start fresh with no completed chores (0 points)
+      // Use convexDefaultChores to match what users see when signed in
       const now = new Date()
-      const generatedChores = defaultChores.map((chore, index) => {
+      const generatedChores = convexDefaultChores.map((chore, index) => {
         // Start with all chores incomplete so users begin with 0 points
         const isCompleted = false
         const createdAt = new Date(now.getTime() - (Math.random() * 7 * 24 * 60 * 60 * 1000)) // Random date within last week
-        const dueDate = new Date(now.getTime() + (Math.random() * 7 * 24 * 60 * 60 * 1000)) // Random date within next week
+        // Use the dueDate from the chore (already calculated based on category)
+        const dueDate = chore.dueDate || new Date(now.getTime() + 24 * 60 * 60 * 1000) // Fallback to tomorrow
         
         // No finalPoints for incomplete chores
         const finalPoints = undefined
@@ -230,7 +232,7 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
       
       // Fallback to basic chores if demo generation fails
       try {
-        const fallbackChores = defaultChores.map((chore, index) => ({
+        const fallbackChores = convexDefaultChores.map((chore, index) => ({
           ...chore,
           id: `demo-${index + 1}`,
           createdAt: new Date(),

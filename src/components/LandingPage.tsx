@@ -261,7 +261,7 @@ export default function LandingPage() {
 					</nav>
 					<div className="flex items-center gap-2 sm:gap-3">
 						<ThemeToggle />
-						<Button variant="ghost" className="hidden lg:inline-flex" size="sm" onClick={openAuthModal}>
+						<Button variant="ghost" className="inline-flex" size="sm" onClick={openAuthModal}>
 							Sign in
 						</Button>
 						<Button className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 text-xs sm:text-sm" size="sm" onClick={handleGetAppClick}>
@@ -498,10 +498,10 @@ export default function LandingPage() {
 							initial={{ opacity: 0, scale: 0.95, y: 20 }}
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-4"
+							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<Card className="w-full max-w-md border-border bg-card/95 backdrop-blur-md shadow-xl">
+							<Card className="w-full max-w-md border-border bg-card/95 backdrop-blur-md shadow-xl max-h-[90vh] overflow-y-auto">
 								<CardHeader className="pb-4">
 									<div className="flex items-center justify-between">
 										<div>
@@ -537,26 +537,26 @@ export default function LandingPage() {
 													<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 														<User className="h-4 w-4 text-muted-foreground" />
 													</div>
-													<Input
-														ref={nameRef}
-														id="modal-name"
-														name="name"
-														type="text"
-														required={isSignUp}
-														value={name}
-														onChange={(e) => setName(e.target.value)}
-														className={`pl-10 ${
-															hasFieldError('name') 
-																? 'border-destructive bg-destructive/10' 
-																: ''
-														}`}
-														placeholder="Enter your full name"
-														autoComplete="name"
-														autoCapitalize="words"
-														autoCorrect="off"
-														spellCheck={false}
-														maxLength={50}
-													/>
+												<Input
+													ref={nameRef}
+													id="modal-name"
+													name="name"
+													type="text"
+													required={isSignUp}
+													value={name}
+													onChange={(e) => setName(e.target.value)}
+													className={`pl-10 text-base sm:text-sm min-h-[44px] ${
+														hasFieldError('name') 
+															? 'border-destructive bg-destructive/10' 
+															: ''
+													}`}
+													placeholder="Enter your full name"
+													autoComplete="name"
+													autoCapitalize="words"
+													autoCorrect="off"
+													spellCheck={false}
+													maxLength={50}
+												/>
 												</div>
 												{getFieldError('name') && (
 													<p className="text-sm text-destructive flex items-center">
@@ -584,7 +584,7 @@ export default function LandingPage() {
 													required
 													value={email}
 													onChange={(e) => setEmail(e.target.value)}
-													className={`pl-10 ${
+													className={`pl-10 text-base sm:text-sm min-h-[44px] ${
 														hasFieldError('email') 
 															? 'border-destructive bg-destructive/10' 
 															: ''
@@ -622,7 +622,7 @@ export default function LandingPage() {
 													required
 													value={password}
 													onChange={(e) => setPassword(e.target.value)}
-													className={`pl-10 pr-10 ${
+													className={`pl-10 pr-10 text-base sm:text-sm min-h-[44px] ${
 														hasFieldError('password') 
 															? 'border-destructive bg-destructive/10' 
 															: ''
@@ -674,7 +674,7 @@ export default function LandingPage() {
 														required={isSignUp}
 														value={confirmPassword}
 														onChange={(e) => setConfirmPassword(e.target.value)}
-														className="pl-10 pr-10"
+														className="pl-10 pr-10 text-base sm:text-sm min-h-[44px]"
 														placeholder="Confirm your password"
 														autoComplete="new-password"
 														minLength={6}
@@ -726,7 +726,7 @@ export default function LandingPage() {
 										<Button
 											type="submit"
 											disabled={isLoading}
-											className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+											className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-[44px]"
 										>
 											{isLoading ? (
 												<div className="flex items-center justify-center">
@@ -784,10 +784,10 @@ export default function LandingPage() {
 							initial={{ opacity: 0, scale: 0.95, y: 20 }}
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<Card className="w-full max-w-2xl border-border bg-card/95 backdrop-blur-md shadow-xl my-8">
+							<Card className="w-full max-w-2xl border-border bg-card/95 backdrop-blur-md shadow-xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
 								<CardHeader className="pb-4">
 									<div className="flex items-center justify-between">
 										<div>

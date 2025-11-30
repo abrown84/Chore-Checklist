@@ -19,6 +19,8 @@ interface LeaderboardMember {
   completedChores: number
   isCurrentUser: boolean
   householdName?: string
+  memberCount?: number
+  members?: Array<{ userId: string; name: string; points: number; level: number }>
 }
 
 interface LeaderboardListProps {
@@ -50,16 +52,16 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
         return (
           <div
             key={member.id}
-            className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+            className={`p-3 sm:p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
               member.isCurrentUser
                 ? 'bg-primary/10 dark:bg-primary/20 border-primary/30 dark:border-primary/600 shadow-lg'
                 : getRankColor(index)
             } hover:scale-[1.02]`}
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
               {/* Rank and User Info */}
               <div className="flex items-center space-x-3 min-w-0 flex-1">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-card dark:bg-card/80 text-sm font-bold shadow-sm border border-border flex-shrink-0">
+                <div className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-card dark:bg-card/80 text-base sm:text-sm font-bold shadow-sm border border-border flex-shrink-0">
                   {getRankIcon(index)}
                 </div>
                 <Avatar 
@@ -69,23 +71,29 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                   size="sm"
                 />
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-foreground flex items-center flex-wrap gap-2">
+                  <h4 className="font-semibold text-sm sm:text-base text-foreground flex items-center flex-wrap gap-2">
                     <span className="truncate">{getDisplayName(member.name, member.email)}</span>
                     {member.isCurrentUser && (
                       <span className="text-xs bg-indigo-100/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-700 flex-shrink-0">
-                        You
+                        Your Household
+                      </span>
+                    )}
+                    {member.memberCount !== undefined && (
+                      <span className="text-xs bg-blue-100/60 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-700 flex-shrink-0">
+                        {member.memberCount} {member.memberCount === 1 ? 'member' : 'members'}
                       </span>
                     )}
                   </h4>
-                  {member.householdName && (
+                  {member.members && member.members.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {member.householdName}
+                      Top members: {member.members.slice(0, 3).map(m => m.name).join(', ')}
+                      {member.members.length > 3 && ` +${member.members.length - 3} more`}
                     </p>
                   )}
                   <div className="flex items-center flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
                     <span className="flex items-center flex-shrink-0">
                       <span className="mr-1">{member.currentLevelData?.icon || '🌱'}</span>
-                      Lv {member.currentLevel}
+                      Avg Lv {member.currentLevel}
                     </span>
                     {rankingMode === RANKING_MODES.EFFICIENCY && (
                       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${efficiencyBadge.color} animate-fade-in flex-shrink-0`}>

@@ -125,13 +125,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 onClick={onMenuToggle}
                 variant="ghost"
                 size="sm"
-                className="flex items-center justify-center p-2 mr-1"
+                className="flex items-center justify-center p-2 mr-1 min-h-[44px] min-w-[44px]"
                 aria-label="Toggle menu"
               >
                 {isMenuOpen ? (
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 ) : (
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-6 h-6" />
                 )}
               </Button>
             )}
