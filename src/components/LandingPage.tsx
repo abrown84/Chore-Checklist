@@ -101,6 +101,7 @@ export default function LandingPage() {
 		setFieldErrors({})
 	}, [isSignUp])
 
+
 	const validateFields = (): boolean => {
 		const errors: Record<string, string> = {}
 		
@@ -195,6 +196,25 @@ export default function LandingPage() {
 	const closeVideoModal = () => {
 		setShowVideoModal(false)
 	}
+
+	// Handle escape key and body scroll lock for video modal
+	useEffect(() => {
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && showVideoModal) {
+				closeVideoModal()
+			}
+		}
+
+		if (showVideoModal) {
+			document.addEventListener('keydown', handleEscape)
+			document.body.style.overflow = 'hidden'
+		}
+
+		return () => {
+			document.removeEventListener('keydown', handleEscape)
+			document.body.style.overflow = ''
+		}
+	}, [showVideoModal])
 
 	// Penguin pointing meme background from imgflip template 258651081
 	const penguinMemeUrl = '/penguin-pointing-meme.mp4'
@@ -832,6 +852,7 @@ export default function LandingPage() {
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							onClick={closeVideoModal}
+							onTouchStart={closeVideoModal}
 							className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
 						/>
 						{/* Modal */}
@@ -839,30 +860,37 @@ export default function LandingPage() {
 							initial={{ opacity: 0, scale: 0.95, y: 20 }}
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+							className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
 							onClick={(e) => e.stopPropagation()}
+							onTouchStart={(e) => e.stopPropagation()}
 						>
-						<div className="relative w-full max-w-4xl">
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={closeVideoModal}
-								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
-							>
-								<X className="h-4 w-4" />
-							</Button>
-							<div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-xl">
-								<video
-									className="w-full h-full"
-									controls
-									autoPlay
-									onClick={(e) => e.stopPropagation()}
+							<div className="relative w-full max-w-4xl mx-auto">
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={closeVideoModal}
+									onTouchStart={closeVideoModal}
+									className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/70 hover:bg-black/90 active:bg-black text-white backdrop-blur-sm touch-manipulation"
+									aria-label="Close video"
 								>
-									<source src="/overview-video.mp4" type="video/mp4" />
-									Your browser does not support the video tag.
-								</video>
+									<X className="h-5 w-5 sm:h-6 sm:w-6" />
+								</Button>
+								<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: '16/9' }}>
+									<video
+										className="w-full h-full object-contain"
+										controls
+										autoPlay
+										playsInline
+										muted={false}
+										preload="auto"
+										onClick={(e) => e.stopPropagation()}
+										onTouchStart={(e) => e.stopPropagation()}
+									>
+										<source src="/overview-video.mp4" type="video/mp4" />
+										Your browser does not support the video tag.
+									</video>
+								</div>
 							</div>
-						</div>
 						</motion.div>
 					</>
 				)}
