@@ -128,7 +128,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   </Button>
                 </div>
               )}
-              <p className="text-gray-600">{currentUser?.email}</p>
             </div>
           </div>
           

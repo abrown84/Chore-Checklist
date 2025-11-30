@@ -731,7 +731,7 @@ export const HouseholdManager: React.FC = () => {
                   className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
                 >
                   <div>
-                    <p className="font-medium text-gray-900">{invite.email}</p>
+                    <p className="font-medium text-gray-900">Invited User</p>
                     <p className="text-sm text-gray-500">
                       Invited {new Date(invite.createdAt).toLocaleDateString()}
                     </p>
@@ -807,7 +807,6 @@ export const HouseholdManager: React.FC = () => {
                   <div>
                     <div className="space-y-1">
                       <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                      <p className="text-sm text-gray-500">{member.email}</p>
                       <p className="text-xs text-gray-400">
                         Joined {member.joinedAt.toLocaleDateString()}
                       </p>

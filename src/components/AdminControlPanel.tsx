@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useUsers } from '../contexts/UserContext'
+import { getDisplayName } from '../utils/convexHelpers'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -285,12 +286,12 @@ export const AdminControlPanel: React.FC = () => {
                       <div className="flex items-center gap-3 flex-1">
                         <Avatar
                           avatarUrl={member.avatarUrl}
-                          userName={member.name || member.email}
+                          userName={getDisplayName(member.name, member.email)}
                           userId={member._id}
                           size="md"
                         />
                           <div className="flex-1">
-                            <div className="font-medium">{member.name || member.email}</div>
+                            <div className="font-medium">{getDisplayName(member.name, member.email)}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2">
                               {isEditing ? (
                                 <select
@@ -311,9 +312,6 @@ export const AdminControlPanel: React.FC = () => {
                                   <Badge variant="outline" className="text-xs">
                                     {currentRole}
                                   </Badge>
-                                  {member.email && (
-                                    <span className="text-xs">{member.email}</span>
-                                  )}
                                 </>
                               )}
                             </div>
@@ -363,7 +361,7 @@ export const AdminControlPanel: React.FC = () => {
                         <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border space-y-3">
                           <div className="flex items-center gap-2">
                             <Coins className="w-4 h-4 text-amber-500" />
-                            <span className="font-medium text-sm">Adjust Points for {member.name || member.email}</span>
+                            <span className="font-medium text-sm">Adjust Points for {getDisplayName(member.name, member.email)}</span>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>

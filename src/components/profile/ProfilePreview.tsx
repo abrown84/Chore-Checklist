@@ -117,9 +117,6 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({
               <h3 className="text-xl font-semibold text-gray-900">
                 {currentUser?.name || 'User Name'}
               </h3>
-              <p className="text-gray-600">
-                {currentUser?.email || 'user@example.com'}
-              </p>
               {selectedCustomizations.avatar === 'custom' && (
                 <p className="text-sm text-gray-500 mt-1">
                   Custom: {avatarName}

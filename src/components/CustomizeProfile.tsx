@@ -213,7 +213,6 @@ const CustomizeProfile_DEPRECATED: React.FC = () => {
                 </div>
               )}
 
-              <p className="text-gray-500 text-sm">{currentUser.email}</p>
             </div>
 
             {/* Level and Progress */}
