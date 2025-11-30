@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 interface PageWrapperProps {
@@ -9,6 +9,8 @@ interface PageWrapperProps {
   showBackground?: boolean
   backgroundImage?: string
   backgroundOpacity?: number
+  backgroundAudio?: string
+  audioVolume?: number
 }
 
 export const PageWrapper: React.FC<PageWrapperProps> = ({
@@ -18,8 +20,59 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
   description,
   showBackground = true,
   backgroundImage,
-  backgroundOpacity = 0.3
+  backgroundOpacity = 0.3,
+  backgroundAudio,
+  audioVolume = 0.3
 }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (backgroundAudio && audioRef.current) {
+      const audio = audioRef.current
+      audio.volume = audioVolume
+      audio.loop = true
+      
+      // Handle audio loading errors (e.g., file not found)
+      const handleError = () => {
+        console.log('Background audio file not found or failed to load:', backgroundAudio)
+      }
+      audio.addEventListener('error', handleError)
+      
+      // Try to play audio (may require user interaction due to browser autoplay policies)
+      audio.play().catch((error) => {
+        // Autoplay was prevented - this is normal for background audio
+        // Audio will play after user interaction
+        console.log('Background audio autoplay prevented:', error)
+      })
+
+      // Handle user interaction to start audio
+      const handleUserInteraction = () => {
+        if (audio.paused && audio.readyState >= 2) { // Check if audio is loaded
+          audio.play().catch((err) => {
+            // Silently fail if audio can't play (file might not exist)
+            console.log('Audio play failed:', err)
+          })
+        }
+        // Remove listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction)
+        document.removeEventListener('touchstart', handleUserInteraction)
+        document.removeEventListener('keydown', handleUserInteraction)
+      }
+
+      document.addEventListener('click', handleUserInteraction, { once: true })
+      document.addEventListener('touchstart', handleUserInteraction, { once: true })
+      document.addEventListener('keydown', handleUserInteraction, { once: true })
+
+      return () => {
+        audio.pause()
+        audio.removeEventListener('error', handleError)
+        document.removeEventListener('click', handleUserInteraction)
+        document.removeEventListener('touchstart', handleUserInteraction)
+        document.removeEventListener('keydown', handleUserInteraction)
+      }
+    }
+  }, [backgroundAudio, audioVolume])
+
   const fadeUp = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
@@ -27,6 +80,17 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 
   return (
     <div className={`min-h-full ${className}`}>
+      {/* Background Audio */}
+      {backgroundAudio && (
+        <audio
+          ref={audioRef}
+          src={backgroundAudio}
+          preload="auto"
+          loop
+          className="hidden"
+        />
+      )}
+
       {/* Optional Background */}
       {showBackground && (
         <div className="pointer-events-none fixed inset-0 -z-10">

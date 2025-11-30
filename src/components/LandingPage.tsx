@@ -219,8 +219,22 @@ export default function LandingPage() {
 	// Animated background GIF from Giphy
 	const backgroundGifUrl = '/background.gif'
 	
+	// Background money flying sound effect
+	// Add a money sound effect file to public/sounds/money-flying.mp3
+	// You can download free money sound effects from:
+	// - https://mixkit.co/free-sound-effects/money/ (recommended - free, no attribution required)
+	// - https://freesound.org (search for "money" or "cash" - check license)
+	// - https://pixabay.com/sound-effects/search/money/
+	const backgroundAudioUrl = '/sounds/money-flying.mp3'
+	
 	return (
-		<PageWrapper showBackground={true} backgroundImage={backgroundGifUrl} backgroundOpacity={0.2}>
+		<PageWrapper 
+			showBackground={true} 
+			backgroundImage={backgroundGifUrl} 
+			backgroundOpacity={0.2}
+			backgroundAudio={backgroundAudioUrl}
+			audioVolume={0.2}
+		>
 			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
 				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
 					<div className="flex items-center gap-2 sm:gap-3">
