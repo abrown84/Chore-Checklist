@@ -32,13 +32,20 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
         <div className="pointer-events-none fixed inset-0 -z-10">
           {backgroundImage ? (
             <>
-              {backgroundImage.endsWith('.mp4') || backgroundImage.endsWith('.webm') || backgroundImage.endsWith('.gif') ? (
+              {backgroundImage.endsWith('.mp4') || backgroundImage.endsWith('.webm') ? (
                 <video
                   src={backgroundImage}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ opacity: backgroundOpacity }}
+                />
+              ) : backgroundImage.endsWith('.gif') ? (
+                <img
+                  src={backgroundImage}
+                  alt=""
                   className="absolute inset-0 w-full h-full object-cover"
                   style={{ opacity: backgroundOpacity }}
                 />
