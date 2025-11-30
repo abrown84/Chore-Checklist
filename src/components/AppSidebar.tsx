@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { LogOut, X } from 'lucide-react'
 import { navigationItems } from '../config/navigation'
 import { Logo } from './Logo'
+import { useUsers } from '../contexts/UserContext'
 
 interface AppSidebarProps {
   activeTab: string
@@ -27,6 +28,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   isMobileOpen = false,
   onMobileClose
 }) => {
+  const { state: userState } = useUsers()
+  
+  // Get current user's household membership role (this is what determines admin permissions)
+  const currentUserRole = React.useMemo(() => {
+    if (!user?.id) return null
+    const currentUserMember = userState.members.find(m => m.id === user.id)
+    return (currentUserMember?.role || user?.role || 'member') as 'admin' | 'parent' | 'teen' | 'kid' | 'member'
+  }, [user, userState.members])
+  
   const handleTabChange = (tab: string) => {
     onTabChange(tab)
     // Close mobile menu when a tab is selected
@@ -89,7 +99,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             </button>
           ))}
           {/* Admin Control Panel - Only visible to admins */}
-          {!isDemoMode && user?.role === 'admin' && (
+          {!isDemoMode && currentUserRole === 'admin' && (
             <button
               onClick={() => handleTabChange('admin')}
               className={`w-full flex items-center space-x-2 xl:space-x-3 px-3 xl:px-4 py-3 xl:py-3 rounded-lg text-left transition-all duration-200 min-h-[48px] ${

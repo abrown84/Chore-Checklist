@@ -50,7 +50,6 @@ export const HouseholdManager: React.FC = () => {
   // Mutations
   const createHousehold = useMutation(api.households.createHousehold)
   const updateHousehold = useMutation(api.households.updateHousehold)
-  const updateMemberRole = useMutation(api.households.updateMemberRole)
   const removeMember = useMutation(api.households.removeHouseholdMember)
   const acceptInviteMutation = useMutation(api.invites.acceptInvite)
   const declineInviteMutation = useMutation(api.invites.declineInvite)
@@ -69,8 +68,6 @@ export const HouseholdManager: React.FC = () => {
   const [isJoining, setIsJoining] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [editingMemberId, setEditingMemberId] = useState<Id<'users'> | null>(null)
-  const [editingRole, setEditingRole] = useState<string>('')
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
   const [householdName, setHouseholdName] = useState('')
   const [isCreatingHousehold, setIsCreatingHousehold] = useState(false)
@@ -82,7 +79,7 @@ export const HouseholdManager: React.FC = () => {
       .filter((member): member is NonNullable<typeof member> => member !== null && member.user !== null)
       .map((member) => ({
         id: member.userId,
-        name: member.user.name || 'Unknown',
+        name: getDisplayName(member.user.name, member.user.email),
         email: member.user.email || '',
         avatar: member.user.avatarUrl || '👤',
         role: member.role,
@@ -225,32 +222,6 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error declining invite:', error)
       alert(error.message || 'Failed to decline invite. Please try again.')
     }
-  }
-
-  const handleEditMember = (memberId: Id<'users'>, currentRole: string) => {
-    setEditingMemberId(memberId)
-    setEditingRole(currentRole)
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editingMemberId || !editingRole || !householdId) return
-    try {
-      await updateMemberRole({
-        householdId,
-        userId: editingMemberId,
-        role: editingRole as any,
-      })
-      setEditingMemberId(null)
-      setEditingRole('')
-    } catch (error: any) {
-      console.error('Error updating member role:', error)
-      alert(error.message || 'Failed to update member role. Please try again.')
-    }
-  }
-
-  const handleCancelEdit = () => {
-    setEditingMemberId(null)
-    setEditingRole('')
   }
 
   const handleRemoveMember = async (userId: Id<'users'>) => {
@@ -816,8 +787,7 @@ export const HouseholdManager: React.FC = () => {
           {!canManageHousehold && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                ℹ️ You can view household members here. Contact a parent or admin to make changes
-                to member roles or remove members.
+                ℹ️ You can view household members here. Role changes and member management can be done in the Admin Panel.
               </p>
             </div>
           )}
@@ -835,56 +805,16 @@ export const HouseholdManager: React.FC = () => {
                     size="md"
                   />
                   <div>
-                    {editingMemberId === member.id ? (
-                      <div className="space-y-2">
-                        <select
-                          value={editingRole}
-                          onChange={(e) => setEditingRole(e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="parent">Parent</option>
-                          <option value="teen">Teen</option>
-                          <option value="kid">Kid</option>
-                          <option value="member">Member</option>
-                        </select>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            onClick={handleSaveEdit}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button onClick={handleCancelEdit} size="sm" variant="outline">
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                          {canManageMember(currentUserRole, member.role) && (
-                            <Button
-                              onClick={() => handleEditMember(member.id, member.role)}
-                              size="sm"
-                              variant="ghost"
-                              className="p-1 h-auto"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">{member.email}</p>
-                        <p className="text-xs text-gray-400">
-                          Joined {member.joinedAt.toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {getRoleDescription(member.role)}
-                        </p>
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-gray-900">{member.name}</h3>
+                      <p className="text-sm text-gray-500">{member.email}</p>
+                      <p className="text-xs text-gray-400">
+                        Joined {member.joinedAt.toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {getRoleDescription(member.role)}
+                      </p>
+                    </div>
                   </div>
                 </div>
 

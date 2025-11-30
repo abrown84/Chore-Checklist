@@ -2,9 +2,20 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { query, MutationCtx } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { DataModel } from "./_generated/dataModel";
 
 export const { auth, signIn, signOut, store } = convexAuth({
-  providers: [Password],
+  providers: [
+    Password<DataModel>({
+      // Extract custom fields from FormData and save them to user profile
+      profile(params) {
+        return {
+          email: params.email as string,
+          name: params.name as string | undefined,
+        };
+      },
+    }),
+  ],
   callbacks: {
     // Initialize user profile with app-specific fields after sign up
     async afterUserCreatedOrUpdated(ctx: MutationCtx, { userId, existingUserId }) {
@@ -19,14 +30,17 @@ export const { auth, signIn, signOut, store } = convexAuth({
           .collect();
         const isFirstUser = existingUsers.length === 0;
         
-        // Set default values for new user
+        // Get the user to check if name was already set by profile method
+        const user = await ctx.db.get(userId);
+        
+        // Set default values for new user (only if not already set by profile)
         await ctx.db.patch(userId, {
-          points: 0,
-          level: 1,
-          role: isFirstUser ? "admin" : "member",
-          avatarUrl: "👤",
+          points: user?.points ?? 0,
+          level: user?.level ?? 1,
+          role: user?.role ?? (isFirstUser ? "admin" : "member"),
+          avatarUrl: user?.avatarUrl ?? "👤",
           lastActive: now,
-          createdAt: now,
+          createdAt: user?.createdAt ?? now,
           updatedAt: now,
         });
       }

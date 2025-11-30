@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
+import { useUsers } from '../contexts/UserContext'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -32,6 +33,7 @@ import {
 
 export const AdminControlPanel: React.FC = () => {
   const { user } = useAuth()
+  const { state: userState } = useUsers()
   const householdId = useCurrentHousehold()
   const [activeSection, setActiveSection] = useState<'overview' | 'users' | 'households' | 'chores' | 'activity'>('overview')
   const [editingUserId, setEditingUserId] = useState<Id<'users'> | null>(null)
@@ -46,8 +48,15 @@ export const AdminControlPanel: React.FC = () => {
   const [pointsAdjustment, setPointsAdjustment] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
 
+  // Get current user's household membership role (this is what determines admin permissions)
+  const currentUserRole = useMemo(() => {
+    if (!user?.id) return null
+    const currentUserMember = userState.members.find(m => m.id === user.id)
+    return (currentUserMember?.role || user?.role || 'member') as 'admin' | 'parent' | 'teen' | 'kid' | 'member'
+  }, [user, userState.members])
+
   // Check if user is admin
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = currentUserRole === 'admin'
 
   // Mutations
   const updateMemberRole = useMutation(api.households.updateMemberRole)

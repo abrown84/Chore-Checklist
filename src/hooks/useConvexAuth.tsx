@@ -74,15 +74,32 @@ export function useConvexAuth() {
       await signInAction('password', formData)
       
       // After successful signup, save the name to the user profile
-      // This ensures the name is properly stored in the database
-      try {
-        await createOrUpdateUser({
-          email,
-          name,
-        })
-      } catch (updateError) {
-        // Log but don't fail signup if name update fails
-        console.warn('Failed to update user name after signup:', updateError)
+      // Retry mechanism to ensure authentication is complete before updating
+      let retries = 3
+      let lastError = null
+      while (retries > 0) {
+        try {
+          // Small delay to ensure auth session is established
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await createOrUpdateUser({
+            email,
+            name,
+          })
+          // Success - break out of retry loop
+          break
+        } catch (updateError: any) {
+          lastError = updateError
+          retries--
+          if (retries > 0) {
+            // Wait a bit longer before retrying
+            await new Promise(resolve => setTimeout(resolve, 200))
+          }
+        }
+      }
+      
+      if (retries === 0 && lastError) {
+        // Log but don't fail signup if name update fails after retries
+        console.warn('Failed to update user name after signup after retries:', lastError)
       }
       
       return { success: true }
