@@ -57,6 +57,7 @@ export default function LandingPage() {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 	const [showInstallGuide, setShowInstallGuide] = useState(false)
+	const [showVideoModal, setShowVideoModal] = useState(false)
 	
 	// Fetch public global leaderboard
 	const globalLeaderboard = useQuery(api.stats.getPublicGlobalLeaderboard, { limit: 5 })
@@ -187,6 +188,14 @@ export default function LandingPage() {
 		}
 	}
 
+	const openVideoModal = () => {
+		setShowVideoModal(true)
+	}
+
+	const closeVideoModal = () => {
+		setShowVideoModal(false)
+	}
+
 	// Penguin pointing meme background from imgflip template 258651081
 	const penguinMemeUrl = '/penguin-pointing-meme.mp4'
 	
@@ -248,7 +257,11 @@ export default function LandingPage() {
 						>
 							Try the demo <ChevronRight className="ml-1 h-4 w-4" />
 						</Button>
-						<Button variant="outline" className="border-border bg-card/40 w-full sm:w-auto">
+						<Button 
+							variant="outline" 
+							className="border-border bg-card/40 w-full sm:w-auto"
+							onClick={openVideoModal}
+						>
 							Watch overview
 						</Button>
 					</div>
@@ -804,6 +817,52 @@ export default function LandingPage() {
 									</Button>
 								</CardFooter>
 							</Card>
+						</motion.div>
+					</>
+				)}
+			</AnimatePresence>
+
+			{/* Video Overview Modal */}
+			<AnimatePresence>
+				{showVideoModal && (
+					<>
+						{/* Backdrop */}
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							onClick={closeVideoModal}
+							className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+						/>
+						{/* Modal */}
+						<motion.div
+							initial={{ opacity: 0, scale: 0.95, y: 20 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.95, y: 20 }}
+							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+							onClick={(e) => e.stopPropagation()}
+						>
+						<div className="relative w-full max-w-4xl">
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={closeVideoModal}
+								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
+							>
+								<X className="h-4 w-4" />
+							</Button>
+							<div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-xl">
+								<video
+									className="w-full h-full"
+									controls
+									autoPlay
+									onClick={(e) => e.stopPropagation()}
+								>
+									<source src="/overview-video.mp4" type="video/mp4" />
+									Your browser does not support the video tag.
+								</video>
+							</div>
+						</div>
 						</motion.div>
 					</>
 				)}
