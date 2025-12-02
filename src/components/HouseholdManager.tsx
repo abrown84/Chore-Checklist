@@ -381,7 +381,7 @@ export const HouseholdManager: React.FC = () => {
             <div className="text-center mb-6">
               <UserPlus className="w-12 h-12 mx-auto mb-4 text-green-500" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Join a Household</h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 break-words px-4">
                 Have a join code? Enter it below to join an existing household.
               </p>
             </div>
@@ -393,7 +393,7 @@ export const HouseholdManager: React.FC = () => {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   maxLength={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-2xl font-mono tracking-widest"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-xl sm:text-2xl font-mono tracking-wide sm:tracking-widest"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
                       handleJoinHousehold()
@@ -440,7 +440,7 @@ export const HouseholdManager: React.FC = () => {
           <CardContent className="p-6 text-center">
             <Home className="w-12 h-12 mx-auto mb-4 text-indigo-500" />
             <h2 className="text-2xl font-bold text-gray-900 mb-4">🏠 Create Your Household</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-6 break-words px-4">
               Start managing chores together with your family, roommates, or friends!
             </p>
             <div className="max-w-md mx-auto space-y-4">
@@ -508,7 +508,7 @@ export const HouseholdManager: React.FC = () => {
           
           {!canManageHousehold && (
             <div className="mt-4 p-3 bg-card/40 backdrop-blur-sm border border-border rounded-lg">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground break-words">
                 ℹ️ You can view household information here. Contact a parent or admin to make
                 changes to household settings.
               </p>
@@ -527,7 +527,7 @@ export const HouseholdManager: React.FC = () => {
             </Button>
             {showLeaveConfirm && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-3">
+                <p className="text-sm text-red-800 mb-3 break-words">
                   Are you sure you want to leave this household? You will lose access to all chores and data.
                 </p>
                 <div className="flex space-x-2">
@@ -570,7 +570,7 @@ export const HouseholdManager: React.FC = () => {
                     Household Join Code
                   </label>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <code className="text-2xl font-mono font-bold text-primary tracking-widest bg-primary/10 px-4 py-2.5 rounded-md border border-primary/20 shadow-sm">
+                    <code className="text-xl sm:text-2xl font-mono font-bold text-primary tracking-wide sm:tracking-widest bg-primary/10 px-3 sm:px-4 py-2 sm:py-2.5 rounded-md border border-primary/20 shadow-sm break-all">
                       {household.joinCode}
                     </code>
                     <Button
@@ -611,7 +611,7 @@ export const HouseholdManager: React.FC = () => {
                       </Button>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">
+                  <p className="text-xs text-muted-foreground mt-3 break-words">
                     Share this code with others so they can join your household. On mobile, use the share button to send via text, email, or other apps.
                   </p>
                 </div>
@@ -669,17 +669,17 @@ export const HouseholdManager: React.FC = () => {
               {myInvites.map((invite) => (
                 <div
                   key={invite._id}
-                  className="flex items-center justify-between p-4 bg-purple-50 border border-purple-200 rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 p-4 bg-purple-50 border border-purple-200 rounded-lg"
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <Home className="w-4 h-4 text-purple-600" />
-                      <p className="font-medium text-gray-900">
+                      <Home className="w-4 h-4 text-purple-600 shrink-0" />
+                      <p className="font-medium text-gray-900 break-words">
                         {invite.household?.name || 'Unknown Household'}
                       </p>
                     </div>
                     {invite.inviter && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 break-words">
                         Invited by {getDisplayName(invite.inviter.name, invite.inviter.email)}
                       </p>
                     )}
@@ -689,7 +689,7 @@ export const HouseholdManager: React.FC = () => {
                         : 'No expiration'}
                     </p>
                   </div>
-                  <div className="flex space-x-2 ml-4">
+                  <div className="flex space-x-2 sm:ml-4 shrink-0">
                     <Button
                       onClick={() => handleAcceptMyInvite(invite._id)}
                       size="sm"
@@ -786,7 +786,7 @@ export const HouseholdManager: React.FC = () => {
         <CardContent>
           {!canManageHousehold && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-blue-700 break-words">
                 ℹ️ You can view household members here. Role changes and member management can be done in the Admin Panel.
               </p>
             </div>
@@ -795,31 +795,31 @@ export const HouseholdManager: React.FC = () => {
             {transformedMembers.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 p-4 border border-gray-200 rounded-lg"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
                   <Avatar 
                     avatarUrl={member.avatar}
                     userName={member.name}
                     userId={member.id}
                     size="md"
                   />
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="space-y-1">
-                      <h3 className="font-semibold text-gray-900">{member.name}</h3>
+                      <h3 className="font-semibold text-gray-900 break-words">{member.name}</h3>
                       <p className="text-xs text-gray-400">
                         Joined {member.joinedAt.toLocaleDateString()}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-400 break-words">
                         {getRoleDescription(member.role)}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 shrink-0">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
+                    className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getRoleColor(
                       member.role
                     )}`}
                   >
@@ -835,7 +835,7 @@ export const HouseholdManager: React.FC = () => {
                         onClick={() => handleRemoveMember(member.id)}
                         size="sm"
                         variant="outline"
-                        className="border-red-300 text-red-600 hover:bg-red-50"
+                        className="border-red-300 text-red-600 hover:bg-red-50 shrink-0"
                       >
                         <UserMinus className="w-4 h-4" />
                       </Button>
@@ -924,7 +924,7 @@ export const HouseholdManager: React.FC = () => {
                 </h4>
                 <div>
                   <h5 className="font-medium text-red-800 mb-2">Delete Household</h5>
-                    <p className="text-sm text-red-700 mb-3">
+                    <p className="text-sm text-red-700 mb-3 break-words">
                       This will permanently delete the entire household and all associated data. This action cannot be undone.
                     </p>
                     <Button
@@ -941,7 +941,7 @@ export const HouseholdManager: React.FC = () => {
                         <p className="text-xs font-semibold text-red-900 mb-2">
                           ⚠️ WARNING: This action cannot be undone!
                         </p>
-                        <p className="text-xs text-red-800 mb-3">
+                        <p className="text-xs text-red-800 mb-3 break-words">
                           Deleting this household will permanently remove:
                           <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs">
                             <li>All household members and their data</li>
