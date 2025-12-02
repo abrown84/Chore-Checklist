@@ -209,7 +209,14 @@ export const PointRedemption: React.FC = () => {
   }
 
   const pendingRequests = getPendingRequestsForApproval()
-  const userRequests = redemptionRequests.filter(req => req.userId === currentUser?.id)
+  const userRequests = useMemo(() => {
+    return redemptionRequests
+      .filter(req => req.userId === currentUser?.id)
+      .sort((a, b) => {
+        // Sort by requestedAt date, newest first
+        return b.requestedAt.getTime() - a.requestedAt.getTime()
+      })
+  }, [redemptionRequests, currentUser?.id])
 
   return (
     <div className="space-y-4 sm:space-y-6" id="point-redemption">

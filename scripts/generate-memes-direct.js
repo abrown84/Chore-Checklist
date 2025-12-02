@@ -135,3 +135,4 @@ console.log(`   2. Replace with actual meme images (JPG/PNG)`)
 console.log(`   3. Use the same filenames but with .jpg extension`)
 
 
+

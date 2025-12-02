@@ -21,23 +21,73 @@ export const LevelMeme: React.FC<LevelMemeProps> = ({ level, className = '' }) =
   // So we treat .gif files as videos for proper playback
   const shouldUseVideo = isVideo || isGif
 
-  // Try to play video on mount (mobile browsers may block autoplay)
+  // Set mobile-specific attributes and try to play video
   useEffect(() => {
-    if (shouldUseVideo && videoRef.current && loaded) {
-      const playPromise = videoRef.current.play()
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            // Autoplay worked
-            setNeedsInteraction(false)
-          })
-          .catch(() => {
-            // Autoplay was prevented - show play button
-            setNeedsInteraction(true)
-          })
+    if (shouldUseVideo && videoRef.current) {
+      const video = videoRef.current
+      
+      // Set webkit-playsinline for iOS Safari
+      if ('playsInline' in video) {
+        video.setAttribute('playsinline', 'true')
+        video.setAttribute('webkit-playsinline', 'true')
+      }
+      
+      // Ensure video is loaded before trying to play
+      if (video.readyState >= 2) {
+        // Video is loaded enough to play
+        const playPromise = video.play()
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              // Autoplay worked
+              setNeedsInteraction(false)
+            })
+            .catch(() => {
+              // Autoplay was prevented - show play button
+              setNeedsInteraction(true)
+            })
+        }
+      } else if (loaded) {
+        // Video loaded event fired, try to play
+        const playPromise = video.play()
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setNeedsInteraction(false)
+            })
+            .catch(() => {
+              setNeedsInteraction(true)
+            })
+        }
       }
     }
   }, [shouldUseVideo, loaded])
+  
+  // Additional effect to try playing when video can play (mobile fix)
+  useEffect(() => {
+    if (shouldUseVideo && videoRef.current) {
+      const video = videoRef.current
+      
+      const handleCanPlay = () => {
+        if (video.paused) {
+          const playPromise = video.play()
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => setNeedsInteraction(false))
+              .catch(() => setNeedsInteraction(true))
+          }
+        }
+      }
+      
+      video.addEventListener('canplay', handleCanPlay)
+      video.addEventListener('canplaythrough', handleCanPlay)
+      
+      return () => {
+        video.removeEventListener('canplay', handleCanPlay)
+        video.removeEventListener('canplaythrough', handleCanPlay)
+      }
+    }
+  }, [shouldUseVideo])
 
   const handlePlayClick = () => {
     if (videoRef.current) {
@@ -63,13 +113,36 @@ export const LevelMeme: React.FC<LevelMemeProps> = ({ level, className = '' }) =
                 className={`w-full h-full object-contain transition-opacity duration-300 ${
                   loaded ? 'opacity-100' : 'opacity-0'
                 }`}
-                style={{ maxHeight: '100%', maxWidth: '100%' }}
-                onLoadedData={() => setLoaded(true)}
+                style={{ maxHeight: '100%', maxWidth: '100%', display: 'block' }}
+                onLoadedData={() => {
+                  setLoaded(true)
+                  // Try to play immediately when data is loaded (mobile fix)
+                  if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => setNeedsInteraction(true))
+                  }
+                }}
+                onLoadedMetadata={() => {
+                  setLoaded(true)
+                  // Also try on metadata loaded (mobile fix)
+                  if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => setNeedsInteraction(true))
+                  }
+                }}
+                onCanPlay={() => {
+                  setLoaded(true)
+                  // Try to play when video can play (mobile fix)
+                  if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => setNeedsInteraction(true))
+                  }
+                }}
                 onError={() => {
                   setError(true)
                   setLoaded(false)
                 }}
-                onPlay={() => setNeedsInteraction(false)}
+                onPlay={() => {
+                  setNeedsInteraction(false)
+                  setLoaded(true)
+                }}
               />
               {/* Play button overlay for mobile if autoplay fails */}
               {needsInteraction && loaded && (

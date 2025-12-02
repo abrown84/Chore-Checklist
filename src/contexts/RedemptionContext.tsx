@@ -76,6 +76,7 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
     
     return convexRedemptionRequests.map(req => {
       const user = userState.members.find(m => m.id === req.userId)
+      const processedByUser = req.processedBy ? userState.members.find(m => m.id === req.processedBy) : undefined
       return {
         id: req._id,
         userId: req.userId,
@@ -86,7 +87,7 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
         status: req.status,
         requestedAt: new Date(req.requestedAt),
         processedAt: req.processedAt ? new Date(req.processedAt) : undefined,
-        processedBy: req.processedBy,
+        processedBy: processedByUser ? getDisplayName(processedByUser.name, processedByUser.email) : req.processedBy,
         adminNotes: req.adminNotes,
       } as RedemptionRequest
     })

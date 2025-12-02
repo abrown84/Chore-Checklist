@@ -82,17 +82,17 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
               🔒 Next Level Rewards (Level {nextLevelInfo.level})
             </h4>
             <div className="mb-3">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Progress to Level {nextLevelInfo.level}</span>
-                <span>{currentPoints} / {nextLevelInfo.totalPoints} points</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-1">
+                <span className="text-sm text-gray-600 whitespace-nowrap">Progress to Level {nextLevelInfo.level}</span>
+                <span className="text-sm text-gray-600 whitespace-nowrap">{currentPoints} / {nextLevelInfo.totalPoints} points</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentPoints / nextLevelInfo.totalPoints) * 100}%` }}
+                  style={{ width: `${Math.min((currentPoints / nextLevelInfo.totalPoints) * 100, 100)}%` }}
                 ></div>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 mt-1 text-center sm:text-left">
                 {nextLevelInfo.pointsToNext} more points needed
               </div>
             </div>

@@ -79,7 +79,10 @@ export const getHouseholdRedemptionRequests = query({
         .withIndex("by_status", (q) => q.eq("status", args.status!));
     }
 
-    return await query.collect();
+    const results = await query.collect();
+    
+    // Sort by requestedAt date, newest first
+    return results.sort((a, b) => b.requestedAt - a.requestedAt);
   },
 });
 
