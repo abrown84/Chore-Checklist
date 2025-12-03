@@ -16,14 +16,19 @@ export interface UserStats {
   totalChores: number
   completedChores: number
   totalPoints: number
-  earnedPoints: number
+  lifetimePoints: number // Total points ever earned (before deductions)
+  earnedPoints: number // Current usable points (lifetimePoints - deductions)
   currentStreak: number
   longestStreak: number
-  currentLevel: number
+  currentLevel: number // Level based on lifetime points
   currentLevelPoints: number
   pointsToNextLevel: number
   lastActive: Date
   efficiencyScore?: number
+  // Seasonal stats
+  seasonalPoints?: number // Points earned in current season
+  seasonalLevel?: number // Level based on seasonal points
+  currentSeason?: string // Current season identifier (e.g., "Spring 2024")
   levelPersistenceInfo?: {
     originalLevel: number
     persistedLevel: number

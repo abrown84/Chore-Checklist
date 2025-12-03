@@ -240,11 +240,15 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
   if (!user) return;
 
   // Get all chores for this user in this household
-  const userChores = await ctx.db
+  // Include chores that are assigned to the user OR completed by the user
+  const allHouseholdChores = await ctx.db
     .query("chores")
     .withIndex("by_household", (q: any) => q.eq("householdId", householdId))
-    .filter((q: any) => q.eq(q.field("assignedTo"), userId))
     .collect();
+
+  const userChores = allHouseholdChores.filter((chore: any) => 
+    chore.assignedTo === userId || chore.completedBy === userId
+  );
 
   // Get all chore completions for this user in this household
   const completions = await ctx.db
@@ -252,15 +256,51 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     .withIndex("by_user_household", (q: any) => q.eq("userId", userId).eq("householdId", householdId))
     .collect();
 
-  const completedChores = userChores.filter((chore: any) => chore.status === "completed");
+  const completedChores = userChores.filter((chore: any) => 
+    chore.status === "completed" && chore.completedBy === userId
+  );
   
-  // Calculate points
-  const totalPoints = userChores.reduce((sum: number, chore: any) => {
-    return sum + (chore.finalPoints || chore.points);
+  // Calculate lifetime points (matching frontend calculation)
+  // Base earned points from completed chores
+  const baseEarnedPoints = completedChores.reduce((sum: number, chore: any) => {
+    return sum + (chore.finalPoints || chore.points || 0);
   }, 0);
 
-  const earnedPoints = completedChores.reduce((sum: number, chore: any) => {
-    return sum + (chore.finalPoints || chore.points);
+  // Reset chores points (incomplete chores with finalPoints - these are points from chores that were reset)
+  const resetChoresPoints = userChores.reduce((sum: number, chore: any) => {
+    if (!chore.status || chore.status !== "completed") {
+      // Include points from incomplete chores that have finalPoints (from resets)
+      if (chore.finalPoints !== undefined && chore.finalPoints !== null) {
+        return sum + chore.finalPoints;
+      }
+    }
+    return sum;
+  }, 0);
+
+  // Total lifetime points (completed + reset chores) - all points ever earned
+  const lifetimePoints = baseEarnedPoints + resetChoresPoints;
+
+  // Get approved redemption requests for this user in this household
+  // This is the source of truth for redeemed points
+  const redemptionRequests = await ctx.db
+    .query("redemptionRequests")
+    .withIndex("by_user_status", (q: any) => q.eq("userId", userId).eq("status", "approved"))
+    .collect();
+
+  const householdRedemptions = redemptionRequests.filter(
+    (req: any) => req.householdId === householdId
+  );
+  const pointsRedeemed = householdRedemptions.reduce(
+    (sum: number, req: any) => sum + (req.pointsRequested || 0),
+    0
+  );
+
+  // Earned points = lifetime points minus points redeemed (current usable points)
+  const earnedPoints = Math.max(0, lifetimePoints - pointsRedeemed);
+
+  // Calculate total points (for display purposes)
+  const totalPoints = userChores.reduce((sum: number, chore: any) => {
+    return sum + (chore.finalPoints || chore.points || 0);
   }, 0);
 
   // Calculate streaks
@@ -280,16 +320,17 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     { level: 10, pointsRequired: 5000 },
   ];
 
+  // Calculate level based on lifetime points (all points ever earned)
   let currentLevel = 1;
-  let currentLevelPoints = earnedPoints;
+  let currentLevelPoints = lifetimePoints;
   let pointsToNextLevel = 25; // Default to Level 2 requirement (25 points)
 
   for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (earnedPoints >= LEVELS[i].pointsRequired) {
+    if (lifetimePoints >= LEVELS[i].pointsRequired) {
       currentLevel = LEVELS[i].level;
-      currentLevelPoints = earnedPoints - LEVELS[i].pointsRequired;
+      currentLevelPoints = lifetimePoints - LEVELS[i].pointsRequired;
       if (i < LEVELS.length - 1) {
-        pointsToNextLevel = LEVELS[i + 1].pointsRequired - earnedPoints;
+        pointsToNextLevel = LEVELS[i + 1].pointsRequired - lifetimePoints;
       } else {
         pointsToNextLevel = 0;
       }
@@ -300,20 +341,102 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
   // Calculate efficiency score - pass completions and longestStreak for accurate calculation
   const efficiencyScore = calculateEfficiencyScore(userChores, completedChores, completions, longestStreak);
 
+  // Calculate seasonal stats
   const now = Date.now();
+  const currentDate = new Date(now);
+  const currentMonth = currentDate.getMonth() + 1; // 1-12
+  const currentDay = currentDate.getDate();
+  
+  // Determine current season
+  let currentSeasonName: string;
+  let seasonYear: number;
+  if ((currentMonth === 3 && currentDay >= 20) || currentMonth === 4 || currentMonth === 5 || (currentMonth === 6 && currentDay < 21)) {
+    currentSeasonName = 'Spring';
+    seasonYear = currentDate.getFullYear();
+  } else if ((currentMonth === 6 && currentDay >= 21) || currentMonth === 7 || currentMonth === 8 || (currentMonth === 9 && currentDay < 22)) {
+    currentSeasonName = 'Summer';
+    seasonYear = currentDate.getFullYear();
+  } else if ((currentMonth === 9 && currentDay >= 22) || currentMonth === 10 || currentMonth === 11 || (currentMonth === 12 && currentDay < 21)) {
+    currentSeasonName = 'Fall';
+    seasonYear = currentDate.getFullYear();
+  } else {
+    currentSeasonName = 'Winter';
+    if (currentMonth === 12 && currentDay >= 21) {
+      seasonYear = currentDate.getFullYear();
+    } else {
+      seasonYear = currentDate.getFullYear() - 1; // Winter started last year
+    }
+  }
+  const currentSeason = `${currentSeasonName} ${seasonYear}`;
+  
+  // Calculate seasonal points (points from chores completed in current season)
+  // Get season start and end dates
+  let seasonStart: Date;
+  let seasonEnd: Date;
+  if (currentSeasonName === 'Spring') {
+    seasonStart = new Date(seasonYear, 2, 20); // March 20
+    seasonEnd = new Date(seasonYear, 5, 20); // June 20
+  } else if (currentSeasonName === 'Summer') {
+    seasonStart = new Date(seasonYear, 5, 21); // June 21
+    seasonEnd = new Date(seasonYear, 8, 21); // September 21
+  } else if (currentSeasonName === 'Fall') {
+    seasonStart = new Date(seasonYear, 8, 22); // September 22
+    seasonEnd = new Date(seasonYear, 11, 20); // December 20
+  } else {
+    // Winter
+    if (currentMonth === 12 && currentDay >= 21) {
+      seasonStart = new Date(seasonYear, 11, 21); // December 21
+      seasonEnd = new Date(seasonYear + 1, 2, 19); // March 19 next year
+    } else {
+      seasonStart = new Date(seasonYear, 11, 21); // December 21 last year
+      seasonEnd = new Date(seasonYear + 1, 2, 19); // March 19 this year
+    }
+  }
+  
+  const seasonStartTime = seasonStart.getTime();
+  const seasonEndTime = seasonEnd.getTime();
+  
+  // Calculate seasonal points from completions in current season
+  const seasonalCompletions = completions.filter((c: any) => {
+    const completedAt = c.completedAt;
+    return completedAt >= seasonStartTime && completedAt <= seasonEndTime;
+  });
+  
+  // Get seasonal points from completed chores in this season
+  const seasonalPoints = seasonalCompletions.reduce((sum: number, completion: any) => {
+    const chore = userChores.find((c: any) => c._id === completion.choreId);
+    if (chore && chore.status === 'completed') {
+      return sum + (chore.finalPoints || chore.points || 0);
+    }
+    return sum;
+  }, 0);
+  
+  // Calculate seasonal level based on seasonal points
+  let seasonalLevel = 1;
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (seasonalPoints >= LEVELS[i].pointsRequired) {
+      seasonalLevel = LEVELS[i].level;
+      break;
+    }
+  }
+
   const stats = {
     userId,
     householdId,
     totalChores: userChores.length,
     completedChores: completedChores.length,
     totalPoints,
-    earnedPoints,
+    lifetimePoints, // Total points ever earned
+    earnedPoints, // Current usable points (lifetimePoints - deductions)
     currentStreak,
     longestStreak,
     currentLevel,
     currentLevelPoints,
     pointsToNextLevel,
     efficiencyScore,
+    seasonalPoints, // Points earned in current season
+    seasonalLevel, // Level based on seasonal points
+    currentSeason, // Current season identifier
     lastActive: user.lastActive,
     updatedAt: now,
   };
@@ -325,9 +448,11 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     .first();
 
   if (existingStats) {
+    // Don't include _creationTime when patching - it's a system field
     await ctx.db.patch(existingStats._id, stats);
   } else {
-    await ctx.db.insert("userStats", stats);
+    // Only include _creationTime when inserting new records
+    await ctx.db.insert("userStats", { ...stats, _creationTime: now });
   }
 }
 

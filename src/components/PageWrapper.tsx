@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Volume2, VolumeX } from 'lucide-react'
 
 interface PageWrapperProps {
   children: React.ReactNode
@@ -25,16 +26,68 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
   audioVolume = 0.3
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isMuted, setIsMuted] = useState(() => {
+    // Load mute preference from localStorage
+    try {
+      const saved = localStorage.getItem('backgroundAudioMuted')
+      return saved === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  // Toggle mute state
+  const toggleMute = () => {
+    const newMutedState = !isMuted
+    setIsMuted(newMutedState)
+    
+    // Save preference to localStorage
+    try {
+      localStorage.setItem('backgroundAudioMuted', String(newMutedState))
+    } catch (error) {
+      console.warn('Failed to save mute preference:', error)
+    }
+    
+    // Update audio playback using muted property and pause/play
+    if (audioRef.current) {
+      const audio = audioRef.current
+      audio.muted = newMutedState
+      
+      if (newMutedState) {
+        // Mute: pause the audio
+        audio.pause()
+        console.log('🔇 Audio muted')
+      } else {
+        // Unmute: try to play the audio
+        if (audio.readyState >= 2) {
+          audio.play().then(() => {
+            console.log('🔊 Audio unmuted and playing')
+          }).catch((err) => {
+            console.log('Audio play failed after unmute:', err)
+          })
+        } else {
+          console.warn('Audio not ready yet, readyState:', audio.readyState)
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     if (backgroundAudio && audioRef.current) {
       const audio = audioRef.current
       audio.volume = audioVolume
       audio.loop = true
+      audio.muted = isMuted // Set initial mute state
       
       // Handle audio loading success
       const handleCanPlay = () => {
         console.log('✅ Background audio loaded successfully:', backgroundAudio)
+        // Try to play if not muted and audio is ready
+        if (!isMuted && audio.readyState >= 2) {
+          audio.play().catch((error) => {
+            console.log('⏸️ Background audio autoplay prevented:', error.name)
+          })
+        }
       }
       
       // Handle audio loading errors (e.g., file not found)
@@ -51,48 +104,71 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       }
       
       audio.addEventListener('canplay', handleCanPlay)
+      audio.addEventListener('canplaythrough', handleCanPlay)
       audio.addEventListener('error', handleError)
       
-      // Try to play audio (may require user interaction due to browser autoplay policies)
-      audio.play().then(() => {
-        console.log('✅ Background audio started playing')
-      }).catch((error) => {
-        // Autoplay was prevented - this is normal for background audio
-        // Audio will play after user interaction
-        console.log('⏸️ Background audio autoplay prevented (will play on user interaction):', error.name)
-      })
+      // Only try to play if not muted
+      if (!isMuted) {
+        // Try to play audio (may require user interaction due to browser autoplay policies)
+        audio.play().then(() => {
+          console.log('✅ Background audio started playing')
+        }).catch((error) => {
+          // Autoplay was prevented - this is normal for background audio
+          // Audio will play after user interaction
+          console.log('⏸️ Background audio autoplay prevented (will play on user interaction):', error.name)
+        })
 
-      // Handle user interaction to start audio
-      const handleUserInteraction = () => {
-        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
-          audio.play().then(() => {
-            console.log('✅ Background audio started after user interaction')
-          }).catch((err) => {
-            console.error('❌ Audio play failed after user interaction:', err)
-          })
-        } else {
-          console.warn('⚠️ Audio not ready yet, readyState:', audio.readyState)
+        // Handle user interaction to start audio
+        const handleUserInteraction = () => {
+          if (audio.readyState >= 2 && !isMuted) { // HAVE_CURRENT_DATA or higher
+            audio.muted = false
+            audio.play().then(() => {
+              console.log('✅ Background audio started after user interaction')
+            }).catch((err) => {
+              console.error('❌ Audio play failed after user interaction:', err)
+            })
+          } else {
+            console.warn('⚠️ Audio not ready yet, readyState:', audio.readyState)
+          }
         }
-        // Remove listeners after first interaction
-        document.removeEventListener('click', handleUserInteraction)
-        document.removeEventListener('touchstart', handleUserInteraction)
-        document.removeEventListener('keydown', handleUserInteraction)
-      }
 
-      document.addEventListener('click', handleUserInteraction, { once: true })
-      document.addEventListener('touchstart', handleUserInteraction, { once: true })
-      document.addEventListener('keydown', handleUserInteraction, { once: true })
+        // Use { once: true } so listeners auto-remove after first interaction
+        document.addEventListener('click', handleUserInteraction, { once: true })
+        document.addEventListener('touchstart', handleUserInteraction, { once: true })
+        document.addEventListener('keydown', handleUserInteraction, { once: true })
+      }
 
       return () => {
         audio.pause()
         audio.removeEventListener('canplay', handleCanPlay)
+        audio.removeEventListener('canplaythrough', handleCanPlay)
         audio.removeEventListener('error', handleError)
-        document.removeEventListener('click', handleUserInteraction)
-        document.removeEventListener('touchstart', handleUserInteraction)
-        document.removeEventListener('keydown', handleUserInteraction)
+        // Note: Event listeners with { once: true } auto-remove, but we clean up just in case
       }
     }
-  }, [backgroundAudio, audioVolume])
+  }, [backgroundAudio, audioVolume, isMuted])
+  
+  // Update audio playback when mute state changes
+  useEffect(() => {
+    if (audioRef.current && backgroundAudio) {
+      const audio = audioRef.current
+      audio.muted = isMuted
+      
+      if (isMuted) {
+        // Mute: pause the audio
+        audio.pause()
+        console.log('🔇 Audio muted via effect')
+      } else {
+        // Unmute: try to play the audio if ready
+        if (audio.readyState >= 2) {
+          audio.play().catch((err) => {
+            console.log('Audio play failed in effect:', err)
+          })
+          console.log('🔊 Audio unmuted via effect')
+        }
+      }
+    }
+  }, [isMuted, backgroundAudio])
 
   const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -108,6 +184,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
           src={backgroundAudio}
           preload="auto"
           loop
+          muted={isMuted}
           className="hidden"
         />
       )}
@@ -153,6 +230,22 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
             <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)] dark:bg-[radial-gradient(60%_40%_at_50%_0%,rgba(14,165,233,0.18),transparent_60%),radial-gradient(40%_30%_at_80%_20%,rgba(139,92,246,0.14),transparent_60%),radial-gradient(30%_30%_at_20%_60%,rgba(234,179,8,0.12),transparent_60%)]" />
           )}
         </div>
+      )}
+
+      {/* Mute/Unmute Button - Only show if background audio is present */}
+      {backgroundAudio && (
+        <button
+          onClick={toggleMute}
+          className="fixed bottom-4 right-4 z-50 p-3 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border hover:bg-background transition-all duration-200 hover:scale-110 active:scale-95"
+          aria-label={isMuted ? 'Unmute background audio' : 'Mute background audio'}
+          title={isMuted ? 'Unmute background audio' : 'Mute background audio'}
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-primary" />
+          )}
+        </button>
       )}
 
       {/* Page Content */}

@@ -2,16 +2,16 @@
 
 This directory contains background sound effects for the application.
 
-## Money Flying Sound Effect
+## Tranquil Background Sound Effect
 
-To add the money flying background sound:
+To add the tranquil/peaceful background sound:
 
-1. Download a free money/cash sound effect from one of these sources:
-   - **Mixkit** (recommended): https://mixkit.co/free-sound-effects/money/
-   - **Pixabay**: https://pixabay.com/sound-effects/search/money/
-   - **Freesound**: https://freesound.org (search for "money" or "cash")
+1. Download a free tranquil/ambient sound effect from one of these sources:
+   - **Mixkit** (recommended): https://mixkit.co/free-sound-effects/nature/
+   - **Pixabay**: https://pixabay.com/sound-effects/search/peaceful/
+   - **Freesound**: https://freesound.org (search for "tranquil", "peaceful", "ambient", or "nature")
 
-2. Save the file as `money-flying.mp3` in this directory (`public/sounds/`)
+2. Save the file as `tranquil.mp3` in this directory (`public/sounds/`)
 
 3. The sound will automatically play in the background on the landing page
 

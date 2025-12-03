@@ -39,6 +39,7 @@ function DemoStatsProvider({ children }: { children: React.ReactNode }) {
   
   // In regular mode, use the main StatsProvider
   // Pass the already-fetched state to avoid re-fetching
+  // Note: StatsProvider needs RedemptionProvider, so it's wrapped in RedemptionProvider
   return (
     <StatsProvider chores={choreState.state.chores} members={userState.state.members}>
       {children}

@@ -219,13 +219,13 @@ export default function LandingPage() {
 	// Animated background GIF from Giphy
 	const backgroundGifUrl = '/background.gif'
 	
-	// Background money flying sound effect
-	// Add a money sound effect file to public/sounds/money-flying.mp3
-	// You can download free money sound effects from:
-	// - https://mixkit.co/free-sound-effects/money/ (recommended - free, no attribution required)
-	// - https://freesound.org (search for "money" or "cash" - check license)
-	// - https://pixabay.com/sound-effects/search/money/
-	const backgroundAudioUrl = '/sounds/money-flying.mp3'
+	// Background tranquil/peaceful sound effect
+	// Add a tranquil sound effect file to public/sounds/tranquil.mp3
+	// You can download free tranquil/ambient sound effects from:
+	// - https://mixkit.co/free-sound-effects/nature/ (recommended - free, no attribution required)
+	// - https://freesound.org (search for "tranquil", "peaceful", "ambient", or "nature" - check license)
+	// - https://pixabay.com/sound-effects/search/peaceful/
+	const backgroundAudioUrl = '/sounds/tranquil.mp3'
 	
 	return (
 		<PageWrapper 

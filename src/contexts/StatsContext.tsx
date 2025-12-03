@@ -7,6 +7,8 @@ import { User, UserStats } from '../types/user'
 import { calculateUserLevel, calculateEfficiencyScore } from '../utils/statsCalculations'
 import { calculateStreaks } from '../utils/streakCalculations'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
+import { getCurrentSeason, getSeasonId } from '../utils/seasons'
+import { useAuth } from '../hooks/useAuth'
 
 interface StatsContextType {
   getUserStats: (userId: string) => UserStats | undefined
@@ -35,17 +37,31 @@ interface StatsProviderProps {
 export const StatsProvider = ({ children, chores, members }: StatsProviderProps) => {
   // Convex queries and mutations
   const householdId = useCurrentHousehold()
+  const { user: currentUser } = useAuth()
   
-  // Get point deductions from Convex for all household members
-  const householdDeductions = useQuery(
-    api.redemptions.getHouseholdPointDeductions,
+  // Query redemption requests directly from Convex (no need for RedemptionProvider)
+  const convexRedemptionRequests = useQuery(
+    api.redemptions.getHouseholdRedemptionRequests,
     householdId ? { householdId } : "skip"
   )
   
-  // Build point deductions map from Convex data
-  const pointDeductions = useMemo(() => {
-    return householdDeductions || {}
-  }, [householdDeductions])
+  // Calculate redeemed points from approved redemption requests (no deductions system)
+  const redeemedPointsByUser = useMemo(() => {
+    if (!convexRedemptionRequests) return {}
+    
+    const redeemed: Record<string, number> = {}
+    convexRedemptionRequests
+      .filter(req => req.status === 'approved')
+      .forEach(req => {
+        // Convert userId to string for consistent key lookup
+        const userId = typeof req.userId === 'string' ? req.userId : String(req.userId)
+        if (!redeemed[userId]) {
+          redeemed[userId] = 0
+        }
+        redeemed[userId] += req.pointsRequested || 0
+      })
+    return redeemed
+  }, [convexRedemptionRequests])
   
   // Get user stats from Convex (for each member)
   const convexStats = useQuery(
@@ -56,10 +72,11 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
   // Build level persistence map from Convex stats
   const levelPersistence = useMemo(() => {
     const persistenceMap: Record<string, { level: number; expiresAt: number; pointsAtRedemption: number }> = {}
-    if (convexStats) {
+    if (convexStats && Array.isArray(convexStats)) {
       convexStats.forEach(stat => {
-        if (stat.levelPersistenceInfo) {
-          persistenceMap[stat.userId] = stat.levelPersistenceInfo
+        if (stat.levelPersistenceInfo && stat.userId) {
+          const userIdStr = typeof stat.userId === 'string' ? stat.userId : String(stat.userId)
+          persistenceMap[userIdStr] = stat.levelPersistenceInfo
         }
       })
     }
@@ -127,156 +144,276 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
 
   // Memoized user stats calculation
   const userStats = useMemo(() => {
-    console.log('🔍 StatsContext: Calculating userStats', {
-      membersCount: members.length,
-      choreDistributionKeys: Object.keys(choreDistribution),
-      pointDeductions: pointDeductions,
-      refreshTrigger
-    })
-    
-    // Get all user IDs (members + users who completed chores)
+    // Get all user IDs (members + users who completed chores + current user + convex stats)
     const allUserIds = new Set([
       ...members.map(m => m.id),
       ...Object.keys(choreDistribution)
     ])
     
-    console.log('🔍 StatsContext: All user IDs to process:', Array.from(allUserIds))
+    // Add user IDs from Convex stats (convexStats is an array, can be empty but not null when loaded)
+    if (convexStats && Array.isArray(convexStats)) {
+      convexStats.forEach(stat => {
+        if (stat.userId) {
+          // Convert Convex Id to string for comparison
+          const userIdStr = typeof stat.userId === 'string' ? stat.userId : String(stat.userId)
+          allUserIds.add(userIdStr)
+        }
+      })
+    }
     
-    return Array.from(allUserIds).map(userId => {
+    // Always include current user even if they're not in members or have no chores
+    if (currentUser?.id) {
+      allUserIds.add(currentUser.id)
+    }
+    
+    // Create a map of Convex stats by userId for quick lookup
+    const convexStatsMap = new Map<string, NonNullable<typeof convexStats>[0]>()
+    if (convexStats && Array.isArray(convexStats) && convexStats.length > 0) {
+      convexStats.forEach(stat => {
+        if (stat.userId) {
+          // Convert Convex Id to string for consistent key lookup
+          const userIdStr = typeof stat.userId === 'string' ? stat.userId : String(stat.userId)
+          convexStatsMap.set(userIdStr, stat)
+        }
+      })
+    }
+    
+    const stats = Array.from(allUserIds).map(userId => {
       // Get member info or create minimal representation
-      const member = members.find(m => m.id === userId) || {
-        id: userId,
-        name: `User ${userId}`,
-        email: '',
-        role: 'member' as const,
-        avatar: '👤',
-        joinedAt: new Date(),
-        isActive: true
+      // First try members list, then try current user from auth, then create minimal
+      let member = members.find(m => m.id === userId)
+      
+      if (!member && currentUser?.id === userId) {
+        // Use current user info if available
+        member = {
+          id: currentUser.id,
+          name: currentUser.name || `User ${userId}`,
+          email: currentUser.email || '',
+          role: currentUser.role || 'member' as const,
+          avatar: currentUser.avatar || '👤',
+          joinedAt: currentUser.joinedAt || new Date(),
+          isActive: true
+        }
+      }
+      
+      if (!member) {
+        // Create minimal representation as fallback
+        member = {
+          id: userId,
+          name: `User ${userId}`,
+          email: '',
+          role: 'member' as const,
+          avatar: '👤',
+          joinedAt: new Date(),
+          isActive: true
+        }
       }
       
       const userChores = choreDistribution[userId] || []
       const completedChores = userChores.filter(c => c.completed)
       
-      console.log(`🔍 StatsContext: Processing user ${userId} (${member.name})`, {
-        totalChores: userChores.length,
-        completedChores: completedChores.length,
-        userChores: userChores
-      })
+      // Try to use Convex stats first (source of truth), fall back to local calculation
+      // Ensure userId is a string for map lookup
+      const userIdStr = typeof userId === 'string' ? userId : String(userId)
+      const convexStat = convexStatsMap.get(userIdStr)
       
-      // Calculate points
-      const baseEarnedPoints = completedChores.reduce((sum, c) => {
-        const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
-        return sum + earnedPoints
-      }, 0)
-      
-      const resetChoresPoints = userChores.reduce((sum, c) => {
-        if (!c.completed && c.finalPoints !== undefined) {
-          return sum + c.finalPoints
-        }
-        return sum
-      }, 0)
-      
-      const totalLifetimePoints = baseEarnedPoints + resetChoresPoints
-      const userDeductions = pointDeductions[userId] || 0
-      const earnedPoints = Math.max(0, totalLifetimePoints - userDeductions)
-      
-      console.log(`🔍 StatsContext: Points calculation for ${userId}`, {
-        baseEarnedPoints,
-        resetChoresPoints,
-        totalLifetimePoints,
-        userDeductions,
-        finalEarnedPoints: earnedPoints
-      })
-      
-      // Calculate other metrics
-      const totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
-      const { currentStreak, longestStreak } = calculateStreaks(completedChores)
-      
-      // Calculate level with persistence
-      const currentLevel = calculateUserLevel(earnedPoints)
-      const userLevelPersistence = levelPersistence[userId]
-      let finalLevel = currentLevel
-      let levelPersistenceInfo: { originalLevel: number; persistedLevel: number; expiresAt: number; pointsAtRedemption: number } | undefined = undefined
-      
-      // For demo users, always use calculated level (no persistence interference)
-      if (userId.startsWith('demo-')) {
-        finalLevel = currentLevel
-        console.log(`🎯 Demo User: Bypassing level persistence for ${userId}, using calculated level ${currentLevel} (${earnedPoints} points)`)
-      } else if (userLevelPersistence && userLevelPersistence.expiresAt > Date.now()) {
-        finalLevel = userLevelPersistence.level
-        levelPersistenceInfo = {
-          originalLevel: currentLevel,
-          persistedLevel: userLevelPersistence.level,
-          expiresAt: userLevelPersistence.expiresAt,
-          pointsAtRedemption: userLevelPersistence.pointsAtRedemption
-        }
-        
-        console.log(`Applying level persistence for user ${userId}:`, {
-          currentLevel,
-          persistedLevel: userLevelPersistence.level,
-          earnedPoints,
-          pointsAtRedemption: userLevelPersistence.pointsAtRedemption,
-          expiresAt: new Date(userLevelPersistence.expiresAt).toLocaleString()
+      // Debug logging (remove after fixing)
+      if (currentUser?.id === userId) {
+        console.log('🔍 Stats Debug:', {
+          userId,
+          userIdStr,
+          hasConvexStat: !!convexStat,
+          convexStatsCount: convexStats?.length ?? 0,
+          convexStatsMapSize: convexStatsMap.size,
+          convexStatsUserIds: convexStats?.map(s => String(s.userId)) ?? [],
+          membersCount: members.length,
+          userChoresCount: userChores.length,
+          completedChoresCount: completedChores.length
         })
       }
       
-      // Calculate level progress
-      const currentLevelData = LEVELS.find(level => level.level === finalLevel)
-      const nextLevelData = LEVELS.find(level => level.level === finalLevel + 1)
+      let earnedPoints: number
+      let lifetimePoints: number
+      let currentLevel: number
+      let currentLevelPoints: number
+      let pointsToNextLevel: number
+      let totalChores: number
+      let completedChoresCount: number
+      let totalPoints: number
+      let currentStreak: number
+      let longestStreak: number
+      let efficiencyScore: number
+      let seasonalPoints: number
+      let seasonalLevel: number
+      let currentSeasonId: string
+      let lastActive: Date
       
-      let currentLevelPoints = 0
-      let pointsToNextLevel = 0
-      
-      if (userLevelPersistence && userLevelPersistence.expiresAt > Date.now()) {
-        const originalPoints = userLevelPersistence.pointsAtRedemption
-        currentLevelPoints = Math.max(0, originalPoints - (currentLevelData?.pointsRequired || 0))
-        pointsToNextLevel = nextLevelData 
-          ? Math.max(0, nextLevelData.pointsRequired - originalPoints)
-          : 0
+      if (convexStat) {
+        // Use Convex stats as primary source
+        earnedPoints = convexStat.earnedPoints ?? 0
+        lifetimePoints = convexStat.lifetimePoints ?? 0
+        currentLevel = convexStat.currentLevel ?? 1
+        
+        // Debug logging - show what we're getting from Convex
+        if (currentUser?.id === userId) {
+          console.log('🔍 Convex Stats for Current User:', {
+            userId,
+            'Raw earnedPoints from Convex': convexStat.earnedPoints,
+            'Raw lifetimePoints from Convex': convexStat.lifetimePoints,
+            'Calculated earnedPoints': earnedPoints,
+            'Calculated lifetimePoints': lifetimePoints,
+            'Deductions (lifetime - earned)': lifetimePoints - earnedPoints,
+            'Full stat object': JSON.stringify(convexStat, null, 2)
+          })
+        }
+        currentLevelPoints = convexStat.currentLevelPoints ?? 0
+        pointsToNextLevel = convexStat.pointsToNextLevel ?? 0
+        totalChores = convexStat.totalChores ?? userChores.length
+        completedChoresCount = convexStat.completedChores ?? completedChores.length
+        totalPoints = convexStat.totalPoints ?? 0
+        currentStreak = convexStat.currentStreak ?? 0
+        longestStreak = convexStat.longestStreak ?? 0
+        efficiencyScore = convexStat.efficiencyScore ?? 0
+        seasonalPoints = convexStat.seasonalPoints ?? 0
+        seasonalLevel = convexStat.seasonalLevel ?? 1
+        currentSeasonId = convexStat.currentSeason ?? getSeasonId(getCurrentSeason())
+        lastActive = convexStat.lastActive ? new Date(convexStat.lastActive) : new Date()
       } else {
-        currentLevelPoints = Math.max(0, earnedPoints - (currentLevelData?.pointsRequired || 0))
+        // Fall back to local calculation if Convex stats not available
+        // Calculate lifetime points (all points ever earned)
+        const baseEarnedPoints = completedChores.reduce((sum, c) => {
+          const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
+          return sum + earnedPoints
+        }, 0)
+        
+        const resetChoresPoints = userChores.reduce((sum, c) => {
+          if (!c.completed && c.finalPoints !== undefined) {
+            return sum + c.finalPoints
+          }
+          return sum
+        }, 0)
+        
+        // Lifetime points = all points ever earned (never decreases)
+        lifetimePoints = baseEarnedPoints + resetChoresPoints
+        
+        // Earned points = lifetime points minus redeemed points
+        // Redemptions subtract from available balance, but lifetime points stay the same
+        // Use userIdStr for consistent lookup
+        const redeemedPoints = redeemedPointsByUser[userIdStr] || redeemedPointsByUser[userId] || 0
+        earnedPoints = Math.max(0, lifetimePoints - redeemedPoints)
+        
+        // Debug logging for current user
+        if (currentUser?.id === userId) {
+          console.log('⚠️ Using local calculation (no Convex stats):', {
+            baseEarnedPoints,
+            resetChoresPoints,
+            lifetimePoints,
+            redeemedPoints,
+            earnedPoints,
+            completedChoresCount: completedChores.length
+          })
+        }
+        
+        // Calculate other metrics
+        totalPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
+        const streakData = calculateStreaks(completedChores)
+        currentStreak = streakData.currentStreak
+        longestStreak = streakData.longestStreak
+        
+        // Calculate level based on lifetime points
+        currentLevel = calculateUserLevel(lifetimePoints)
+        
+        totalChores = userChores.length
+        completedChoresCount = completedChores.length
+        efficiencyScore = calculateEfficiencyScore(userChores, completedChores)
+        
+        // Calculate seasonal stats
+        const currentSeason = getCurrentSeason()
+        currentSeasonId = getSeasonId(currentSeason)
+        const seasonStartTime = currentSeason.startDate.getTime()
+        const seasonEndTime = currentSeason.endDate.getTime()
+        
+        // Calculate seasonal points (points from chores completed in current season)
+        seasonalPoints = completedChores.reduce((sum, chore) => {
+          if (chore.completedAt) {
+            const completedTime = new Date(chore.completedAt).getTime()
+            if (completedTime >= seasonStartTime && completedTime <= seasonEndTime) {
+              const points = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
+              return sum + points
+            }
+          }
+          return sum
+        }, 0)
+        
+        // Calculate seasonal level based on seasonal points
+        seasonalLevel = calculateUserLevel(seasonalPoints)
+        
+        // Calculate level progress
+        const currentLevelData = LEVELS.find(level => level.level === currentLevel)
+        const nextLevelData = LEVELS.find(level => level.level === currentLevel + 1)
+        
+        currentLevelPoints = Math.max(0, lifetimePoints - (currentLevelData?.pointsRequired || 0))
         pointsToNextLevel = nextLevelData 
-          ? Math.max(0, nextLevelData.pointsRequired - earnedPoints)
+          ? Math.max(0, nextLevelData.pointsRequired - lifetimePoints)
           : 0
+        
+        lastActive = new Date()
       }
+      
+      // Level is based on lifetimePoints, which never decreases
+      // So redemptions don't affect level - no need for level persistence
+      const finalLevel = currentLevel
       
       // Create stats object
       const calculatedStats: UserStats = {
         userId: userId,
         userName: member.name,
-        totalChores: userChores.length,
-        completedChores: completedChores.length,
+        totalChores,
+        completedChores: completedChoresCount,
         totalPoints,
-        earnedPoints,
+        lifetimePoints, // Total points ever earned
+        earnedPoints, // Current usable points (from Convex or calculated)
         currentStreak,
         longestStreak,
-        currentLevel: finalLevel,
+        currentLevel: finalLevel, // Level based on lifetime points (immune to redemptions)
         currentLevelPoints,
         pointsToNextLevel,
-        lastActive: new Date(),
-        levelPersistenceInfo,
-        efficiencyScore: calculateEfficiencyScore(userChores, completedChores)
+        lastActive,
+        seasonalPoints, // Points earned in current season
+        seasonalLevel, // Level based on seasonal points
+        currentSeason: currentSeasonId, // Current season identifier
+        levelPersistenceInfo: undefined, // Not needed - levels are based on lifetimePoints which never decrease
+        efficiencyScore
       }
       
       return calculatedStats
     })
-  }, [members, choreDistribution, pointDeductions, levelPersistence, refreshTrigger])
+    
+    return stats
+  }, [members, choreDistribution, redeemedPointsByUser, levelPersistence, refreshTrigger, currentUser?.id, convexStats])
 
   // Stats are now stored in Convex, no need to persist to localStorage
   // The stats are recalculated server-side when chores are completed
 
   // Memoized efficiency leaderboard
+  // Note: efficiencyScore is already calculated in userStats from Convex or local calculation
+  // We only need to ensure it exists and sort by it
   const efficiencyLeaderboard = useMemo(() => {
     return userStats.map(stats => {
-      const userChores = choreDistribution[stats.userId] || []
-      const completedChores = userChores.filter(c => c.completed)
-      const efficiencyScore = calculateEfficiencyScore(userChores, completedChores)
+      // Use efficiencyScore from stats (already calculated from Convex or locally)
+      // Only recalculate if it's missing (shouldn't happen, but safety fallback)
+      let efficiencyScore = stats.efficiencyScore
+      if (efficiencyScore === undefined) {
+        const userChores = choreDistribution[stats.userId] || []
+        const completedChores = userChores.filter(c => c.completed)
+        efficiencyScore = calculateEfficiencyScore(userChores, completedChores)
+      }
       
       return {
         ...stats,
-        efficiencyScore
+        efficiencyScore: efficiencyScore || 0
       }
-    }).sort((a, b) => b.efficiencyScore - a.efficiencyScore)
+    }).sort((a, b) => (b.efficiencyScore || 0) - (a.efficiencyScore || 0))
   }, [userStats, choreDistribution])
 
   // Context methods

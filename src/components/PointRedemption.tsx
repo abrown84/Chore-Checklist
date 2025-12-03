@@ -32,6 +32,17 @@ export const PointRedemption: React.FC = () => {
   const currentUser = userState.currentUser
   const currentUserStats = memberStats.find(s => s.userId === currentUser?.id)
   
+  console.log('🎯 Redemption: Stats lookup', {
+    currentUserId: currentUser?.id,
+    memberStatsCount: memberStats.length,
+    currentUserStats: currentUserStats ? {
+      userId: currentUserStats.userId,
+      earnedPoints: currentUserStats.earnedPoints,
+      lifetimePoints: currentUserStats.lifetimePoints,
+      currentLevel: currentUserStats.currentLevel
+    } : null
+  })
+  
   // Get current user's household membership role (this is what determines admin permissions)
   const currentUserHouseholdRole = useMemo(() => {
     if (!currentUser) return null
@@ -107,10 +118,28 @@ export const PointRedemption: React.FC = () => {
 
   const submitRedemptionRequest = () => {
     const points = parseInt(pointsToRedeem)
-    if (points <= 0 || !currentUser || !currentUserStats) return
+    if (points <= 0 || !currentUser || !currentUserStats) {
+      console.error('🎯 Redemption: Cannot submit - missing data', {
+        points,
+        hasCurrentUser: !!currentUser,
+        hasCurrentUserStats: !!currentUserStats,
+        currentUserStats: currentUserStats
+      })
+      if (!currentUserStats) {
+        alert('Unable to load your points. Please refresh the page and try again.')
+      }
+      return
+    }
+    
+    console.log('🎯 Redemption: Checking points', {
+      pointsRequested: points,
+      earnedPoints: currentUserStats.earnedPoints,
+      lifetimePoints: currentUserStats.lifetimePoints,
+      availablePoints: currentUserStats.earnedPoints
+    })
     
     if (points > currentUserStats.earnedPoints) {
-      alert('You don\'t have enough points for this redemption!')
+      alert(`You don't have enough points for this redemption! You have ${currentUserStats.earnedPoints} available points.`)
       return
     }
 

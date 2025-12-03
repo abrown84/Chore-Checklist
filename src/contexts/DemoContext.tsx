@@ -162,6 +162,7 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
           totalChores: userChores.length,
           completedChores: completedChores.length,
           totalPoints: userChores.reduce((sum, c) => sum + (c.finalPoints || c.points), 0), // Use finalPoints for total
+          lifetimePoints: earnedPoints, // In demo mode, lifetime equals earned since no redemptions
           earnedPoints,
           currentStreak,
           longestStreak,

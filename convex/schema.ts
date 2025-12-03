@@ -134,14 +134,19 @@ export default defineSchema({
     totalChores: v.number(),
     completedChores: v.number(),
     totalPoints: v.number(),
-    earnedPoints: v.number(),
+    lifetimePoints: v.number(), // Total points ever earned (before deductions)
+    earnedPoints: v.number(), // Current usable points (lifetimePoints - deductions)
     currentStreak: v.number(),
     longestStreak: v.number(),
-    currentLevel: v.number(),
+    currentLevel: v.number(), // Level based on lifetime points
     currentLevelPoints: v.number(),
     pointsToNextLevel: v.number(),
     efficiencyScore: v.number(),
     lastActive: v.number(),
+    // Seasonal stats
+    seasonalPoints: v.optional(v.number()), // Points earned in current season
+    seasonalLevel: v.optional(v.number()), // Level based on seasonal points
+    currentSeason: v.optional(v.string()), // Current season identifier (e.g., "Spring 2024")
     levelPersistenceInfo: v.optional(v.object({
       level: v.number(),
       expiresAt: v.number(),

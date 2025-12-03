@@ -15,6 +15,7 @@ interface LeaderboardMember {
   currentLevel: number
   currentLevelData?: any
   earnedPoints: number
+  lifetimePoints?: number
   efficiencyScore: number
   completedChores: number
   isCurrentUser: boolean
@@ -44,7 +45,8 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
         const redemptionStatus = getUserRedemptionStatus(member.id)
         
         // Calculate different point metrics
-        const lifetimePoints = member.earnedPoints + (redemptionStatus.totalRedeemed * conversionRate)
+        // Use lifetimePoints if available, otherwise calculate it (for backward compatibility)
+        const lifetimePoints = member.lifetimePoints ?? (member.earnedPoints + (redemptionStatus.totalRedeemed * conversionRate))
         const availablePoints = member.earnedPoints - redemptionStatus.pendingPoints
         const availableValue = availablePoints > 0 ? (availablePoints / conversionRate) : 0
         const lifetimeValue = lifetimePoints > 0 ? (lifetimePoints / conversionRate) : 0

@@ -1,5 +1,4 @@
-
-import React from 'react'
+import React, { useMemo, memo } from 'react'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
@@ -7,7 +6,6 @@ import { useChores } from '../contexts/ChoreContext'
 import { LEVELS } from '../types/chore'
 import { LevelMeme } from './profile/LevelMeme'
 import { Star, Crown, Target, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from 'lucide-react'
-import { useMemo } from 'react'
 
 // Function to get current season based on date
 const getCurrentSeason = () => {
@@ -63,7 +61,7 @@ const getSeasonInfo = (season: string) => {
   }
 }
 
-export const PointsCounter: React.FC = () => {
+export const PointsCounter: React.FC = memo(() => {
   const { getUserStats } = useStats()
   const { user } = useAuth()
   const { isDemoMode } = useDemo()
@@ -102,21 +100,32 @@ export const PointsCounter: React.FC = () => {
     
     stats = {
       earnedPoints,
+      lifetimePoints: earnedPoints, // In demo mode, earnedPoints = lifetimePoints (no deductions)
       currentLevel,
       currentLevelPoints,
       pointsToNextLevel,
       levelPersistenceInfo: undefined
     }
-    
-    console.log('🎯 PointsCounter: Demo mode stats calculated from chores:', stats)
   } else {
     // Use userStats if available, otherwise fall back to default values
-    stats = userStats || {
-      earnedPoints: 0,
-      currentLevel: 1,
-      currentLevelPoints: 0,
-      pointsToNextLevel: 25, // Default to Level 2 requirement
-      levelPersistenceInfo: undefined
+    if (userStats) {
+      stats = {
+        earnedPoints: userStats.earnedPoints,
+        lifetimePoints: userStats.lifetimePoints || 0,
+        currentLevel: userStats.currentLevel,
+        currentLevelPoints: userStats.currentLevelPoints,
+        pointsToNextLevel: userStats.pointsToNextLevel,
+        levelPersistenceInfo: userStats.levelPersistenceInfo
+      }
+    } else {
+      stats = {
+        earnedPoints: 0,
+        lifetimePoints: 0,
+        currentLevel: 1,
+        currentLevelPoints: 0,
+        pointsToNextLevel: 25, // Default to Level 2 requirement
+        levelPersistenceInfo: undefined
+      }
     }
   }
   
@@ -179,10 +188,15 @@ export const PointsCounter: React.FC = () => {
 
         {/* Points Display */}
         <div className="text-center">
-          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Points</div>
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Available Points</div>
           <div className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm">
-            {stats.earnedPoints}
+            {stats.earnedPoints || 0}
           </div>
+          {stats.lifetimePoints !== undefined && stats.lifetimePoints !== stats.earnedPoints && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {stats.lifetimePoints} total earned
+            </div>
+          )}
         </div>
 
         {/* Progress to Next Level */}
@@ -204,4 +218,4 @@ export const PointsCounter: React.FC = () => {
       </div>
     </div>
   )
-}
+})

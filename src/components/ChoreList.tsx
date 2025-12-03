@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, memo } from 'react'
+import React, { useState, useCallback, memo } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
+import { useStats } from '../hooks/useStats'
 import { ChorePopupCelebration, usePopupCelebrations } from './ChorePopupCelebration'
 import { ChoreFilters } from './chores/ChoreFilters'
 import { ChoreDisplay } from './chores/ChoreDisplay'
@@ -13,6 +14,7 @@ import { Home, UserPlus } from 'lucide-react'
 export const ChoreList: React.FC = memo(() => {
   const { state, completeChore, deleteChore } = useChores()
   const { state: userState } = useUsers()
+  const { forceRefresh } = useStats()
   const householdId = useCurrentHousehold()
   const { isDemoMode } = useDemo()
   
@@ -30,10 +32,8 @@ export const ChoreList: React.FC = memo(() => {
     completingChores
   })
 
-  // Trigger stats recalculation when chores change
-  useEffect(() => {
-    // Stats are automatically recalculated in the context
-  }, [state.chores])
+  // Stats are automatically recalculated in the context when chores change
+  // No need for explicit effect
 
   const handleCompleteChore = useCallback((choreId: string, event?: React.MouseEvent) => {
     // Find the chore to get points
@@ -52,7 +52,17 @@ export const ChoreList: React.FC = memo(() => {
       console.warn('Chore completion attempted without a valid current user id. Aborting to preserve correct attribution.')
       return
     }
-    completeChore(choreId, currentUserId)
+    
+    // Complete the chore and then refresh stats
+    Promise.resolve(completeChore(choreId, currentUserId)).then(() => {
+      // Force stats refresh after chore completion to ensure points update
+      // Small delay to ensure Convex query has updated
+      setTimeout(() => {
+        forceRefresh()
+      }, 500)
+    }).catch((error) => {
+      console.error('Error completing chore:', error)
+    })
 
     // Get click position and trigger multiple popup celebrations (like damage popups in games)
     if (event) {

@@ -1,14 +1,14 @@
 import { Chore, LEVELS } from '../types/chore'
 
 /**
- * Calculate user level based on earned points
+ * Calculate user level based on lifetime points (all points ever earned)
  */
-export const calculateUserLevel = (earnedPoints: number): number => {
+export const calculateUserLevel = (lifetimePoints: number): number => {
   let currentLevel = 1
   
   // Iterate through levels in descending order to find the highest level user qualifies for
   for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (earnedPoints >= LEVELS[i].pointsRequired) {
+    if (lifetimePoints >= LEVELS[i].pointsRequired) {
       currentLevel = LEVELS[i].level
       break
     }

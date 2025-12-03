@@ -21,6 +21,7 @@ import { Button } from '../components/ui/button'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
+import { useNavigation } from '../contexts/NavigationContext'
 
 export const Leaderboard: React.FC = React.memo(() => {
   const { state: userState } = useUsers()
@@ -146,14 +147,12 @@ export const Leaderboard: React.FC = React.memo(() => {
   // Get redemption summary
   const redemptionSummary = getHouseholdRedemptionSummary()
 
+  // Use navigation hook to navigate to redemption tab
+  const { navigateToTab } = useNavigation()
+
   // Navigate to redemption page
   const navigateToRedemption = () => {
-    // You can implement navigation logic here
-    // For now, we'll just scroll to the redemption section if it exists
-    const redemptionSection = document.getElementById('point-redemption')
-    if (redemptionSection) {
-      redemptionSection.scrollIntoView({ behavior: 'smooth' })
-    }
+    navigateToTab('redemption')
   }
 
   return (

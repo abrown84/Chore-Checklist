@@ -1,6 +1,7 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUserId } from "./authHelpers";
+import { calculateUserStats } from "./stats";
 
 // Query: Get chores for a household
 export const getChoresByHousehold = query({
@@ -259,6 +260,9 @@ export const completeChore = mutation({
       });
     }
 
+    // Update user stats in the userStats table immediately
+    await calculateUserStats(ctx, args.completedBy, chore.householdId);
+
     return {
       choreId: args.choreId,
       finalPoints,
@@ -375,6 +379,261 @@ export const resetChoresToDefaults = mutation({
     // For now, we'll just return success - the actual default chores
     // would be loaded from the client side and added via addChore
     return { success: true };
+  },
+});
+
+// Mutation: Reset all chores for a household (admin only)
+// Resets all completed chores back to pending status and seeds default chores
+export const resetAllChores = mutation({
+  args: { householdId: v.id("households") },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user is member of household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership) {
+      throw new Error("Not a member of this household");
+    }
+
+    // Only admins and parents can reset chores
+    if (membership.role !== "admin" && membership.role !== "parent") {
+      throw new Error("Only admins and parents can reset chores");
+    }
+
+    const now = Date.now();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    // Get all chores for this household
+    const allChores = await ctx.db
+      .query("chores")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    let resetCount = 0;
+
+    // Reset all completed chores to pending
+    for (const chore of allChores) {
+      if (chore.status === "completed") {
+        // Calculate new due date based on category
+        let newDueDate: Date;
+        switch (chore.category) {
+          case "daily":
+            newDueDate = new Date(today);
+            newDueDate.setDate(newDueDate.getDate() + 1);
+            newDueDate.setHours(18, 0, 0, 0); // 6:00 PM tomorrow
+            break;
+          case "weekly":
+            newDueDate = new Date(today);
+            newDueDate.setDate(newDueDate.getDate() + 7);
+            newDueDate.setHours(18, 0, 0, 0); // 6:00 PM next week
+            break;
+          case "monthly":
+            newDueDate = new Date(today);
+            newDueDate.setMonth(newDueDate.getMonth() + 1);
+            newDueDate.setHours(18, 0, 0, 0); // 6:00 PM next month
+            break;
+          case "seasonal":
+            newDueDate = new Date(today);
+            newDueDate.setMonth(newDueDate.getMonth() + 3);
+            newDueDate.setHours(18, 0, 0, 0); // 6:00 PM next season
+            break;
+          default:
+            newDueDate = new Date(today);
+            newDueDate.setDate(newDueDate.getDate() + 1);
+            newDueDate.setHours(18, 0, 0, 0);
+        }
+
+        await ctx.db.patch(chore._id, {
+          status: "pending",
+          completedAt: undefined,
+          completedBy: undefined,
+          finalPoints: undefined,
+          bonusMessage: undefined,
+          dueDate: newDueDate.getTime(),
+          updatedAt: now,
+        });
+
+        resetCount++;
+      }
+    }
+
+    // Seed default chores that don't already exist
+    // Create a set of existing chore titles (case-insensitive) for quick lookup
+    const existingChoreTitles = new Set(
+      allChores.map((chore) => chore.title.toLowerCase().trim())
+    );
+
+    let addedCount = 0;
+    const addedChoreIds: string[] = [];
+
+    // Add default chores that don't already exist
+    for (const defaultChore of DEFAULT_CHORES) {
+      const normalizedTitle = defaultChore.title.toLowerCase().trim();
+      
+      // Only add if a chore with this title doesn't already exist
+      if (!existingChoreTitles.has(normalizedTitle)) {
+        const choreId = await ctx.db.insert("chores", {
+          title: defaultChore.title,
+          description: defaultChore.description,
+          points: defaultChore.points,
+          difficulty: defaultChore.difficulty,
+          category: defaultChore.category,
+          priority: defaultChore.priority,
+          householdId: args.householdId,
+          status: "pending",
+          dueDate: getDueDateForCategory(defaultChore.category),
+          createdAt: now,
+          updatedAt: now,
+        });
+        addedChoreIds.push(choreId);
+        addedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      resetCount,
+      addedCount,
+      totalChores: allChores.length,
+      message: `Reset ${resetCount} completed chore(s) and added ${addedCount} default chore(s).`,
+    };
+  },
+});
+
+// Mutation: Reset all data for a household (admin only)
+// This is a comprehensive reset that clears all chores, stats, points, redemptions, etc.
+export const resetAllData = mutation({
+  args: { householdId: v.id("households") },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user is member of household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership) {
+      throw new Error("Not a member of this household");
+    }
+
+    // Only admins can reset all data
+    if (membership.role !== "admin") {
+      throw new Error("Only admins can reset all data");
+    }
+
+    const now = Date.now();
+    let deletedCounts = {
+      chores: 0,
+      completions: 0,
+      stats: 0,
+      redemptions: 0,
+      deductions: 0,
+    };
+    let resetUsers = 0;
+
+    // 1. Delete all chores and their completions
+    const allChores = await ctx.db
+      .query("chores")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const chore of allChores) {
+      // Delete related completion records
+      const completions = await ctx.db
+        .query("choreCompletions")
+        .withIndex("by_chore", (q) => q.eq("choreId", chore._id))
+        .collect();
+
+      for (const completion of completions) {
+        await ctx.db.delete(completion._id);
+        deletedCounts.completions++;
+      }
+
+      await ctx.db.delete(chore._id);
+      deletedCounts.chores++;
+    }
+
+    // 2. Delete all chore completions (in case any were orphaned)
+    const remainingCompletions = await ctx.db
+      .query("choreCompletions")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const completion of remainingCompletions) {
+      await ctx.db.delete(completion._id);
+      deletedCounts.completions++;
+    }
+
+    // 3. Delete all user stats for household members
+    const allStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const stat of allStats) {
+      await ctx.db.delete(stat._id);
+      deletedCounts.stats++;
+    }
+
+    // 4. Reset user points and levels for all household members
+    const householdMembers = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const member of householdMembers) {
+      const user = await ctx.db.get(member.userId);
+      if (user) {
+        await ctx.db.patch(member.userId, {
+          points: 0,
+          level: 1,
+          lastActive: now,
+          updatedAt: now,
+        });
+        resetUsers++;
+      }
+    }
+
+    // 5. Delete all redemption requests
+    const redemptions = await ctx.db
+      .query("redemptionRequests")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const redemption of redemptions) {
+      await ctx.db.delete(redemption._id);
+      deletedCounts.redemptions++;
+    }
+
+    // 6. Delete all point deductions
+    const deductions = await ctx.db
+      .query("pointDeductions")
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
+
+    for (const deduction of deductions) {
+      await ctx.db.delete(deduction._id);
+      deletedCounts.deductions++;
+    }
+
+    return {
+      success: true,
+      deletedCounts,
+      resetUsers,
+      message: `Reset complete: ${deletedCounts.chores} chores, ${deletedCounts.completions} completions, ${deletedCounts.stats} stats, ${deletedCounts.redemptions} redemptions, ${deletedCounts.deductions} deductions, and reset ${resetUsers} users' points/levels.`,
+    };
   },
 });
 

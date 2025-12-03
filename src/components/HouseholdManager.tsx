@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { Id } from '../../convex/_generated/dataModel'
@@ -25,7 +25,6 @@ import {
   GraduationCap,
   Home,
   Loader2,
-  Trash2,
   Share2,
 } from 'lucide-react'
 
@@ -56,7 +55,6 @@ export const HouseholdManager: React.FC = () => {
   const joinHouseholdByCode = useMutation(api.households.joinHouseholdByCode)
   const regenerateJoinCode = useMutation(api.households.regenerateJoinCode)
   const leaveHousehold = useMutation(api.households.leaveHousehold)
-  const deleteHousehold = useMutation(api.households.deleteHousehold)
   const cancelInvite = useMutation(api.invites.cancelInvite)
   
   // Get invites sent to current user
@@ -67,7 +65,6 @@ export const HouseholdManager: React.FC = () => {
   const [copied, setCopied] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showSettingsFeedback, setShowSettingsFeedback] = useState(false)
   const [householdName, setHouseholdName] = useState('')
   const [isCreatingHousehold, setIsCreatingHousehold] = useState(false)
@@ -117,7 +114,7 @@ export const HouseholdManager: React.FC = () => {
     return invites?.filter((invite) => invite.status === 'pending') || []
   }, [invites])
 
-  const handleCreateHousehold = async () => {
+  const handleCreateHousehold = useCallback(async () => {
     if (!householdName.trim()) return
     setIsCreatingHousehold(true)
     try {
@@ -129,9 +126,9 @@ export const HouseholdManager: React.FC = () => {
     } finally {
       setIsCreatingHousehold(false)
     }
-  }
+  }, [householdName, createHousehold])
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!household || !household.joinCode) return
 
     const shareText = `Join ${household.name} on Daily Bag! Use join code: ${household.joinCode}`
@@ -175,11 +172,11 @@ export const HouseholdManager: React.FC = () => {
       }
       document.body.removeChild(textArea)
     }
-  }
+  }, [household])
 
   // Removed handleAcceptInvite and handleDeclineInvite - not used for pending invites (those are for canceling)
 
-  const handleLeaveHousehold = async () => {
+  const handleLeaveHousehold = useCallback(async () => {
     if (!householdId) return
     try {
       await leaveHousehold({ householdId })
@@ -189,21 +186,10 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error leaving household:', error)
       alert(error.message || 'Failed to leave household. Please try again.')
     }
-  }
+  }, [householdId, leaveHousehold])
 
-  const handleDeleteHousehold = async () => {
-    if (!householdId) return
-    try {
-      await deleteHousehold({ householdId })
-      setShowDeleteConfirm(false)
-      alert('Household has been deleted.')
-    } catch (error: any) {
-      console.error('Error deleting household:', error)
-      alert(error.message || 'Failed to delete household. Please try again.')
-    }
-  }
 
-  const handleAcceptMyInvite = async (inviteId: Id<'userInvites'>) => {
+  const handleAcceptMyInvite = useCallback(async (inviteId: Id<'userInvites'>) => {
     try {
       const result = await acceptInviteMutation({ inviteId })
       if (result.success) {
@@ -213,18 +199,18 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error accepting invite:', error)
       alert(error.message || 'Failed to accept invite. Please try again.')
     }
-  }
+  }, [acceptInviteMutation])
 
-  const handleDeclineMyInvite = async (inviteId: Id<'userInvites'>) => {
+  const handleDeclineMyInvite = useCallback(async (inviteId: Id<'userInvites'>) => {
     try {
       await declineInviteMutation({ inviteId })
     } catch (error: any) {
       console.error('Error declining invite:', error)
       alert(error.message || 'Failed to decline invite. Please try again.')
     }
-  }
+  }, [declineInviteMutation])
 
-  const handleRemoveMember = async (userId: Id<'users'>) => {
+  const handleRemoveMember = useCallback(async (userId: Id<'users'>) => {
     if (!householdId) return
     if (!window.confirm('Are you sure you want to remove this member?')) return
     try {
@@ -236,9 +222,9 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error removing member:', error)
       alert(error.message || 'Failed to remove member. Please try again.')
     }
-  }
+  }, [householdId, removeMember])
 
-  const handleToggleInvites = async () => {
+  const handleToggleInvites = useCallback(async () => {
     if (!householdId || !household) return
     try {
       await updateHousehold({
@@ -256,9 +242,9 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error updating household settings:', error)
       alert(error.message || 'Failed to update settings. Please try again.')
     }
-  }
+  }, [householdId, household, householdSettings, updateHousehold])
 
-  const handleToggleApproval = async () => {
+  const handleToggleApproval = useCallback(async () => {
     if (!householdId || !household) return
     try {
       await updateHousehold({
@@ -276,9 +262,28 @@ export const HouseholdManager: React.FC = () => {
       console.error('Error updating household settings:', error)
       alert(error.message || 'Failed to update settings. Please try again.')
     }
-  }
+  }, [householdId, household, householdSettings, updateHousehold])
 
-  const getRoleIcon = (role: string) => {
+  const handleRegenerateJoinCode = useCallback(async () => {
+    if (!householdId) return
+    try {
+      const result = await regenerateJoinCode({ householdId })
+      alert(`New join code: ${result.joinCode}`)
+    } catch (error: any) {
+      alert(error.message || 'Failed to regenerate code')
+    }
+  }, [householdId, regenerateJoinCode])
+
+  const handleCancelInvite = useCallback(async (inviteId: Id<'userInvites'>) => {
+    try {
+      await cancelInvite({ inviteId })
+    } catch (error: any) {
+      alert(error.message || 'Failed to cancel invite')
+    }
+  }, [cancelInvite])
+
+  // Memoize helper functions to prevent recreation on every render
+  const getRoleIcon = useCallback((role: string) => {
     switch (role) {
       case 'admin':
         return <Crown className="w-4 h-4 text-yellow-500" />
@@ -291,9 +296,9 @@ export const HouseholdManager: React.FC = () => {
       default:
         return <Users className="w-4 h-4 text-gray-500" />
     }
-  }
+  }, [])
 
-  const getRoleColor = (role: string) => {
+  const getRoleColor = useCallback((role: string) => {
     switch (role) {
       case 'admin':
         return 'bg-yellow-100 text-yellow-800'
@@ -306,9 +311,9 @@ export const HouseholdManager: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800'
     }
-  }
+  }, [])
 
-  const getRoleDescription = (role: string) => {
+  const getRoleDescription = useCallback((role: string) => {
     switch (role) {
       case 'admin':
         return 'Full system access and control'
@@ -323,14 +328,33 @@ export const HouseholdManager: React.FC = () => {
       default:
         return 'Standard member'
     }
-  }
+  }, [])
 
-  const canManageMember = (currentUserRole: string, targetMemberRole: string) => {
+  const canManageMember = useCallback((currentUserRole: string, targetMemberRole: string) => {
     if (currentUserRole === 'admin') return true
     if (currentUserRole === 'parent' && (targetMemberRole === 'teen' || targetMemberRole === 'kid'))
       return true
     return false
-  }
+  }, [])
+
+  const handleJoinHousehold = useCallback(async () => {
+    if (!joinCode.trim()) return
+    setIsJoining(true)
+    try {
+      const result = await joinHouseholdByCode({ joinCode: joinCode.trim().toUpperCase() })
+      if (result.requiresApproval) {
+        alert('Your request to join has been submitted and is pending approval.')
+      } else {
+        alert('Successfully joined the household!')
+        setJoinCode('')
+      }
+    } catch (error: any) {
+      console.error('Error joining household:', error)
+      alert(error.message || 'Failed to join household. Please check the code and try again.')
+    } finally {
+      setIsJoining(false)
+    }
+  }, [joinCode, joinHouseholdByCode])
 
   // Check if queries are still loading (reserved for future loading states)
   // const isLoadingHousehold = householdId === null && household === undefined
@@ -349,25 +373,6 @@ export const HouseholdManager: React.FC = () => {
         </Card>
       </div>
     )
-  }
-
-  const handleJoinHousehold = async () => {
-    if (!joinCode.trim()) return
-    setIsJoining(true)
-    try {
-      const result = await joinHouseholdByCode({ joinCode: joinCode.trim().toUpperCase() })
-      if (result.requiresApproval) {
-        alert('Your request to join has been submitted and is pending approval.')
-      } else {
-        alert('Successfully joined the household!')
-        setJoinCode('')
-      }
-    } catch (error: any) {
-      console.error('Error joining household:', error)
-      alert(error.message || 'Failed to join household. Please check the code and try again.')
-    } finally {
-      setIsJoining(false)
-    }
   }
 
   // No household - show create/join form
@@ -595,15 +600,7 @@ export const HouseholdManager: React.FC = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={async () => {
-                          if (!householdId) return
-                          try {
-                            const result = await regenerateJoinCode({ householdId })
-                            alert(`New join code: ${result.joinCode}`)
-                          } catch (error: any) {
-                            alert(error.message || 'Failed to regenerate code')
-                          }
-                        }}
+                        onClick={handleRegenerateJoinCode}
                         className="flex items-center gap-2"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -738,13 +735,7 @@ export const HouseholdManager: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     <Button
-                      onClick={async () => {
-                        try {
-                          await cancelInvite({ inviteId: invite._id })
-                        } catch (error: any) {
-                          alert(error.message || 'Failed to cancel invite')
-                        }
-                      }}
+                      onClick={() => handleCancelInvite(invite._id)}
                       size="sm"
                       variant="outline"
                       className="border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -914,67 +905,14 @@ export const HouseholdManager: React.FC = () => {
                 <p className="text-sm text-gray-600">{householdSettings.maxMembers}</p>
               </div>
             </div>
-
-            {/* Admin Data Management */}
-            {currentUserRole === 'admin' && (
-              <div className="mt-6 p-4 border border-red-200 rounded-lg bg-red-50">
-                <h4 className="font-medium text-red-900 mb-3 flex items-center">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Data Management (Admin/Parent Only)
-                </h4>
-                <div>
-                  <h5 className="font-medium text-red-800 mb-2">Delete Household</h5>
-                    <p className="text-sm text-red-700 mb-3 break-words">
-                      This will permanently delete the entire household and all associated data. This action cannot be undone.
-                    </p>
-                    <Button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-500 text-red-700 hover:bg-red-100 font-semibold"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Household
-                    </Button>
-                    {showDeleteConfirm && (
-                      <div className="mt-3 p-3 bg-red-100 border-2 border-red-400 rounded-lg">
-                        <p className="text-xs font-semibold text-red-900 mb-2">
-                          ⚠️ WARNING: This action cannot be undone!
-                        </p>
-                        <p className="text-xs text-red-800 mb-3 break-words">
-                          Deleting this household will permanently remove:
-                          <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs">
-                            <li>All household members and their data</li>
-                            <li>All chores and completion history</li>
-                            <li>All user stats and points</li>
-                            <li>All invites and redemption requests</li>
-                          </ul>
-                        </p>
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={handleDeleteHousehold}
-                            size="sm"
-                            className="bg-red-700 hover:bg-red-800 flex-1 text-xs"
-                          >
-                            Yes, Delete Forever
-                          </Button>
-                          <Button
-                            onClick={() => setShowDeleteConfirm(false)}
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
     </div>
   )
 }
+
+
+
+
+

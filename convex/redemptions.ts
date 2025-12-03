@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUserId } from "./authHelpers";
+import { calculateUserStats } from "./stats";
 
 // Query: Get redemption requests for a user
 export const getUserRedemptionRequests = query({
@@ -182,13 +183,17 @@ export const updateRedemptionRequestStatus = mutation({
     if (args.status === "approved") {
       const user = await ctx.db.get(request.userId);
       if (user) {
+        // No need to set level persistence - levels are based on lifetimePoints
+        // which never decrease, so redemptions won't affect level
+
+        // Update user.points (legacy field, kept for compatibility)
         const newPoints = Math.max(0, (user.points ?? 0) - request.pointsRequested);
         await ctx.db.patch(request.userId, {
           points: newPoints,
           updatedAt: now,
         });
 
-        // Create point deduction record
+        // Create point deduction record (for audit trail)
         await ctx.db.insert("pointDeductions", {
           userId: request.userId,
           householdId: request.householdId,
@@ -198,6 +203,10 @@ export const updateRedemptionRequestStatus = mutation({
           deductedAt: now,
           deductedBy: userId as any,
         });
+
+        // Recalculate user stats - this will use redemptionRequests as source of truth
+        // and properly calculate earnedPoints = lifetimePoints - pointsRedeemed
+        await calculateUserStats(ctx, request.userId, request.householdId);
       }
     }
 

@@ -73,8 +73,9 @@ export const useLeaderboardData = ({
           return b.efficiencyScore - a.efficiencyScore
         } else if (rankingMode === RANKING_MODES.LIFETIME && redemptionData) {
           // For lifetime ranking, calculate total points including redeemed
-          const aLifetimePoints = a.earnedPoints + (redemptionData.getTotalRedeemedValue(a.userId) * 100) // Assuming 100 points per dollar
-          const bLifetimePoints = b.earnedPoints + (redemptionData.getTotalRedeemedValue(b.userId) * 100)
+          // Use lifetimePoints if available, otherwise calculate it (for backward compatibility)
+          const aLifetimePoints = a.lifetimePoints ?? (a.earnedPoints + (redemptionData.getTotalRedeemedValue(a.userId) * 100))
+          const bLifetimePoints = b.lifetimePoints ?? (b.earnedPoints + (redemptionData.getTotalRedeemedValue(b.userId) * 100))
           return bLifetimePoints - aLifetimePoints
         } else {
           return b.completedChores - a.completedChores

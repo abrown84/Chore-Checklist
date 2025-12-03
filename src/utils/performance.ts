@@ -1,35 +1,39 @@
-// Performance optimization utilities
-
 /**
- * Debounce function to limit how often a function can be called
+ * Performance utilities for optimizing React components
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null
-  
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
-}
 
 /**
- * Throttle function to limit function execution rate
+ * Throttle function calls to limit execution frequency
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean = false
-  
-  return (...args: Parameters<T>) => {
+  let inThrottle: boolean
+  return function(this: any, ...args: Parameters<T>) {
     if (!inThrottle) {
-      func(...args)
+      func.apply(this, args)
       inThrottle = true
       setTimeout(() => inThrottle = false, limit)
     }
+  }
+}
+
+/**
+ * Debounce function calls to delay execution until after a pause
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null
+  
+  return function(this: any, ...args: Parameters<T>) {
+    const context = this
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => {
+      func.apply(context, args)
+    }, wait)
   }
 }
 
@@ -46,7 +50,7 @@ export function memoize<T extends (...args: any[]) => any>(
     const key = getKey ? getKey(...args) : JSON.stringify(args)
     
     if (cache.has(key)) {
-      return cache.get(key)
+      return cache.get(key)!
     }
     
     const result = func(...args)
@@ -62,77 +66,29 @@ export function batch<T extends (...args: any[]) => any>(
   func: T,
   delay: number = 0
 ): (...args: Parameters<T>) => void {
-  let batchArgs: Parameters<T>[] = []
-  let timeout: ReturnType<typeof setTimeout> | null = null
+  let batchedArgs: Parameters<T>[] = []
+  let timeout: NodeJS.Timeout | null = null
   
-  return (...args: Parameters<T>) => {
-    batchArgs.push(args)
+  return function(this: any, ...args: Parameters<T>) {
+    batchedArgs.push(args)
     
     if (timeout) clearTimeout(timeout)
     
     timeout = setTimeout(() => {
-      if (batchArgs.length > 0) {
-        func(...batchArgs[batchArgs.length - 1]) // Execute with last args
-        batchArgs = []
+      if (batchedArgs.length > 0) {
+        func.apply(this, batchedArgs)
+        batchedArgs = []
       }
     }, delay)
   }
 }
 
 /**
- * Intersection Observer utility for lazy loading
+ * Check if code is running in production
  */
-export function createIntersectionObserver(
-  callback: IntersectionObserverCallback,
-  options: IntersectionObserverInit = {}
-): IntersectionObserver {
-  return new IntersectionObserver(callback, {
-    root: null,
-    rootMargin: '0px',
-    threshold: 0.1,
-    ...options,
-  })
-}
+export const isProduction = import.meta.env.PROD
 
 /**
- * Request Animation Frame utility for smooth animations
+ * Check if code is running in development
  */
-export function requestAnimationFramePromise(): Promise<number> {
-  return new Promise(resolve => {
-    requestAnimationFrame(resolve)
-  })
-}
-
-/**
- * Performance measurement utility
- */
-export function measurePerformance<T>(
-  name: string,
-  fn: () => T
-): T {
-  const start = performance.now()
-  const result = fn()
-  const end = performance.now()
-  
-  // Log performance measurement
-  console.log(`Performance: ${name} took ${end - start}ms`)
-  
-  return result
-}
-
-/**
- * Async performance measurement utility
- */
-export async function measureAsyncPerformance<T>(
-  name: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const start = performance.now()
-  const result = await fn()
-  const end = performance.now()
-  
-  // Log async performance measurement
-  console.log(`Async Performance: ${name} took ${end - start}ms`)
-  
-  return result
-}
+export const isDevelopment = import.meta.env.DEV

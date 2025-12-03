@@ -129,6 +129,7 @@ export const migrateLocalStorageData = mutation({
             totalChores: stats.totalChores || 0,
             completedChores: stats.completedChores || 0,
             totalPoints: stats.totalPoints || 0,
+            lifetimePoints: stats.lifetimePoints || stats.earnedPoints || 0,
             earnedPoints: stats.earnedPoints || 0,
             currentStreak: stats.currentStreak || 0,
             longestStreak: stats.longestStreak || 0,
