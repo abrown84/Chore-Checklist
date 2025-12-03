@@ -54,15 +54,31 @@ export const ChoreList: React.FC = memo(() => {
     }
     
     // Complete the chore and then refresh stats
-    Promise.resolve(completeChore(choreId, currentUserId)).then(() => {
-      // Force stats refresh after chore completion to ensure points update
-      // Small delay to ensure Convex query has updated
-      setTimeout(() => {
-        forceRefresh()
-      }, 500)
-    }).catch((error) => {
-      console.error('Error completing chore:', error)
-    })
+    Promise.resolve(completeChore(choreId, currentUserId))
+      .then((result) => {
+        console.log('✅ Chore completion result:', result)
+        // Force stats refresh after chore completion to ensure points update
+        // Convex queries are reactive and should update automatically,
+        // but we'll trigger a refresh to ensure UI updates immediately
+        setTimeout(() => {
+          forceRefresh()
+          console.log('🔄 Forced stats refresh after chore completion')
+        }, 1000) // Increased delay to ensure backend has processed
+      })
+      .catch((error) => {
+        console.error('❌ Error completing chore:', error)
+        // Remove animation state on error
+        setAnimatingChores(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(choreId)
+          return newSet
+        })
+        setCompletingChores(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(choreId)
+          return newSet
+        })
+      })
 
     // Get click position and trigger multiple popup celebrations (like damage popups in games)
     if (event) {

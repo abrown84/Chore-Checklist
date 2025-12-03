@@ -169,32 +169,32 @@ export const getGlobalLeaderboard = query({
           continue;
         }
 
-        // Get user stats first (we'll use it for points fallback and metrics)
+        // Get user stats first (we'll use it for points and metrics)
+        // Points should be household-specific, not global user.points
         const userStats = await ctx.db
           .query("userStats")
           .withIndex("by_user_household", (q: any) => 
             q.eq("userId", membership.userId).eq("householdId", household._id))
           .first();
 
-        // Try to get points from user.points first, then fall back to userStats or calculate from completions
-        let userPoints = user.points || 0;
+        // Prioritize household-specific userStats.earnedPoints over global user.points
+        let userPoints = 0;
         
-        // If user.points is 0, try to get from userStats
-        if (userPoints === 0 && userStats && userStats.earnedPoints > 0) {
+        if (userStats && userStats.earnedPoints > 0) {
+          // Use household-specific points from userStats
           userPoints = userStats.earnedPoints;
-          console.log(`[getGlobalLeaderboard] Using userStats.earnedPoints for ${user.name}: ${userPoints}`);
-        } else if (userPoints === 0) {
-          // Calculate from chore completions as last resort
+          console.log(`[getGlobalLeaderboard] Using userStats.earnedPoints for ${user.name} in ${household.name}: ${userPoints}`);
+        } else {
+          // Calculate from chore completions for this specific household
           const completions = await ctx.db
             .query("choreCompletions")
             .withIndex("by_user_household", (q: any) => 
               q.eq("userId", membership.userId).eq("householdId", household._id))
             .collect();
           
-          const calculatedPoints = completions.reduce((sum, c) => sum + (c.pointsEarned || 0), 0);
-          if (calculatedPoints > 0) {
-            userPoints = calculatedPoints;
-            console.log(`[getGlobalLeaderboard] Calculated points from completions for ${user.name}: ${userPoints}`);
+          userPoints = completions.reduce((sum, c) => sum + (c.pointsEarned || 0), 0);
+          if (userPoints > 0) {
+            console.log(`[getGlobalLeaderboard] Calculated points from completions for ${user.name} in ${household.name}: ${userPoints}`);
           }
         }
         
@@ -208,17 +208,20 @@ export const getGlobalLeaderboard = query({
           totalEfficiencyScore += userStats.efficiencyScore || 0;
         }
 
-        // Extract first name from signup name
-        const getFirstName = (fullName: string | undefined | null): string => {
-          if (!fullName) return `User ${membership.userId.slice(0, 8)}`;
-          // Split by space and take the first part
-          const firstName = fullName.trim().split(/\s+/)[0];
-          return firstName || `User ${membership.userId.slice(0, 8)}`;
+        // Extract display name - use name if available, otherwise use default
+        const getDisplayName = (fullName: string | undefined | null): string => {
+          // If name exists, extract first name
+          if (fullName && fullName.trim().length > 0) {
+            const firstName = fullName.trim().split(/\s+/)[0];
+            if (firstName) return firstName;
+          }
+          // Default name for users without a name set
+          return 'Member';
         };
         
         memberDetails.push({
           userId: membership.userId,
-          name: getFirstName(user.name),
+          name: getDisplayName(user.name),
           points: userPoints,
           level: user.level || 1,
         });
@@ -226,12 +229,7 @@ export const getGlobalLeaderboard = query({
         memberCount++;
       }
 
-      // Skip households with no points
-      if (totalHouseholdPoints <= 0) {
-        console.log(`[getGlobalLeaderboard] Skipping household ${household.name} - no points (${totalHouseholdPoints})`);
-        continue;
-      }
-      
+      // Include all households, even those with 0 points, so everyone can see each other
       console.log(`[getGlobalLeaderboard] Adding household ${household.name} with ${totalHouseholdPoints} points`);
 
       // Calculate average efficiency
@@ -353,18 +351,21 @@ export const getPublicGlobalLeaderboard = query({
         }
 
         // Get user stats for points
+        // Points should be household-specific, not global user.points
         const userStats = await ctx.db
           .query("userStats")
           .withIndex("by_user_household", (q: any) => 
             q.eq("userId", membership.userId).eq("householdId", household._id))
           .first();
 
-        let userPoints = user.points || 0;
+        // Prioritize household-specific userStats.earnedPoints over global user.points
+        let userPoints = 0;
         
-        if (userPoints === 0 && userStats && userStats.earnedPoints > 0) {
+        if (userStats && userStats.earnedPoints > 0) {
+          // Use household-specific points from userStats
           userPoints = userStats.earnedPoints;
-        } else if (userPoints === 0) {
-          // Calculate from chore completions as last resort
+        } else {
+          // Calculate from chore completions for this specific household
           const completions = await ctx.db
             .query("choreCompletions")
             .withIndex("by_user_household", (q: any) => 
@@ -376,16 +377,20 @@ export const getPublicGlobalLeaderboard = query({
         
         totalHouseholdPoints += userPoints;
 
-        // Extract first name from signup name
-        const getFirstName = (fullName: string | undefined | null): string => {
-          if (!fullName) return `User ${membership.userId.slice(0, 8)}`;
-          const firstName = fullName.trim().split(/\s+/)[0];
-          return firstName || `User ${membership.userId.slice(0, 8)}`;
+        // Extract display name - use name if available, otherwise use default
+        const getDisplayName = (fullName: string | undefined | null): string => {
+          // If name exists, extract first name
+          if (fullName && fullName.trim().length > 0) {
+            const firstName = fullName.trim().split(/\s+/)[0];
+            if (firstName) return firstName;
+          }
+          // Default name for users without a name set
+          return 'Member';
         };
         
         memberDetails.push({
           userId: membership.userId,
-          name: getFirstName(user.name),
+          name: getDisplayName(user.name),
           points: userPoints,
           level: user.level || 1,
         });
@@ -393,11 +398,7 @@ export const getPublicGlobalLeaderboard = query({
         memberCount++;
       }
 
-      // Skip households with no points
-      if (totalHouseholdPoints <= 0) {
-        continue;
-      }
-
+      // Include all households, even those with 0 points, so everyone can see each other
       householdLeaderboard.push({
         householdId: household._id,
         householdName: household.name,
@@ -780,7 +781,7 @@ export async function calculateUserStats(ctx: any, userId: any, householdId: any
   const efficiencyScore = calculateEfficiencyScore(userChores, completedChores, completions, longestStreak);
 
   // Calculate seasonal stats
-  const now = Date.now();
+  const now = Math.floor(Date.now());
   const currentDate = new Date(now);
   const currentMonth = currentDate.getMonth() + 1; // 1-12
   const currentDay = currentDate.getDate();
@@ -875,7 +876,7 @@ export async function calculateUserStats(ctx: any, userId: any, householdId: any
     seasonalPoints, // Points earned in current season
     seasonalLevel, // Level based on seasonal points
     currentSeason, // Current season identifier
-    lastActive: user.lastActive,
+    lastActive: user.lastActive ? Math.floor(user.lastActive) : now,
     updatedAt: now,
   };
 
@@ -888,17 +889,46 @@ export async function calculateUserStats(ctx: any, userId: any, householdId: any
   if (existingStats) {
     // Level persistence is not needed - levels are based on lifetimePoints which never decrease
     // Clear any existing levelPersistenceInfo since it's no longer used
-    const { _creationTime, ...patchData } = stats as any;
-    // Remove levelPersistenceInfo if it exists
-    if (patchData.levelPersistenceInfo) {
-      delete patchData.levelPersistenceInfo;
-    }
+    // Create patch data without any system fields - explicitly list only data fields
+    const patchData: any = {
+      userId: stats.userId,
+      householdId: stats.householdId,
+      totalChores: stats.totalChores,
+      completedChores: stats.completedChores,
+      totalPoints: stats.totalPoints,
+      lifetimePoints: stats.lifetimePoints,
+      earnedPoints: stats.earnedPoints,
+      currentStreak: stats.currentStreak,
+      longestStreak: stats.longestStreak,
+      currentLevel: stats.currentLevel,
+      currentLevelPoints: stats.currentLevelPoints,
+      pointsToNextLevel: stats.pointsToNextLevel,
+      efficiencyScore: stats.efficiencyScore,
+      seasonalPoints: stats.seasonalPoints,
+      seasonalLevel: stats.seasonalLevel,
+      currentSeason: stats.currentSeason,
+      lastActive: stats.lastActive ? Math.floor(stats.lastActive) : undefined,
+      updatedAt: Math.floor(stats.updatedAt),
+      levelPersistenceInfo: undefined, // Explicitly clear levelPersistenceInfo
+    };
+    
+    // Patch the document - Convex will handle system fields automatically
     await ctx.db.patch(existingStats._id, patchData);
-    return { ...patchData, _id: existingStats._id, _creationTime: existingStats._creationTime };
+    
+    // Return updated stats by fetching from DB to ensure we have correct system fields
+    const updatedStats = await ctx.db.get(existingStats._id);
+    if (!updatedStats) {
+      throw new Error("Failed to retrieve updated stats after patch");
+    }
+    return updatedStats;
   } else {
-    // Only include _creationTime when inserting new records
-    const statsId = await ctx.db.insert("userStats", { ...stats, _creationTime: now });
-    return { ...stats, _id: statsId, _creationTime: now };
+    // Insert new record - Convex automatically manages _creationTime, don't include it
+    const statsId = await ctx.db.insert("userStats", stats);
+    const insertedStats = await ctx.db.get(statsId);
+    if (!insertedStats) {
+      throw new Error("Failed to retrieve inserted stats");
+    }
+    return insertedStats;
   }
 }
 

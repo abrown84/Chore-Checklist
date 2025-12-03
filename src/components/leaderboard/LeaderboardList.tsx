@@ -46,8 +46,9 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
         
         // Calculate different point metrics
         // Use lifetimePoints if available, otherwise calculate it (for backward compatibility)
-        const lifetimePoints = member.lifetimePoints ?? (member.earnedPoints + (redemptionStatus.totalRedeemed * conversionRate))
-        const availablePoints = member.earnedPoints - redemptionStatus.pendingPoints
+        const earnedPoints = member.earnedPoints ?? 0
+        const lifetimePoints = member.lifetimePoints ?? (earnedPoints + (redemptionStatus.totalRedeemed * conversionRate))
+        const availablePoints = Math.max(0, earnedPoints - (redemptionStatus.pendingPoints || 0))
         const availableValue = availablePoints > 0 ? (availablePoints / conversionRate) : 0
         const lifetimeValue = lifetimePoints > 0 ? (lifetimePoints / conversionRate) : 0
         
@@ -138,7 +139,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                         <div className="p-1 bg-warning/20 dark:bg-warning/30 rounded-full">
                           <Star className="w-4 h-4 text-warning" />
                         </div>
-                        <span className="text-base sm:text-lg font-bold text-foreground">{member.earnedPoints}</span>
+                        <span className="text-base sm:text-lg font-bold text-foreground">{earnedPoints.toLocaleString()}</span>
                       </>
                     )}
                   </div>

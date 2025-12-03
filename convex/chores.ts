@@ -250,18 +250,21 @@ export const completeChore = mutation({
       daysLate: isLate ? daysLate : undefined,
     });
 
-    // Update user points
+    // Update user lastActive timestamp
     const user = await ctx.db.get(args.completedBy);
     if (user) {
       await ctx.db.patch(args.completedBy, {
-        points: (user.points ?? 0) + finalPoints,
         lastActive: now,
         updatedAt: now,
       });
+    } else {
+      console.error(`[completeChore] User ${args.completedBy} not found!`)
     }
 
-    // Update user stats in the userStats table immediately
-    await calculateUserStats(ctx, args.completedBy, chore.householdId);
+    // Update user stats in the userStats table (household-specific points)
+    console.log(`[completeChore] Calling calculateUserStats for user ${args.completedBy} in household ${chore.householdId}`)
+    const updatedStats = await calculateUserStats(ctx, args.completedBy, chore.householdId);
+    console.log(`[completeChore] Stats updated - earnedPoints: ${updatedStats.earnedPoints}, lifetimePoints: ${updatedStats.lifetimePoints}`)
 
     return {
       choreId: args.choreId,

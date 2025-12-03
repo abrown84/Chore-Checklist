@@ -101,7 +101,7 @@ export const getHouseholdMembers = query({
             email: user.email,
             name: user.name,
             avatarUrl: user.avatarUrl,
-            points: user.points,
+            points: user.points, // Legacy field - not updated, use userStats.earnedPoints for household-specific points
             level: user.level,
             lastActive: user.lastActive,
           },

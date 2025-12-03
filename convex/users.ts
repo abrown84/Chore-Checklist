@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getCurrentUserId } from "./authHelpers";
+import { calculateUserStats } from "./stats";
 
 // Query: Get user by ID
 export const getUser = query({
@@ -18,12 +19,13 @@ export const getUser = query({
     }
 
     // Only return public user info
+    // NOTE: points field is legacy/stale - use userStats.earnedPoints for household-specific points
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
-      points: user.points || 0,
+      points: user.points || 0, // Legacy field - not updated, use userStats.earnedPoints instead
       level: user.level || 1,
       lastActive: user.lastActive,
     };
@@ -46,12 +48,13 @@ export const getCurrentUser = query({
       return null;
     }
 
+    // NOTE: points field is legacy/stale - use userStats.earnedPoints for household-specific points
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
-      points: user.points || 0,
+      points: user.points || 0, // Legacy field - not updated, use userStats.earnedPoints instead
       level: user.level || 1,
       role: user.role,
       createdAt: user.createdAt,
@@ -89,12 +92,13 @@ export const getUsersByHousehold = query({
         const user = await ctx.db.get(member.userId);
         if (!user) return null;
         
+        // NOTE: points field is legacy/stale - use userStats.earnedPoints for household-specific points
         return {
           _id: user._id,
           email: user.email,
           name: user.name,
           avatarUrl: user.avatarUrl,
-          points: user.points || 0,
+          points: user.points || 0, // Legacy field - not updated, use userStats.earnedPoints instead
           level: user.level || 1,
           lastActive: user.lastActive,
           role: member.role,
@@ -202,12 +206,16 @@ export const updateUserProfile = mutation({
 });
 
 // Mutation: Update user points (internal use)
+// DEPRECATED: Points are now household-specific and managed in userStats table
+// This mutation is kept for backward compatibility but should not be used
+// Use calculateUserStats or redemption requests instead
 export const updateUserPoints = mutation({
   args: {
     userId: v.id("users"),
     pointsChange: v.number(),
   },
   handler: async (ctx, args) => {
+    console.warn('[DEPRECATED] updateUserPoints called - points are now household-specific in userStats table');
     const currentUserId = await getAuthUserId(ctx);
     if (!currentUserId) {
       throw new Error("Not authenticated");
@@ -218,31 +226,35 @@ export const updateUserPoints = mutation({
       throw new Error("User not found");
     }
 
-    const currentPoints = user.points || 0;
-    const newPoints = Math.max(0, currentPoints + args.pointsChange);
+    // Don't update user.points - it's deprecated
+    // Points are now managed in userStats table (household-specific)
     const now = Date.now();
 
     await ctx.db.patch(args.userId, {
-      points: newPoints,
       lastActive: now,
       updatedAt: now,
     });
 
     return {
       userId: args.userId,
-      oldPoints: currentPoints,
-      newPoints,
-      pointsChange: args.pointsChange,
+      oldPoints: user.points || 0,
+      newPoints: user.points || 0, // No change - points managed in userStats
+      pointsChange: 0, // No change applied
+      message: "Points are now household-specific. Use userStats.earnedPoints instead."
     };
   },
 });
 
 // Mutation: Calculate and update user level
+// DEPRECATED: Levels are now household-specific and calculated in userStats table
+// This mutation uses global user.points which is deprecated
+// Use calculateUserStats instead which calculates level from household-specific lifetimePoints
 export const updateUserLevel = mutation({
   args: {
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    console.warn('[DEPRECATED] updateUserLevel called - levels are now household-specific in userStats table');
     const currentUserId = await getAuthUserId(ctx);
     if (!currentUserId) {
       throw new Error("Not authenticated");
@@ -253,7 +265,9 @@ export const updateUserLevel = mutation({
       throw new Error("User not found");
     }
 
-    const userPoints = user.points || 0;
+    // Don't use user.points - it's deprecated and not household-specific
+    // Levels should be calculated from userStats.lifetimePoints per household
+    const userPoints = 0; // Deprecated - use userStats instead
     const currentLevel = user.level || 1;
 
     // Level calculation based on points - MUST MATCH frontend LEVELS in src/types/chore.ts
@@ -394,48 +408,23 @@ export const adminAdjustUserPoints = mutation({
       throw new Error("User not found");
     }
 
+    // DEPRECATED: Don't update user.points - points are now household-specific in userStats table
+    // This mutation should use userStats instead, but kept for backward compatibility
+    console.warn('[DEPRECATED] updateUserPointsAndLevel called - points are now household-specific in userStats table');
     const currentPoints = user.points || 0;
-    const newPoints = Math.max(0, currentPoints + args.pointsChange);
+    const currentLevel = user.level || 1;
+    // Don't actually update user.points or level - they're deprecated
+    // Points and levels are now managed in userStats table (household-specific)
     const now = Date.now();
 
-    // Update user points
+    // Update lastActive only - points and levels managed in userStats
     await ctx.db.patch(args.userId, {
-      points: newPoints,
       lastActive: now,
       updatedAt: now,
     });
 
-    // Calculate and update user level
-    const LEVELS = [
-      { level: 1, pointsRequired: 0 },
-      { level: 2, pointsRequired: 25 },
-      { level: 3, pointsRequired: 75 },
-      { level: 4, pointsRequired: 150 },
-      { level: 5, pointsRequired: 300 },
-      { level: 6, pointsRequired: 500 },
-      { level: 7, pointsRequired: 1000 },
-      { level: 8, pointsRequired: 2000 },
-      { level: 9, pointsRequired: 3500 },
-      { level: 10, pointsRequired: 5000 },
-    ];
-
-    let newLevel = 1;
-    for (let i = LEVELS.length - 1; i >= 0; i--) {
-      if (newPoints >= LEVELS[i].pointsRequired) {
-        newLevel = LEVELS[i].level;
-        break;
-      }
-    }
-
-    const currentLevel = user.level || 1;
-    if (newLevel !== currentLevel) {
-      await ctx.db.patch(args.userId, {
-        level: newLevel,
-        updatedAt: now,
-      });
-    }
-
     // Create point deduction record for tracking (use negative for additions)
+    // Note: This should ideally update userStats instead, but kept for backward compatibility
     const reasonText = args.reason || `Admin adjustment: ${args.pointsChange > 0 ? '+' : ''}${args.pointsChange} points`;
     if (args.pointsChange < 0) {
       // Only create deduction record for subtractions
@@ -447,15 +436,19 @@ export const adminAdjustUserPoints = mutation({
         deductedAt: now,
         deductedBy: currentUserId as any,
       });
+      
+      // Recalculate user stats to update household-specific points
+      await calculateUserStats(ctx, args.userId, args.householdId);
     }
 
     return {
       userId: args.userId,
       oldPoints: currentPoints,
-      newPoints,
-      pointsChange: args.pointsChange,
+      newPoints: currentPoints, // No change - points managed in userStats
+      pointsChange: 0, // No change applied to deprecated field
       oldLevel: currentLevel,
-      newLevel,
+      newLevel: currentLevel, // No change - levels managed in userStats
+      message: "Points and levels are now household-specific. Use userStats instead."
     };
   },
 });

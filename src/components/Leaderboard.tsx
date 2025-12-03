@@ -105,7 +105,7 @@ export const Leaderboard: React.FC = React.memo(() => {
           currentLevelData,
           nextLevelData,
           levelProgress: Math.min(Math.max(progressToNextLevel, 0), 100),
-          earnedPoints: household.totalPoints,
+          earnedPoints: household.totalPoints ?? 0,
           efficiencyScore: household.averageEfficiency || 0,
           completedChores: household.completedChores,
           totalChores: household.totalChores,

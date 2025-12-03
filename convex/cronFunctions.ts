@@ -451,8 +451,8 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     // Don't include _creationTime when patching - it's a system field
     await ctx.db.patch(existingStats._id, stats);
   } else {
-    // Only include _creationTime when inserting new records
-    await ctx.db.insert("userStats", { ...stats, _creationTime: now });
+    // Insert new record - Convex automatically manages _creationTime, don't include it
+    await ctx.db.insert("userStats", stats);
   }
 }
 

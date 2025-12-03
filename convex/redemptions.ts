@@ -112,14 +112,25 @@ export const createRedemptionRequest = mutation({
       throw new Error("Not a member of this household");
     }
 
-    // Verify user has enough points
+    // Verify user has enough points (household-specific)
     const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new Error("User not found");
     }
 
-    if ((user.points ?? 0) < args.pointsRequested) {
-      throw new Error("Insufficient points");
+    // Get household-specific user stats
+    const userStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q) =>
+        q.eq("userId", args.userId).eq("householdId", args.householdId)
+      )
+      .first();
+
+    // Use household-specific earnedPoints, not global user.points
+    const availablePoints = userStats?.earnedPoints ?? 0;
+    
+    if (availablePoints < args.pointsRequested) {
+      throw new Error(`Insufficient points. You have ${availablePoints} available points in this household.`);
     }
 
     const now = Date.now();
@@ -186,12 +197,8 @@ export const updateRedemptionRequestStatus = mutation({
         // No need to set level persistence - levels are based on lifetimePoints
         // which never decrease, so redemptions won't affect level
 
-        // Update user.points (legacy field, kept for compatibility)
-        const newPoints = Math.max(0, (user.points ?? 0) - request.pointsRequested);
-        await ctx.db.patch(request.userId, {
-          points: newPoints,
-          updatedAt: now,
-        });
+        // Points are now managed in userStats table (household-specific)
+        // No need to update global user.points field
 
         // Create point deduction record (for audit trail)
         await ctx.db.insert("pointDeductions", {
