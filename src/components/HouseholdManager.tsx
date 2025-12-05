@@ -25,7 +25,6 @@ import {
   GraduationCap,
   Home,
   Loader2,
-  Trash2,
   Share2,
 } from 'lucide-react'
 
@@ -912,6 +911,7 @@ export const HouseholdManager: React.FC = () => {
     </div>
   )
 }
+
 
 
 
