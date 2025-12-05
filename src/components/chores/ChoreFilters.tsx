@@ -3,20 +3,24 @@ import { Button } from '../ui/button'
 
 interface ChoreFiltersProps {
   filter: 'all' | 'pending' | 'completed'
+  deadlineFilter?: 'all' | 'overdue' | 'due-soon' | 'upcoming'
   categoryFilter: string
   sortBy: 'priority' | 'difficulty' | 'dueDate'
   categories: string[]
   onFilterChange: (filter: 'all' | 'pending' | 'completed') => void
+  onDeadlineFilterChange?: (filter: 'all' | 'overdue' | 'due-soon' | 'upcoming') => void
   onCategoryFilterChange: (category: string) => void
   onSortByChange: (sortBy: 'priority' | 'difficulty' | 'dueDate') => void
 }
 
 export const ChoreFilters: React.FC<ChoreFiltersProps> = ({
   filter,
+  deadlineFilter = 'all',
   categoryFilter,
   sortBy,
   categories,
   onFilterChange,
+  onDeadlineFilterChange,
   onCategoryFilterChange,
   onSortByChange
 }) => {
@@ -40,6 +44,26 @@ export const ChoreFilters: React.FC<ChoreFiltersProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Deadline Filter */}
+        {onDeadlineFilterChange && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-2">
+            <span className="text-sm font-medium text-gray-700">Deadline:</span>
+            <div className="flex space-x-1 sm:space-x-2">
+              {(['all', 'overdue', 'due-soon', 'upcoming'] as const).map((deadline) => (
+                <Button
+                  key={deadline}
+                  onClick={() => onDeadlineFilterChange(deadline)}
+                  variant={deadlineFilter === deadline ? 'default' : 'outline'}
+                  size="sm"
+                  className="capitalize min-h-[44px] flex-1 sm:flex-none"
+                >
+                  {deadline === 'due-soon' ? 'Due Soon' : deadline}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Category Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-2">

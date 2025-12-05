@@ -108,17 +108,22 @@ export const testEfficiencyCalculation = () => {
   // Points efficiency
   const totalPotentialPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
   
-  // Use the same logic as the main system for consistency
-  const baseEarnedPoints = completedChores.reduce((sum, c) => {
-    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
-    return sum + earnedPoints
+  // Calculate total lifetime points (same logic as main system)
+  const totalLifetimePoints = userChores.reduce((sum, c) => {
+    const points = c.finalPoints !== undefined ? c.finalPoints : c.points || 0
+    
+    // Count points from completed chores
+    if (c.completed) {
+      return sum + points
+    }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (!c.completed && c.finalPoints !== undefined) {
+      return sum + points
+    }
+    
+    return sum
   }, 0)
-  
-  const resetChoresPoints = userChores
-    .filter(c => !c.completed && c.finalPoints !== undefined)
-    .reduce((sum, c) => sum + (c.finalPoints || 0), 0)
-  
-  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints
   const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0
   
   // Final efficiency score

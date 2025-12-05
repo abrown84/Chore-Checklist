@@ -177,7 +177,6 @@ export const PointsCounter: React.FC = memo(() => {
             })()}
           </div>
           <p className="text-sm sm:text-base text-muted-foreground mb-1">{currentLevelData?.name}</p>
-          <div className="text-xs text-muted-foreground mb-2">{currentLevelData?.icon}</div>
           {/* Level Meme - Hidden on small screens, shown on larger */}
           {currentLevelData && (
             <div className="hidden sm:block max-w-[200px] mx-auto mt-2" style={{ aspectRatio: '4/3' }}>

@@ -4,8 +4,8 @@ import { Chore } from "../types/chore";
 import { User } from "../types/user";
 
 // Convert Convex chore to frontend Chore type
-export function convexChoreToChore(convexChore: any): Chore {
-  return {
+export function convexChoreToChore(convexChore: any, storageUrl?: string | null): Chore {
+  const chore: Chore = {
     id: convexChore._id,
     title: convexChore.title,
     description: convexChore.description || "",
@@ -21,7 +21,15 @@ export function convexChoreToChore(convexChore: any): Chore {
     assignedTo: convexChore.assignedTo,
     finalPoints: convexChore.finalPoints,
     bonusMessage: convexChore.bonusMessage,
+    proofPhotoId: convexChore.proofPhotoId,
   };
+  
+  // Add photo URL if we have a storage ID and URL
+  if (convexChore.proofPhotoId && storageUrl) {
+    chore.proofPhotoUrl = storageUrl;
+  }
+  
+  return chore;
 }
 
 // Convert frontend Chore type to Convex mutation args

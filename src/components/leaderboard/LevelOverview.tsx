@@ -2,7 +2,6 @@ import React from 'react'
 import { Award } from 'lucide-react'
 import { User } from '../../types/user'
 import { UserStats } from '../../types/user'
-import { LEVELS } from '../../types/chore'
 import { APP_CONFIG } from '../../config/constants'
 import { useAnimationDelays } from '../../hooks/useAnimationDelays'
 import { getDisplayName } from '../../utils/convexHelpers'
@@ -30,8 +29,6 @@ export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members
       <div className="space-y-4">
         {topMembers.map((member, index) => {
           const stats = memberStats.find(s => s.userId === member.id)
-          const levelData = LEVELS.find(level => level.level === stats?.currentLevel || 1)
-          
           return (
             <div 
               key={member.id} 
@@ -48,7 +45,6 @@ export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members
                 <div>
                   <p className="font-medium text-foreground text-sm">{getDisplayName(member.name, member.email)}</p>
                   <div className="flex items-center space-x-1">
-                    <span className="text-sm animate-float">{levelData?.icon || '🌱'}</span>
                     <span className="text-xs text-muted-foreground">Lv {stats?.currentLevel || 1}</span>
                   </div>
                 </div>

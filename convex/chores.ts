@@ -47,16 +47,26 @@ export const getChoresByHousehold = query({
         );
     }
 
-    if (args.assignedTo) {
-      query = ctx.db
-        .query("chores")
-        .withIndex("by_assigned_to", (q) => q.eq("assignedTo", args.assignedTo));
-    }
-
     const chores = await query.collect();
     
+    // Filter by assignedTo if provided (must filter after collecting to maintain household boundary)
+    const filteredChores = args.assignedTo 
+      ? chores.filter((chore) => chore.assignedTo === args.assignedTo)
+      : chores;
+    
+    // Get photo URLs for chores with proof photos
+    const choresWithPhotos = await Promise.all(
+      filteredChores.map(async (chore) => {
+        if (chore.proofPhotoId) {
+          const photoUrl = await ctx.storage.getUrl(chore.proofPhotoId);
+          return { ...chore, proofPhotoUrl: photoUrl };
+        }
+        return chore;
+      })
+    );
+    
     // Sort by due date, then by priority, then by creation date
-    return chores.sort((a, b) => {
+    return choresWithPhotos.sort((a, b) => {
       // First sort by due date (nulls last)
       if (a.dueDate && !b.dueDate) return -1;
       if (!a.dueDate && b.dueDate) return 1;
@@ -145,11 +155,23 @@ export const addChore = mutation({
   },
 });
 
+// Mutation: Generate upload URL for photo proof
+export const generateUploadUrl = mutation({
+  handler: async (ctx) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
 // Mutation: Complete a chore
 export const completeChore = mutation({
   args: {
     choreId: v.id("chores"),
     completedBy: v.id("users"),
+    proofPhotoId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const userId = await getCurrentUserId(ctx);
@@ -231,6 +253,7 @@ export const completeChore = mutation({
       completedBy: args.completedBy,
       finalPoints,
       bonusMessage,
+      proofPhotoId: args.proofPhotoId,
       updatedAt: now,
     });
 
@@ -248,6 +271,7 @@ export const completeChore = mutation({
       isLate,
       daysEarly: isEarly ? daysEarly : undefined,
       daysLate: isLate ? daysLate : undefined,
+      proofPhotoId: args.proofPhotoId,
     });
 
     // Update user lastActive timestamp
@@ -263,8 +287,40 @@ export const completeChore = mutation({
 
     // Update user stats in the userStats table (household-specific points)
     console.log(`[completeChore] Calling calculateUserStats for user ${args.completedBy} in household ${chore.householdId}`)
+    console.log(`[completeChore] Chore being completed: ${chore.title}, finalPoints: ${finalPoints}, points: ${chore.points}`)
+    
+    // Verify the chore was updated correctly by fetching it again
+    const updatedChore = await ctx.db.get(args.choreId);
+    if (updatedChore) {
+      console.log(`[completeChore] Verified updated chore - status: ${updatedChore.status}, completedBy: ${updatedChore.completedBy}, finalPoints: ${updatedChore.finalPoints}`);
+    }
+    
+    // Get stats BEFORE completing the chore for comparison
+    const statsBefore = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q: any) => q.eq("userId", args.completedBy).eq("householdId", chore.householdId))
+      .first();
+    
+    if (statsBefore) {
+      console.log(`[completeChore] Stats BEFORE completion - earnedPoints: ${statsBefore.earnedPoints}, lifetimePoints: ${statsBefore.lifetimePoints}`)
+    }
+    
     const updatedStats = await calculateUserStats(ctx, args.completedBy, chore.householdId);
-    console.log(`[completeChore] Stats updated - earnedPoints: ${updatedStats.earnedPoints}, lifetimePoints: ${updatedStats.lifetimePoints}`)
+    
+    const calculatedPointsRedeemed = updatedStats.lifetimePoints - updatedStats.earnedPoints
+    console.log(`[completeChore] Stats updated - earnedPoints: ${updatedStats.earnedPoints}, lifetimePoints: ${updatedStats.lifetimePoints}, calculated pointsRedeemed: ${calculatedPointsRedeemed}`)
+    
+    // Double-check the stats were saved correctly by reading them back
+    const verifyStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_user_household", (q: any) => q.eq("userId", args.completedBy).eq("householdId", chore.householdId))
+      .first();
+    if (verifyStats) {
+      console.log(`[completeChore] Verified saved stats - earnedPoints: ${verifyStats.earnedPoints}, lifetimePoints: ${verifyStats.lifetimePoints}`)
+      if (verifyStats.earnedPoints !== updatedStats.earnedPoints) {
+        console.error(`[completeChore] ERROR: earnedPoints mismatch! Expected: ${updatedStats.earnedPoints}, Got: ${verifyStats.earnedPoints}`)
+      }
+    }
 
     return {
       choreId: args.choreId,

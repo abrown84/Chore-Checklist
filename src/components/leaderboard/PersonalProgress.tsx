@@ -44,7 +44,6 @@ export const PersonalProgress: React.FC<PersonalProgressProps> = React.memo(({
                 {getDisplayName(currentUser.name, currentUser.email)}
               </h2>
               <div className="flex items-center justify-center lg:justify-start space-x-2 mt-2">
-                <span className="text-2xl animate-float">{currentLevelData?.icon || '🌱'}</span>
                 <span className="text-xl font-bold text-foreground">
                   Level {currentUserStats.currentLevel}
                 </span>

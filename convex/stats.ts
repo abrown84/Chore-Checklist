@@ -699,43 +699,94 @@ export async function calculateUserStats(ctx: any, userId: any, householdId: any
     chore.status === "completed" && chore.completedBy === userId
   );
   
-  // Calculate lifetime points (matching frontend calculation)
-  // Base earned points from completed chores
-  const baseEarnedPoints = completedChores.reduce((sum: number, chore: any) => {
-    return sum + (chore.finalPoints || chore.points || 0);
-  }, 0);
-
-  // Reset chores points (incomplete chores with finalPoints - these are points from chores that were reset)
-  const resetChoresPoints = userChores.reduce((sum: number, chore: any) => {
-    if (!chore.status || chore.status !== "completed") {
-      // Include points from incomplete chores that have finalPoints (from resets)
-      if (chore.finalPoints !== undefined && chore.finalPoints !== null) {
-        return sum + chore.finalPoints;
-      }
+  // Calculate lifetime points (all points ever earned)
+  // Includes: completed chores + incomplete chores with finalPoints (from resets)
+  const lifetimePoints = userChores.reduce((sum: number, chore: any) => {
+    const points = chore.finalPoints || chore.points || 0;
+    
+    // Count points from completed chores
+    if (chore.status === "completed" && chore.completedBy === userId) {
+      return sum + points;
     }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (chore.status !== "completed" && chore.finalPoints !== undefined && chore.finalPoints !== null) {
+      return sum + points;
+    }
+    
     return sum;
   }, 0);
-
-  // Total lifetime points (completed + reset chores) - all points ever earned
-  const lifetimePoints = baseEarnedPoints + resetChoresPoints;
+  
+  // Debug: Log completed chores details
+  if (completedChores.length > 0) {
+    console.log(`[calculateUserStats] Completed chores for user ${userId}:`, {
+      count: completedChores.length,
+      totalLifetimePoints: lifetimePoints,
+      choreDetails: completedChores.map((c: any) => ({
+        id: c._id,
+        title: c.title,
+        status: c.status,
+        completedBy: c.completedBy,
+        points: c.points,
+        finalPoints: c.finalPoints,
+        pointsUsed: c.finalPoints || c.points || 0
+      }))
+    });
+  }
 
   // Get approved redemption requests for this user in this household
   // This is the source of truth for redeemed points
-  const redemptionRequests = await ctx.db
+  // IMPORTANT: Query by household first, then filter by user and status
+  // to ensure we only get redemptions from THIS household
+  const allHouseholdRedemptions = await ctx.db
     .query("redemptionRequests")
-    .withIndex("by_user_status", (q: any) => q.eq("userId", userId).eq("status", "approved"))
+    .withIndex("by_household", (q: any) => q.eq("householdId", householdId))
     .collect();
 
-  const householdRedemptions = redemptionRequests.filter(
-    (req: any) => req.householdId === householdId
+  // Filter to only approved redemptions for this user in this household
+  const householdRedemptions = allHouseholdRedemptions.filter(
+    (req: any) => req.userId === userId && req.status === "approved"
   );
+  
   const pointsRedeemed = householdRedemptions.reduce(
     (sum: number, req: any) => sum + (req.pointsRequested || 0),
     0
   );
+  
+  // Debug logging for redemption queries
+  if (householdRedemptions.length > 0) {
+    console.log(`[calculateUserStats] Redemption details for user ${userId} in household ${householdId}:`, {
+      totalRedemptionRequestsInHousehold: allHouseholdRedemptions.length,
+      approvedRedemptionsForUser: householdRedemptions.length,
+      pointsRedeemed,
+      redemptionDetails: householdRedemptions.map((r: any) => ({
+        id: r._id,
+        pointsRequested: r.pointsRequested,
+        status: r.status,
+        requestedAt: new Date(r.requestedAt).toISOString()
+      }))
+    });
+  }
 
   // Earned points = lifetime points minus points redeemed (current usable points)
   const earnedPoints = Math.max(0, lifetimePoints - pointsRedeemed);
+  
+  // Debug logging to help diagnose points issues
+  console.log(`[calculateUserStats] Points calculation for user ${userId} in household ${householdId}:`, {
+    lifetimePoints,
+    pointsRedeemed,
+    earnedPoints: Math.max(0, lifetimePoints - pointsRedeemed),
+    completedChoresCount: completedChores.length,
+    totalCompletions: completions.length,
+    approvedRedemptionsCount: householdRedemptions.length,
+    allRedemptionsInHousehold: allHouseholdRedemptions.length,
+    redemptionBreakdown: householdRedemptions.length > 0 ? householdRedemptions.map((r: any) => ({
+      id: r._id,
+      points: r.pointsRequested,
+      status: r.status,
+      date: new Date(r.requestedAt).toISOString()
+    })) : 'No redemptions'
+  });
 
   // Calculate total points (for display purposes)
   const totalPoints = userChores.reduce((sum: number, chore: any) => {
@@ -920,6 +971,18 @@ export async function calculateUserStats(ctx: any, userId: any, householdId: any
     if (!updatedStats) {
       throw new Error("Failed to retrieve updated stats after patch");
     }
+    
+    // Verify the earnedPoints were saved correctly
+    if (updatedStats.earnedPoints !== stats.earnedPoints) {
+      console.error(`[calculateUserStats] WARNING: earnedPoints mismatch! Calculated: ${stats.earnedPoints}, Saved: ${updatedStats.earnedPoints}`);
+      // Force a re-patch with the correct value
+      await ctx.db.patch(existingStats._id, { earnedPoints: stats.earnedPoints });
+      const reFetchedStats = await ctx.db.get(existingStats._id);
+      if (reFetchedStats) {
+        return reFetchedStats;
+      }
+    }
+    
     return updatedStats;
   } else {
     // Insert new record - Convex automatically manages _creationTime, don't include it
@@ -1042,19 +1105,21 @@ function calculateEfficiencyScore(userChores: any[], completedChores: any[], com
   const streakConsistency = totalCompleted > 0 ? Math.min(1, longestStreak / totalCompleted) : 0;
   
   // 5. Points Efficiency (10% weight) - Rewards earning more points from available chores
-  const baseEarnedPoints = completedChores.reduce((sum: number, c: any) => {
-    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points;
-    return sum + earnedPoints;
-  }, 0);
-  
-  const resetChoresPoints = userChores.reduce((sum: number, c: any) => {
-    if (c.status !== "completed" && c.finalPoints !== undefined) {
-      return sum + c.finalPoints;
+  const totalLifetimePoints = userChores.reduce((sum: number, c: any) => {
+    const points = c.finalPoints || c.points || 0;
+    
+    // Count points from completed chores
+    if (c.status === "completed") {
+      return sum + points;
     }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (c.status !== "completed" && c.finalPoints !== undefined) {
+      return sum + points;
+    }
+    
     return sum;
   }, 0);
-  
-  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints;
   const totalPotentialPoints = userChores.reduce((sum: number, c: any) => sum + (c.points || 0), 0);
   const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0;
   

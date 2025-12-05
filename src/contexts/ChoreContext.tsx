@@ -14,7 +14,7 @@ interface ChoreState {
 interface ChoreContextType {
   state: ChoreState
   addChore: (choreData: Omit<Chore, 'id' | 'createdAt' | 'completed'>) => void
-  completeChore: (id: string, completedBy: string) => void
+  completeChore: (id: string, completedBy: string, proofPhotoId?: string) => void
   deleteChore: (id: string) => void
   updateChore: (chore: Chore) => void
   resetChores: () => void
@@ -105,7 +105,9 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
   // Update chores from Convex when data is available
   useEffect(() => {
     if (!isDemoMode && convexChores && householdId) {
-      const convertedChores = convexChores.map(convexChoreToChore);
+      const convertedChores = convexChores.map((convexChore: any) => 
+        convexChoreToChore(convexChore, (convexChore as any).proofPhotoUrl)
+      );
       setChores(convertedChores);
     } else if (!isDemoMode && convexChores === null && householdId) {
       // No chores found in Convex - clear local state
@@ -154,7 +156,7 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
     }
   }, [isDemoMode, householdId, addChoreMutation])
   
-  const completeChore = useCallback(async (id: string, completedBy: string) => {
+  const completeChore = useCallback(async (id: string, completedBy: string, proofPhotoId?: string) => {
     if (isDemoMode) {
       // Demo mode: use local state
       setChores(prev => prev.map(chore => {
@@ -196,6 +198,7 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
         const result = await completeChoreMutation({
           choreId: id as Id<"chores">,
           completedBy: completedBy as Id<"users">,
+          proofPhotoId: proofPhotoId as Id<"_storage"> | undefined,
         });
         console.log('✅ Chore completed successfully:', result);
         console.log(`✅ Points awarded: ${result.finalPoints}`);

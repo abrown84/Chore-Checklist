@@ -256,15 +256,25 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         
         // Debug logging - show what we're getting from Convex
         if (currentUser?.id === userId) {
+          const calculatedRedeemedPoints = lifetimePoints - earnedPoints
           console.log('🔍 Convex Stats for Current User:', {
             userId,
             'Raw earnedPoints from Convex': convexStat.earnedPoints,
             'Raw lifetimePoints from Convex': convexStat.lifetimePoints,
             'Calculated earnedPoints': earnedPoints,
             'Calculated lifetimePoints': lifetimePoints,
-            'Deductions (lifetime - earned)': lifetimePoints - earnedPoints,
-            'Full stat object': JSON.stringify(convexStat, null, 2)
+            'Calculated pointsRedeemed (lifetime - earned)': calculatedRedeemedPoints,
+            'Stats updatedAt': convexStat.updatedAt ? new Date(convexStat.updatedAt).toISOString() : 'unknown',
+            'Note': 'earnedPoints should equal lifetimePoints minus any redeemed points'
           })
+          
+          // Verify the calculation makes sense
+          if (earnedPoints < 0) {
+            console.error('❌ ERROR: earnedPoints is negative!', { earnedPoints, lifetimePoints })
+          }
+          if (earnedPoints > lifetimePoints) {
+            console.error('❌ ERROR: earnedPoints exceeds lifetimePoints!', { earnedPoints, lifetimePoints })
+          }
         }
         currentLevelPoints = convexStat.currentLevelPoints ?? 0
         pointsToNextLevel = convexStat.pointsToNextLevel ?? 0
@@ -281,20 +291,22 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       } else {
         // Fall back to local calculation if Convex stats not available
         // Calculate lifetime points (all points ever earned)
-        const baseEarnedPoints = completedChores.reduce((sum, c) => {
-          const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
-          return sum + earnedPoints
-        }, 0)
-        
-        const resetChoresPoints = userChores.reduce((sum, c) => {
-          if (!c.completed && c.finalPoints !== undefined) {
-            return sum + c.finalPoints
+        // Includes: completed chores + incomplete chores with finalPoints (from resets)
+        lifetimePoints = userChores.reduce((sum, c) => {
+          const points = c.finalPoints !== undefined ? c.finalPoints : c.points || 0
+          
+          // Count points from completed chores
+          if (c.completed && c.completedBy === userId) {
+            return sum + points
           }
+          
+          // Count points from incomplete chores that have finalPoints (chores that were reset)
+          if (!c.completed && c.finalPoints !== undefined) {
+            return sum + points
+          }
+          
           return sum
         }, 0)
-        
-        // Lifetime points = all points ever earned (never decreases)
-        lifetimePoints = baseEarnedPoints + resetChoresPoints
         
         // Earned points = lifetime points minus redeemed points
         // Redemptions subtract from available balance, but lifetime points stay the same
@@ -305,8 +317,6 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         // Debug logging for current user
         if (currentUser?.id === userId) {
           console.log('⚠️ Using local calculation (no Convex stats):', {
-            baseEarnedPoints,
-            resetChoresPoints,
             lifetimePoints,
             redeemedPoints,
             earnedPoints,

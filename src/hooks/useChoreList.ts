@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Chore } from '../types/chore'
+import { isOverdue, isDueSoon, normalizeDueDate, getHoursDifference } from '../utils/dateHelpers'
 
 
 interface UseChoreListProps {
@@ -10,6 +11,7 @@ interface UseChoreListProps {
 
 export const useChoreList = ({ chores, animatingChores, completingChores }: UseChoreListProps) => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
+  const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'overdue' | 'due-soon' | 'upcoming'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'priority' | 'difficulty' | 'dueDate'>('priority')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -53,13 +55,40 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
       // Status filter
       switch (filter) {
         case 'pending':
-          return !chore.completed
+          if (chore.completed) return false
+          break
         case 'completed':
-          return chore.completed
+          if (!chore.completed) return false
+          break
         case 'all':
         default:
-          return true // Show all chores when filter is 'all'
+          break
       }
+      
+      // Deadline filter (only for pending chores)
+      if (!chore.completed && chore.dueDate && deadlineFilter !== 'all') {
+        const normalizedDue = normalizeDueDate(chore.dueDate)
+        const now = new Date()
+        const hoursUntilDue = getHoursDifference(normalizedDue, now)
+        
+        switch (deadlineFilter) {
+          case 'overdue':
+            if (!isOverdue(chore.dueDate)) return false
+            break
+          case 'due-soon':
+            if (!isDueSoon(chore.dueDate)) return false
+            break
+          case 'upcoming':
+            if (isOverdue(chore.dueDate) || isDueSoon(chore.dueDate)) return false
+            if (hoursUntilDue <= 0) return false
+            break
+        }
+      } else if (!chore.completed && !chore.dueDate && deadlineFilter !== 'all') {
+        // Chores without deadlines don't match deadline filters
+        return false
+      }
+      
+      return true
     })
     
     // Debug logging to help identify filtering issues
@@ -117,6 +146,7 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
   return {
     // State
     filter,
+    deadlineFilter,
     categoryFilter,
     sortBy,
     viewMode,
@@ -130,6 +160,7 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
     
     // Actions
     setFilter,
+    setDeadlineFilter,
     setCategoryFilter,
     setSortBy,
     setViewMode,

@@ -11,6 +11,7 @@ interface ChoreDisplayProps {
   completingChores: Set<string>
   onComplete: (id: string, event?: React.MouseEvent) => void
   onDelete: (id: string) => void
+  onEdit?: (chore: Chore) => void
   onAnimationComplete: (id: string) => void
   getCategoryStats: (category: string) => { total: number; completed: number; pending: number }
   filter: 'all' | 'pending' | 'completed'
@@ -25,6 +26,7 @@ export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
   completingChores,
   onComplete,
   onDelete,
+  onEdit,
   onAnimationComplete,
   getCategoryStats,
   filter,
@@ -84,6 +86,7 @@ export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
                 chore={chore}
                 onComplete={onComplete}
                 onDelete={onDelete}
+                onEdit={onEdit}
                 isAnimating={animatingChores.has(chore.id)}
                 isCompleting={completingChores.has(chore.id)}
                 onAnimationComplete={onAnimationComplete}

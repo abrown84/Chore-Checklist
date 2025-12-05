@@ -14,6 +14,8 @@ export interface Chore {
   assignedTo?: string
   finalPoints?: number
   bonusMessage?: string
+  proofPhotoId?: string // Storage ID for photo proof
+  proofPhotoUrl?: string // URL for displaying photo (derived from storage ID)
   // Removed approval system fields - no longer needed for chores
 }
 
@@ -71,7 +73,7 @@ export const CATEGORY_COLORS = {
 export const LEVELS: Level[] = [
   { level: 1, name: "Down Bad", pointsRequired: 0, color: "text-muted-foreground", icon: "🌱", rewards: ["Basic access", "Starting your journey"], meme: "/memes/level1-down-bad.gif" },
   { level: 2, name: "Mid", pointsRequired: 25, color: "text-success", icon: "📚", rewards: ["Profile avatar selection", "Basic color themes", "Simple borders"], meme: "/memes/level2-mid.gif" },
-  { level: 3, name: "Valid'", pointsRequired: 75, color: "text-primary", icon: "🛠️", rewards: ["Custom profile borders", "Priority sorting", "Streak tracking", "Custom avatar upload"], meme: "/memes/level3-valid.gif" },
+  { level: 3, name: "Valid'", pointsRequired: 75, color: "text-primary", icon: "✨", rewards: ["Custom profile borders", "Priority sorting", "Streak tracking", "Custom avatar upload"], meme: "/memes/level3-valid.gif" },
   { level: 4, name: "Locked In", pointsRequired: 150, color: "text-chart-4", icon: "⭐", rewards: ["Profile badges", "Advanced analytics", "Custom backgrounds", "Gradient themes", "Animated borders"], meme: "/memes/level4-locked-in.gif" },
   { level: 5, name: "Main Character", pointsRequired: 300, color: "text-warning", icon: "🏆", rewards: ["Animated avatars", "Custom themes", "Profile animations", "Glow effects", "Particle backgrounds"], meme: "/memes/level5-main-character.gif" },
   { level: 6, name: "Living My Best Life", pointsRequired: 500, color: "text-destructive", icon: "👑", rewards: ["Exclusive avatars", "Premium themes", "Custom fonts", "3D effects", "Sound effects"], meme: "/memes/level6-living-my-best-life.gif" },

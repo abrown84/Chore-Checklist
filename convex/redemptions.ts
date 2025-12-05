@@ -29,19 +29,18 @@ export const getUserRedemptionRequests = query({
       throw new Error("Not a member of this household");
     }
 
-    let query = ctx.db
+    // Query by household first to maintain household boundary, then filter by user and status
+    const allHouseholdRedemptions = await ctx.db
       .query("redemptionRequests")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId));
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
 
-    if (args.status) {
-      query = ctx.db
-        .query("redemptionRequests")
-        .withIndex("by_user_status", (q) =>
-          q.eq("userId", args.userId).eq("status", args.status!)
-        );
-    }
+    // Filter by user and optional status
+    const userRedemptions = allHouseholdRedemptions.filter(
+      (req) => req.userId === args.userId && (!args.status || req.status === args.status)
+    );
 
-    return await query.collect();
+    return userRedemptions;
   },
 });
 
@@ -244,12 +243,15 @@ export const getUserPointDeductions = query({
       throw new Error("Not a member of this household");
     }
 
-    const deductions = await ctx.db
+    // Query by household first to maintain household boundary, then filter by user
+    const allHouseholdDeductions = await ctx.db
       .query("pointDeductions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
       .collect();
 
-    return deductions.filter((d) => d.householdId === args.householdId);
+    const deductions = allHouseholdDeductions.filter((d) => d.userId === args.userId);
+
+    return deductions;
   },
 });
 
@@ -276,12 +278,13 @@ export const getTotalPointDeductions = query({
       throw new Error("Not a member of this household");
     }
 
-    const deductions = await ctx.db
+    // Query by household first to maintain household boundary, then filter by user
+    const allHouseholdDeductions = await ctx.db
       .query("pointDeductions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
       .collect();
 
-    const householdDeductions = deductions.filter((d) => d.householdId === args.householdId);
+    const householdDeductions = allHouseholdDeductions.filter((d) => d.userId === args.userId);
     const total = householdDeductions.reduce((sum, d) => sum + d.pointsDeducted, 0);
     
     return { total, deductions: householdDeductions };

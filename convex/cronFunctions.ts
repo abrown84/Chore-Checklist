@@ -260,35 +260,36 @@ async function recalculateUserStatsInternal(ctx: any, userId: string, householdI
     chore.status === "completed" && chore.completedBy === userId
   );
   
-  // Calculate lifetime points (matching frontend calculation)
-  // Base earned points from completed chores
-  const baseEarnedPoints = completedChores.reduce((sum: number, chore: any) => {
-    return sum + (chore.finalPoints || chore.points || 0);
-  }, 0);
-
-  // Reset chores points (incomplete chores with finalPoints - these are points from chores that were reset)
-  const resetChoresPoints = userChores.reduce((sum: number, chore: any) => {
-    if (!chore.status || chore.status !== "completed") {
-      // Include points from incomplete chores that have finalPoints (from resets)
-      if (chore.finalPoints !== undefined && chore.finalPoints !== null) {
-        return sum + chore.finalPoints;
-      }
+  // Calculate lifetime points (all points ever earned)
+  // Includes: completed chores + incomplete chores with finalPoints (from resets)
+  const lifetimePoints = userChores.reduce((sum: number, chore: any) => {
+    const points = chore.finalPoints || chore.points || 0;
+    
+    // Count points from completed chores
+    if (chore.status === "completed" && chore.completedBy === userId) {
+      return sum + points;
     }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (chore.status !== "completed" && chore.finalPoints !== undefined && chore.finalPoints !== null) {
+      return sum + points;
+    }
+    
     return sum;
   }, 0);
 
-  // Total lifetime points (completed + reset chores) - all points ever earned
-  const lifetimePoints = baseEarnedPoints + resetChoresPoints;
-
   // Get approved redemption requests for this user in this household
   // This is the source of truth for redeemed points
-  const redemptionRequests = await ctx.db
+  // IMPORTANT: Query by household first, then filter by user and status
+  // to ensure we only get redemptions from THIS household
+  const allHouseholdRedemptions = await ctx.db
     .query("redemptionRequests")
-    .withIndex("by_user_status", (q: any) => q.eq("userId", userId).eq("status", "approved"))
+    .withIndex("by_household", (q: any) => q.eq("householdId", householdId))
     .collect();
 
-  const householdRedemptions = redemptionRequests.filter(
-    (req: any) => req.householdId === householdId
+  // Filter to only approved redemptions for this user in this household
+  const householdRedemptions = allHouseholdRedemptions.filter(
+    (req: any) => req.userId === userId && req.status === "approved"
   );
   const pointsRedeemed = householdRedemptions.reduce(
     (sum: number, req: any) => sum + (req.pointsRequested || 0),
@@ -566,19 +567,21 @@ function calculateEfficiencyScore(userChores: any[], completedChores: any[], com
   const streakConsistency = totalCompleted > 0 ? Math.min(1, longestStreak / totalCompleted) : 0;
   
   // 5. Points Efficiency (10% weight) - Rewards earning more points from available chores
-  const baseEarnedPoints = completedChores.reduce((sum: number, c: any) => {
-    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points;
-    return sum + earnedPoints;
-  }, 0);
-  
-  const resetChoresPoints = userChores.reduce((sum: number, c: any) => {
-    if (c.status !== "completed" && c.finalPoints !== undefined) {
-      return sum + c.finalPoints;
+  const totalLifetimePoints = userChores.reduce((sum: number, c: any) => {
+    const points = c.finalPoints || c.points || 0;
+    
+    // Count points from completed chores
+    if (c.status === "completed") {
+      return sum + points;
     }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (c.status !== "completed" && c.finalPoints !== undefined) {
+      return sum + points;
+    }
+    
     return sum;
   }, 0);
-  
-  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints;
   const totalPotentialPoints = userChores.reduce((sum: number, c: any) => sum + (c.points || 0), 0);
   const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0;
   

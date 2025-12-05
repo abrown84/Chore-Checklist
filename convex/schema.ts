@@ -93,6 +93,7 @@ export default defineSchema({
     completedBy: v.optional(v.id("users")),
     finalPoints: v.optional(v.number()), // includes bonuses/penalties
     bonusMessage: v.optional(v.string()),
+    proofPhotoId: v.optional(v.id("_storage")), // Photo proof of completion
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -119,6 +120,7 @@ export default defineSchema({
     isLate: v.boolean(),
     daysEarly: v.optional(v.number()),
     daysLate: v.optional(v.number()),
+    proofPhotoId: v.optional(v.id("_storage")), // Photo proof of completion
   })
     .index("by_chore", ["choreId"])
     .index("by_user", ["userId"])

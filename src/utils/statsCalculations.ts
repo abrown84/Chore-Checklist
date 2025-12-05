@@ -90,19 +90,21 @@ export const calculateEfficiencyScore = (userChores: Chore[], completedChores: C
   const streakConsistency = totalCompleted > 0 ? Math.min(1, longestStreak / totalCompleted) : 0
   
   // 5. Points Efficiency (10% weight) - Rewards earning more points from available chores
-  const baseEarnedPoints = completedChores.reduce((sum, c) => {
-    const earnedPoints = c.finalPoints !== undefined ? c.finalPoints : c.points
-    return sum + earnedPoints
-  }, 0)
-  
-  const resetChoresPoints = userChores.reduce((sum, c) => {
-    if (!c.completed && c.finalPoints !== undefined) {
-      return sum + c.finalPoints
+  const totalLifetimePoints = userChores.reduce((sum, c) => {
+    const points = c.finalPoints !== undefined ? c.finalPoints : c.points || 0
+    
+    // Count points from completed chores
+    if (c.completed) {
+      return sum + points
     }
+    
+    // Count points from incomplete chores that have finalPoints (chores that were reset)
+    if (!c.completed && c.finalPoints !== undefined) {
+      return sum + points
+    }
+    
     return sum
   }, 0)
-  
-  const totalLifetimePoints = baseEarnedPoints + resetChoresPoints
   const totalPotentialPoints = userChores.reduce((sum, c) => sum + (c.points || 0), 0)
   const pointsEfficiency = totalPotentialPoints > 0 ? totalLifetimePoints / totalPotentialPoints : 0
   
