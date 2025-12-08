@@ -131,28 +131,43 @@ export default function LandingPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		e.stopPropagation()
 		setError('')
 		
+		console.log('Form submitted', { isSignUp, email: email.substring(0, 3) + '***' })
+		
 		if (!validateFields()) {
+			console.log('Validation failed')
 			return
 		}
 		
 		setIsLoading(true)
 		
 		try {
+			console.log('Attempting', isSignUp ? 'sign-up' : 'sign-in', 'for', email)
+			
 			if (isSignUp) {
 				await signUp(email, password, name)
 			} else {
 				await signIn(email, password)
 			}
-			// Close modal on success
+			
+			console.log('Auth action completed successfully')
+			
+			// Close modal - the reactive queries will update and ProtectedRoute will show the app
 			setShowAuthModal(false)
+			setIsLoading(false)
+			
 			if (window.location.hash === '#signin') {
 				window.history.replaceState(null, '', window.location.pathname)
 			}
+			
+			// The reactive queries should update automatically via Convex's useQuery
+			// ProtectedRoute will detect the auth state change and show the app
 		} catch (err: any) {
-			setError(err.message || 'An error occurred. Please try again.')
-		} finally {
+			console.error('Auth action failed:', err)
+			const errorMessage = err?.message || 'An error occurred. Please try again.'
+			setError(errorMessage)
 			setIsLoading(false)
 		}
 	}
@@ -717,22 +732,24 @@ export default function LandingPage() {
 											</div>
 										)}
 
-										{/* Remember Me (Sign In Only) */}
+										{/* Remember Me & Forgot Password (Sign In Only) */}
 										{!isSignUp && (
-											<div className="flex items-center">
-												<input
-													id="modal-rememberMe"
-													name="rememberMe"
-													type="checkbox"
-													checked={rememberMe}
-													onChange={(e) => setRememberMe(e.target.checked)}
-													className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
-												/>
-												<label htmlFor="modal-rememberMe" className="ml-2 block text-sm text-foreground">
-													Remember me for 30 days
-												</label>
+											<div className="flex items-center justify-between">
+												<div className="flex items-center">
+													<input
+														id="modal-rememberMe"
+														name="rememberMe"
+														type="checkbox"
+														checked={rememberMe}
+														onChange={(e) => setRememberMe(e.target.checked)}
+														className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
+													/>
+													<label htmlFor="modal-rememberMe" className="ml-2 block text-sm text-foreground">
+														Remember me for 30 days
+													</label>
 											</div>
-										)}
+										</div>
+									)}
 
 										{/* Error Display */}
 										{error && (

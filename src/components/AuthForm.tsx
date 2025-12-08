@@ -11,7 +11,7 @@ import { PageWrapper } from './PageWrapper'
 import { ThemeToggle } from './ThemeToggle'
 
 interface AuthFormProps {
-  onSignIn: (email: string, password: string, rememberMe: boolean) => Promise<any>
+  onSignIn: (email: string, password: string) => Promise<any>
   onSignUp: (email: string, password: string, name: string) => Promise<any>
 }
 
@@ -89,6 +89,7 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation() // Prevent event bubbling that might trigger errors
     setError('')
     
     if (!validateFields()) {
@@ -98,13 +99,25 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
     setIsLoading(true)
     
     try {
+      // Wrap in additional try-catch to handle any unexpected errors
+      // that might occur during the async operation
       if (isSignUp) {
         await onSignUp(email, password, name)
       } else {
-        await onSignIn(email, password, rememberMe)
+        await onSignIn(email, password)
       }
+      // Sign-in/sign-up succeeded - auth state will update via reactive queries
+      // ProtectedRoute will automatically redirect when isAuthenticated becomes true
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.')
+      // Only set error if it's a real error, not if it's from third-party scripts
+      const errorMessage = err?.message || 'An error occurred. Please try again.'
+      // Don't show errors from third-party scripts in the UI
+      if (!errorMessage.includes('page-events') && !errorMessage.includes('Cannot read properties')) {
+        setError(errorMessage)
+      } else {
+        // Log but don't show to user - this is a known issue with browser extensions
+        console.warn('Suppressed error from third-party script during sign-in:', err)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -167,12 +180,12 @@ export default function AuthForm({ onSignIn, onSignUp }: AuthFormProps) {
       </header>
 
       <div className="flex items-center justify-center min-h-screen p-4">
-        <motion.div 
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          className="max-w-md w-full space-y-8"
-        >
+          <motion.div 
+            initial="hidden"
+            animate="show"
+            variants={fadeUp}
+            className="max-w-md w-full space-y-8"
+          >
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center mb-4">

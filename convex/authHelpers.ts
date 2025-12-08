@@ -1,12 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { Id } from "./_generated/dataModel";
+import { Id, QueryCtx, MutationCtx } from "./_generated/server";
 
 /**
  * Helper function to get the current user's document ID
  * With Convex Auth, getAuthUserId() returns the user's _id directly
  */
 export async function getCurrentUserId(
-  ctx: { auth: any }
+  ctx: QueryCtx | MutationCtx
 ): Promise<Id<"users"> | null> {
   const userId = await getAuthUserId(ctx);
   return userId;
@@ -16,7 +16,7 @@ export async function getCurrentUserId(
  * Helper function to require authentication - throws if not authenticated
  */
 export async function requireAuth(
-  ctx: { auth: any }
+  ctx: QueryCtx | MutationCtx
 ): Promise<Id<"users">> {
   const userId = await getAuthUserId(ctx);
   if (!userId) {

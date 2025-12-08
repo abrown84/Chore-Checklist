@@ -1,9 +1,9 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { query, MutationCtx } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { MutationCtx } from "./_generated/server";
 import { DataModel } from "./_generated/dataModel";
 
+// Configure Convex Auth with Password provider (simple, no password reset)
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Password<DataModel>({
@@ -23,17 +23,14 @@ export const { auth, signIn, signOut, store } = convexAuth({
       if (!existingUserId) {
         const now = Date.now();
         
-        // Check if this is the first user (make them admin)
-        const existingUsers = await ctx.db
-          .query("users")
-          .filter((q) => q.neq(q.field("role"), undefined))
-          .collect();
-        const isFirstUser = existingUsers.length === 0;
+        // Efficiently check if this is the first user (make them admin)
+        const allUsers = await ctx.db.query("users").collect();
+        const isFirstUser = allUsers.length === 1;
         
         // Get the user to check if name was already set by profile method
         const user = await ctx.db.get(userId);
         
-        // Set default values for new user (only if not already set by profile)
+        // Set default values for new user
         await ctx.db.patch(userId, {
           points: user?.points ?? 0,
           level: user?.level ?? 1,
@@ -47,12 +44,3 @@ export const { auth, signIn, signOut, store } = convexAuth({
     },
   },
 });
-
-// Query to get current authenticated user ID
-export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    return await getAuthUserId(ctx);
-  },
-});
-

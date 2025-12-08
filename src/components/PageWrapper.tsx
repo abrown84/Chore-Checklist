@@ -81,11 +81,14 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       
       // Handle audio loading success
       const handleCanPlay = () => {
-        console.log('✅ Background audio loaded successfully:', backgroundAudio)
+        // Audio loaded successfully - no need to log
         // Try to play if not muted and audio is ready
         if (!isMuted && audio.readyState >= 2) {
           audio.play().catch((error) => {
-            console.log('⏸️ Background audio autoplay prevented:', error.name)
+            // Only log if it's not a NotAllowedError (which is expected for autoplay)
+            if (error.name !== 'NotAllowedError') {
+              console.warn('Background audio autoplay prevented:', error.name)
+            }
           })
         }
       }
@@ -94,12 +97,15 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       const handleError = () => {
         const error = audio.error
         if (error) {
-          console.error('❌ Background audio error:', {
-            code: error.code,
-            message: error.message,
-            file: backgroundAudio
-          })
+          // Only log actual errors, not expected autoplay prevention
           // Error codes: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
+          // Don't log aborted errors (user navigation) or network errors (expected in some cases)
+          if (error.code !== 1 && error.code !== 2) {
+            console.error('Background audio error:', {
+              code: error.code,
+              message: error.message
+            })
+          }
         }
       }
       
@@ -111,24 +117,34 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       if (!isMuted) {
         // Try to play audio (may require user interaction due to browser autoplay policies)
         audio.play().then(() => {
-          console.log('✅ Background audio started playing')
+          // Audio started playing - no need to log
         }).catch((error) => {
           // Autoplay was prevented - this is normal for background audio
           // Audio will play after user interaction
-          console.log('⏸️ Background audio autoplay prevented (will play on user interaction):', error.name)
+          // Only log if it's not a NotAllowedError (which is expected)
+          if (error.name !== 'NotAllowedError') {
+            console.warn('Background audio autoplay prevented:', error.name)
+          }
         })
 
         // Handle user interaction to start audio
-        const handleUserInteraction = () => {
-          if (audio.readyState >= 2 && !isMuted) { // HAVE_CURRENT_DATA or higher
-            audio.muted = false
-            audio.play().then(() => {
-              console.log('✅ Background audio started after user interaction')
-            }).catch((err) => {
-              console.error('❌ Audio play failed after user interaction:', err)
-            })
-          } else {
-            console.warn('⚠️ Audio not ready yet, readyState:', audio.readyState)
+        const handleUserInteraction = (event?: Event) => {
+          try {
+            if (audio && audio.readyState >= 2 && !isMuted) { // HAVE_CURRENT_DATA or higher
+              audio.muted = false
+              audio.play().then(() => {
+                // Audio started after user interaction - no need to log
+              }).catch((err) => {
+                // Only log actual errors, not expected autoplay prevention
+                if (err.name !== 'NotAllowedError') {
+                  console.error('Audio play failed after user interaction:', err)
+                }
+              })
+            } else {
+              console.warn('⚠️ Audio not ready yet, readyState:', audio?.readyState)
+            }
+          } catch (error) {
+            console.error('Error in handleUserInteraction:', error)
           }
         }
 

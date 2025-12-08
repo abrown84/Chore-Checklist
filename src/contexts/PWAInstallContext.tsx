@@ -57,10 +57,12 @@ export const PWAInstallProvider: React.FC<{ children: ReactNode }> = ({ children
     });
 
     // Log if event doesn't fire after a delay (for debugging)
+    // Only log in development to reduce console noise
     const timeout = setTimeout(() => {
-      if (!promptCapturedRef.current) {
-        console.warn('⚠️ beforeinstallprompt event not fired after 3 seconds. This could mean:', {
-          reason: 'App may not meet PWA criteria, user already dismissed, or browser doesn\'t support it',
+      if (!promptCapturedRef.current && import.meta.env.DEV) {
+        // Only log in development mode
+        console.debug('beforeinstallprompt event not fired. This is normal if:', {
+          reason: 'App already installed, user dismissed prompt, or browser doesn\'t support it',
           hasManifest: document.querySelector('link[rel="manifest"]') !== null,
           hasServiceWorker: 'serviceWorker' in navigator
         });

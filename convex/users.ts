@@ -161,12 +161,10 @@ export const createOrUpdateUser = mutation({
       if (args.role !== undefined) {
         updateData.role = args.role;
       } else if (!existingUser.role) {
-        // Check if this is the first user with a role (make them admin)
-        const usersWithRole = await ctx.db
-          .query("users")
-          .filter((q) => q.neq(q.field("role"), undefined))
-          .collect();
-        updateData.role = usersWithRole.length === 0 ? "admin" : "member";
+        // Efficiently check if this is the first user (make them admin)
+        // Count all users - if only 1 exists (this user), make them admin
+        const allUsers = await ctx.db.query("users").collect();
+        updateData.role = allUsers.length <= 1 ? "admin" : "member";
       }
       
       await ctx.db.patch(userId, updateData);

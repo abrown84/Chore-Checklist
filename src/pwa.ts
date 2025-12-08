@@ -37,6 +37,18 @@ export const registerPWA = () => {
       onRegisterError(error: any) {
         // Handle registration errors
         console.error('Service Worker registration failed:', error);
+        
+        // If corruption error, clear cache and re-register
+        if (error?.message?.includes('Corruption') || error?.message?.includes('checksum')) {
+          console.warn('Cache corruption detected, clearing cache...');
+          clearCorruptedCache().then(() => {
+            console.log('Cache cleared, please refresh the page');
+            // Optionally reload after a short delay
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          });
+        }
       }
     });
 
@@ -68,8 +80,89 @@ export const setupOfflineHandling = () => {
   };
 };
 
+// Clear corrupted cache
+export const clearCorruptedCache = async (): Promise<void> => {
+  try {
+    // Clear all caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+      console.log('All caches cleared');
+    }
+
+    // Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        registrations.map(registration => registration.unregister())
+      );
+      console.log('All service workers unregistered');
+    }
+
+    // Clear IndexedDB if needed
+    if ('indexedDB' in window) {
+      // Note: This is a simplified approach. For production, you might want to
+      // be more selective about what to clear
+      try {
+        indexedDB.databases().then(databases => {
+          databases.forEach(db => {
+            if (db.name) {
+              indexedDB.deleteDatabase(db.name);
+            }
+          });
+        });
+      } catch (e) {
+        console.warn('Could not clear IndexedDB:', e);
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+  }
+};
+
 // Initialize PWA functionality
 export const initializePWA = () => {
+  // Add global error handler for corruption errors
+  // Use a one-time handler to prevent infinite loops
+  let corruptionHandled = false;
+  
+  const handleCorruptionError = (event: ErrorEvent | PromiseRejectionEvent) => {
+    if (corruptionHandled) return;
+    
+    const message = 'message' in event ? event.message : String(event.reason || '');
+    const isCorruptionError = message?.includes('Corruption') || 
+                              message?.includes('checksum') ||
+                              message?.includes('block checksum mismatch');
+    
+    if (isCorruptionError) {
+      corruptionHandled = true;
+      console.warn('Cache corruption detected, clearing cache and reloading...');
+      
+      // Prevent the error from propagating
+      if ('preventDefault' in event) {
+        event.preventDefault();
+      }
+      
+      // Clear cache and reload
+      clearCorruptedCache().then(() => {
+        // Reload after a short delay to allow cache clearing to complete
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }).catch(() => {
+        // If clearing fails, just reload anyway
+        window.location.reload();
+      });
+    }
+  };
+
+  window.addEventListener('error', handleCorruptionError as EventListener, { once: true });
+
+  // Handle unhandled promise rejections (like the corruption error)
+  window.addEventListener('unhandledrejection', handleCorruptionError as EventListener, { once: true });
+
   const updateSW = registerPWA();
   const cleanupOfflineHandling = setupOfflineHandling();
 

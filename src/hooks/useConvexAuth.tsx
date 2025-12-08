@@ -1,131 +1,79 @@
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useConvexAuth as useConvexAuthState } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { api } from '../../convex/_generated/api'
 import { User } from '../types/user'
 import { useMemo, useCallback } from 'react'
 
 /**
- * Hook that integrates Convex Auth with the app's user system
- * This bridges Convex Auth authentication with the users table
+ * Simple Convex Auth hook
+ * Provides authentication state and actions (sign in, sign up, sign out)
  */
 export function useConvexAuth() {
-  // Get auth actions (signIn, signOut)
+  // Get auth state from Convex's built-in hook
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuthState()
+  
+  // Get auth actions
   const { signIn: signInAction, signOut: signOutAction } = useAuthActions()
-  const createOrUpdateUser = useMutation(api.users.createOrUpdateUser)
   
-  // Check authentication state by querying for current user ID
-  const authUserId = useQuery(api.auth.getCurrentUser, {})
-  const isLoading = authUserId === undefined
-  const isAuthenticated = authUserId !== null && authUserId !== undefined
-  
-  // Get current user profile from Convex (only if authenticated)
+  // Query current user - only runs when authenticated
   const convexUser = useQuery(
-    api.users.getCurrentUser,
-    authUserId ? {} : 'skip'
+    api.users.getCurrentUser, 
+    isAuthenticated ? {} : 'skip'
   )
-  
-  // Memoize the user object to prevent unnecessary re-renders
+
+  // Combined loading state
+  const isLoading = isAuthLoading || (isAuthenticated && convexUser === undefined)
+
+  // Map Convex user to frontend User type
   const user: User | null = useMemo(() => {
     if (!convexUser || !convexUser._id) {
       return null
     }
     return {
-      id: convexUser._id,
+      id: convexUser._id as string,
       email: convexUser.email || '',
       name: convexUser.name || '',
       avatar: convexUser.avatarUrl || '👤',
-      role: (convexUser.role as User['role']) || 'member',
-      joinedAt: new Date(convexUser.createdAt || Date.now()),
+      role: (convexUser.role || 'member') as User['role'],
+      joinedAt: convexUser.createdAt ? new Date(convexUser.createdAt) : new Date(),
       isActive: true,
     }
   }, [convexUser])
 
-  // Memoize signIn function
+  // Sign in
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      // Create FormData for password provider with flow=signIn
-      const formData = new FormData()
-      formData.append('email', email)
-      formData.append('password', password)
-      formData.append('flow', 'signIn')
-      
-      await signInAction('password', formData)
-      // User profile will be loaded via the query
-      return { success: true }
-    } catch (error: any) {
-      console.error('Sign in error:', error)
-      throw new Error(error.message || 'Failed to sign in')
-    }
-  }, [signInAction, createOrUpdateUser])
+    const formData = new FormData()
+    formData.append('email', email.trim())
+    formData.append('password', password.trim())
+    formData.append('flow', 'signIn')
+    
+    // signInAction throws on error, returns void on success
+    await signInAction('password', formData)
+  }, [signInAction])
 
-  // Memoize signUp function
+  // Sign up
   const signUp = useCallback(async (email: string, password: string, name: string) => {
-    try {
-      // Create FormData for password provider sign up with flow=signUp
-      const formData = new FormData()
-      formData.append('email', email)
-      formData.append('password', password)
-      formData.append('name', name)
-      formData.append('flow', 'signUp')
-      
-      // Sign up with Convex Auth
-      // The afterUserCreatedOrUpdated callback in convex/auth.ts
-      // automatically sets up the user profile with default values
-      await signInAction('password', formData)
-      
-      // After successful signup, save the name to the user profile
-      // Retry mechanism to ensure authentication is complete before updating
-      let retries = 3
-      let lastError = null
-      while (retries > 0) {
-        try {
-          // Small delay to ensure auth session is established
-          await new Promise(resolve => setTimeout(resolve, 100))
-          await createOrUpdateUser({
-            email,
-            name,
-          })
-          // Success - break out of retry loop
-          break
-        } catch (updateError: any) {
-          lastError = updateError
-          retries--
-          if (retries > 0) {
-            // Wait a bit longer before retrying
-            await new Promise(resolve => setTimeout(resolve, 200))
-          }
-        }
-      }
-      
-      if (retries === 0 && lastError) {
-        // Log but don't fail signup if name update fails after retries
-        console.warn('Failed to update user name after signup after retries:', lastError)
-      }
-      
-      return { success: true }
-    } catch (error: any) {
-      console.error('Sign up error:', error)
-      throw new Error(error.message || 'Failed to sign up')
-    }
-  }, [signInAction, createOrUpdateUser])
+    const formData = new FormData()
+    formData.append('email', email.trim())
+    formData.append('password', password.trim())
+    formData.append('name', name.trim())
+    formData.append('flow', 'signUp')
+    
+    // signInAction throws on error, returns void on success
+    await signInAction('password', formData)
+  }, [signInAction])
 
-  // Memoize signOut function
+  // Sign out
   const signOut = useCallback(async () => {
-    try {
-      await signOutAction()
-    } catch (error: any) {
-      console.error('Sign out error:', error)
-      throw new Error(error.message || 'Failed to sign out')
-    }
+    await signOutAction()
   }, [signOutAction])
 
-  // Memoize the return value
-  return useMemo(() => ({
+  return {
     user,
-    isLoading: isLoading || (isAuthenticated && convexUser === undefined),
     isAuthenticated,
+    isLoading,
     signIn,
     signUp,
     signOut,
-  }), [user, isLoading, isAuthenticated, convexUser, signIn, signUp, signOut])
+  }
 }

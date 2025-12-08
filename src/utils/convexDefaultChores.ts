@@ -398,3 +398,8 @@ export const convexDefaultChores: Omit<Chore, 'id' | 'createdAt' | 'completed'>[
 
 
 
+
+
+
+
+

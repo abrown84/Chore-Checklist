@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { flushSync } from 'react-dom'
 import { User } from '../types/user'
 import { validateEmail, validatePassword, validateName } from '../utils/validation'
 import { useConvexAuth } from './useConvexAuth'
@@ -34,11 +33,20 @@ export function useAuth() {
   const INACTIVITY_WARNING = 25 * 60 * 1000 // Warning at 25 minutes
 
   // Extract stable references from convexAuth
-  const { isAuthenticated, signOut: convexSignOut, signIn: convexSignIn, signUp: convexSignUp, user } = convexAuth
+  const { 
+    isAuthenticated, 
+    signOut: convexSignOut, 
+    signIn: convexSignIn, 
+    signUp: convexSignUp, 
+    user 
+  } = convexAuth
 
   // Track user activity for session timeout
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      setSessionExpired(false)
+      return
+    }
 
     let lastUpdate = 0
     const THROTTLE_MS = 60000 // Only update once per minute
@@ -52,7 +60,7 @@ export function useAuth() {
     }
     
     // Update activity on user interactions (throttled)
-    const events = ['mousedown', 'keypress', 'click']
+    const events = ['mousedown', 'keypress', 'click', 'touchstart', 'scroll']
     events.forEach(event => {
       document.addEventListener(event, updateActivity, true)
     })
@@ -97,16 +105,11 @@ export function useAuth() {
       await convexSignIn(email, password)
       setSessionExpired(false)
       setLastActivity(Date.now())
-      return user
     } catch (error: any) {
-      console.error('Sign in error:', error)
-      // Provide helpful error messages
-      if (error.message?.includes('InvalidAccountId')) {
-        throw new Error('Account not found. Please sign up first to create an account.')
-      }
-      throw new Error(error.message || 'Invalid email or password. Please check your credentials.')
+      // Error is already formatted by useConvexAuth
+      throw error
     }
-  }, [convexSignIn, user])
+  }, [convexSignIn])
 
   // Enhanced sign up with validation
   const signUp = useCallback(async (email: string, password: string, name: string) => {
@@ -130,27 +133,23 @@ export function useAuth() {
       await convexSignUp(email, password, name)
       setSessionExpired(false)
       setLastActivity(Date.now())
-      return user
     } catch (error: any) {
-      console.error('Sign up error:', error)
-      throw new Error(error.message || 'Failed to create account. Please try again.')
+      // Error is already formatted by useConvexAuth
+      throw error
     }
-  }, [convexSignUp, user])
+  }, [convexSignUp])
 
   // Sign out with cleanup
   const signOut = useCallback(async () => {
     try {
       await convexSignOut()
-      
-      // Force immediate synchronous state update
-      flushSync(() => {
-        setSessionExpired(false)
-        setLastActivity(0)
-      })
+      setSessionExpired(false)
+      setLastActivity(0)
     } catch (error) {
       console.error('Error during sign out:', error)
       // Force sign out state even if there's an error
       setSessionExpired(false)
+      setLastActivity(0)
     }
   }, [convexSignOut])
 
