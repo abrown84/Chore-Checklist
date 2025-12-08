@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { Id, QueryCtx, MutationCtx } from "./_generated/server";
+import { QueryCtx, MutationCtx } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 /**
  * Helper function to get the current user's document ID

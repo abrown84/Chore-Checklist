@@ -128,7 +128,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
         })
 
         // Handle user interaction to start audio
-        const handleUserInteraction = (event?: Event) => {
+        const handleUserInteraction = (_event?: Event) => {
           try {
             if (audio && audio.readyState >= 2 && !isMuted) { // HAVE_CURRENT_DATA or higher
               audio.muted = false
