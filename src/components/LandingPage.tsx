@@ -58,6 +58,7 @@ export default function LandingPage() {
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 	const [showInstallGuide, setShowInstallGuide] = useState(false)
 	const [showVideoModal, setShowVideoModal] = useState(false)
+	const videoRef = useRef<HTMLVideoElement>(null)
 	
 	// Fetch public global leaderboard
 	const globalLeaderboard = useQuery(api.stats.getPublicGlobalLeaderboard, { limit: 5 })
@@ -908,16 +909,35 @@ export default function LandingPage() {
 								</Button>
 								<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: '16/9' }}>
 									<video
+										ref={videoRef}
 										className="w-full h-full object-contain"
 										controls
 										autoPlay
 										playsInline
-										muted={false}
+										muted={true}
 										preload="auto"
-										onClick={(e) => e.stopPropagation()}
-										onTouchStart={(e) => e.stopPropagation()}
+										onClick={(e) => {
+											e.stopPropagation();
+											// Unmute when user clicks the video
+											if (videoRef.current) {
+												videoRef.current.muted = false;
+											}
+										}}
+										onTouchStart={(e) => {
+											e.stopPropagation();
+											// Unmute when user touches the video
+											if (videoRef.current) {
+												videoRef.current.muted = false;
+											}
+										}}
+										onPlay={() => {
+											// Ensure video is unmuted when playing (after user interaction)
+											if (videoRef.current) {
+												videoRef.current.muted = false;
+											}
+										}}
 									>
-										<source src="/overview-video.mp4" type="video/mp4" />
+										<source src="/1130.mp4" type="video/mp4" />
 										Your browser does not support the video tag.
 									</video>
 								</div>
