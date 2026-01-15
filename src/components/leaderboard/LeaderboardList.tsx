@@ -1,7 +1,7 @@
 import React from 'react'
-import { Star, Target, CheckCircle, DollarSign, Clock, TrendingUp, Award } from 'lucide-react'
+import { Star, Target, CheckCircle, DollarSign, Clock, TrendingUp, Award, Flame } from 'lucide-react'
 import { RANKING_MODES, RankingMode } from '../../config/constants'
-import { getEfficiencyBadge, getRankColor, getRankIcon } from '../../hooks/useLeaderboardData'
+import { getEfficiencyBadge, getRankIcon } from '../../hooks/useLeaderboardData'
 import { useRedemption } from '../../contexts/RedemptionContext'
 import { APP_CONFIG } from '../../config/constants'
 import { getDisplayName } from '../../utils/convexHelpers'
@@ -22,12 +22,47 @@ interface LeaderboardMember {
   householdName?: string
   memberCount?: number
   members?: Array<{ userId: string; name: string; points: number; level: number }>
+  currentStreak?: number
 }
 
 interface LeaderboardListProps {
   members: LeaderboardMember[]
   rankingMode: RankingMode
   conversionRate?: number
+}
+
+// Get medal styling for top 3 positions
+const getMedalStyle = (rank: number) => {
+  switch (rank) {
+    case 0: // Gold
+      return {
+        bg: 'bg-gradient-to-br from-yellow-100 via-yellow-50 to-amber-100 dark:from-yellow-900/40 dark:via-yellow-800/30 dark:to-amber-900/40',
+        border: 'border-yellow-400 dark:border-yellow-600',
+        ring: 'ring-2 ring-yellow-300/50 dark:ring-yellow-500/30',
+        shadow: 'shadow-lg shadow-yellow-200/50 dark:shadow-yellow-900/30',
+      }
+    case 1: // Silver
+      return {
+        bg: 'bg-gradient-to-br from-gray-100 via-slate-50 to-gray-200 dark:from-gray-700/40 dark:via-slate-700/30 dark:to-gray-600/40',
+        border: 'border-gray-400 dark:border-gray-500',
+        ring: 'ring-2 ring-gray-300/50 dark:ring-gray-500/30',
+        shadow: 'shadow-lg shadow-gray-200/50 dark:shadow-gray-900/30',
+      }
+    case 2: // Bronze
+      return {
+        bg: 'bg-gradient-to-br from-orange-100 via-amber-50 to-orange-200 dark:from-orange-900/40 dark:via-amber-800/30 dark:to-orange-800/40',
+        border: 'border-orange-400 dark:border-orange-600',
+        ring: 'ring-2 ring-orange-300/50 dark:ring-orange-500/30',
+        shadow: 'shadow-lg shadow-orange-200/50 dark:shadow-orange-900/30',
+      }
+    default:
+      return {
+        bg: 'bg-card',
+        border: 'border-border',
+        ring: '',
+        shadow: '',
+      }
+  }
 }
 
 export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
@@ -38,12 +73,27 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
   const { getUserRedemptionStatus } = useRedemption()
   const topMembers = members.slice(0, APP_CONFIG.DISPLAY_LIMITS.LEADERBOARD_TOP)
 
+  // Empty state
+  if (members.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <span className="text-6xl mb-4">🏆</span>
+        <h3 className="text-lg font-semibold text-foreground mb-2">No Rankings Yet</h3>
+        <p className="text-muted-foreground text-sm max-w-xs">
+          Complete chores to start earning points and climb the leaderboard!
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       {topMembers.map((member, index) => {
         const efficiencyBadge = getEfficiencyBadge(member.efficiencyScore)
         const redemptionStatus = getUserRedemptionStatus(member.id)
-        
+        const medalStyle = getMedalStyle(index)
+        const hasActiveStreak = (member.currentStreak ?? 0) >= 3
+
         // Calculate different point metrics
         // Use lifetimePoints if available, otherwise calculate it (for backward compatibility)
         const earnedPoints = member.earnedPoints ?? 0
@@ -51,15 +101,19 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
         const availablePoints = Math.max(0, earnedPoints - (redemptionStatus.pendingPoints || 0))
         const availableValue = availablePoints > 0 ? (availablePoints / conversionRate) : 0
         const lifetimeValue = lifetimePoints > 0 ? (lifetimePoints / conversionRate) : 0
-        
+
+        // Build row classes based on rank and user status
+        const isTop3 = index < 3
+        const rowClasses = member.isCurrentUser
+          ? `${isTop3 ? medalStyle.bg : 'bg-primary/10 dark:bg-primary/20'} ${isTop3 ? medalStyle.border : 'border-primary/30 dark:border-primary/60'} ${isTop3 ? medalStyle.ring : 'ring-2 ring-primary/30'} ${isTop3 ? medalStyle.shadow : 'shadow-lg'}`
+          : isTop3
+          ? `${medalStyle.bg} ${medalStyle.border} ${medalStyle.ring} ${medalStyle.shadow}`
+          : 'bg-card border-border hover:bg-muted/50'
+
         return (
           <div
             key={member.id}
-            className={`p-3 sm:p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
-              member.isCurrentUser
-                ? 'bg-primary/10 dark:bg-primary/20 border-primary/30 dark:border-primary/600 shadow-lg'
-                : getRankColor(index)
-            } hover:scale-[1.02]`}
+            className={`p-3 sm:p-4 rounded-lg border transition-all duration-300 ${rowClasses} hover:scale-[1.02] cursor-default group`}
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
               {/* Rank and User Info */}
@@ -76,6 +130,13 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 <div className="min-w-0 flex-1">
                   <h4 className="font-semibold text-sm sm:text-base text-foreground flex items-center flex-wrap gap-2">
                     <span className="truncate">{getDisplayName(member.name, member.email)}</span>
+                    {/* Streak Fire Icon */}
+                    {hasActiveStreak && (
+                      <span className="flex items-center gap-0.5 text-orange-500 dark:text-orange-400 animate-pulse" title={`${member.currentStreak} day streak!`}>
+                        <Flame className="w-4 h-4" />
+                        <span className="text-xs font-bold">{member.currentStreak}</span>
+                      </span>
+                    )}
                     {member.isCurrentUser && (
                       <span className="text-xs bg-indigo-100/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-700 flex-shrink-0">
                         Your Household

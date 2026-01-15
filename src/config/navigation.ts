@@ -11,6 +11,7 @@ export const navigationItems: NavigationItem[] = [
   { id: 'household', label: 'Household', icon: '👥', color: 'text-success' },
   { id: 'profile', label: 'Profile & Rewards', icon: '🎨', color: 'text-chart-4' },
   { id: 'redemption', label: 'Redemption', icon: '💰', color: 'text-success' },
+  { id: 'about', label: 'About', icon: 'ℹ️', color: 'text-muted-foreground' },
 ]
 
 

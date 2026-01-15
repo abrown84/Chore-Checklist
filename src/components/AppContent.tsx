@@ -31,6 +31,9 @@ const PointRedemption = lazy(() =>
 const AdminControlPanel = lazy(() =>
   import('./AdminControlPanel').then(module => ({ default: module.AdminControlPanel }))
 )
+const AboutPage = lazy(() =>
+  import('./AboutPage').then(module => ({ default: module.AboutPage }))
+)
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -98,6 +101,14 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
         <Suspense fallback={<LoadingFallback />}>
           <div className="space-y-6">
             <AdminControlPanel />
+          </div>
+        </Suspense>
+      )}
+
+      {activeTab === 'about' && (
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <AboutPage />
           </div>
         </Suspense>
       )}

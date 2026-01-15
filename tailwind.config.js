@@ -7,6 +7,31 @@ export default {
   ],
   theme: {
   	extend: {
+  		keyframes: {
+  			'check-bounce': {
+  				'0%': { transform: 'scale(0)', opacity: '0' },
+  				'50%': { transform: 'scale(1.2)' },
+  				'100%': { transform: 'scale(1)', opacity: '1' }
+  			},
+  			'fade-in': {
+  				'0%': { opacity: '0', transform: 'translateY(-4px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' }
+  			},
+  			'pulse-subtle': {
+  				'0%, 100%': { opacity: '1' },
+  				'50%': { opacity: '0.85' }
+  			},
+  			'glow-green': {
+  				'0%, 100%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.3)' },
+  				'50%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' }
+  			}
+  		},
+  		animation: {
+  			'check-bounce': 'check-bounce 0.4s ease-out forwards',
+  			'fade-in': 'fade-in 0.3s ease-out forwards',
+  			'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
+  			'glow-green': 'glow-green 1.5s ease-in-out'
+  		},
   		fontFamily: {
   			// Primary brand font - industrial/coffee shop feel
   			'brand': ['Roboto Slab', 'serif'],

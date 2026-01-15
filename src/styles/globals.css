@@ -10,8 +10,8 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 0 0% 10%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --ring: 38 92% 50%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -43,9 +43,9 @@
     --popover: 220 26% 9%;
     --popover-foreground: 210 20% 94%;
     
-    /* Primary accent - vibrant blue for consistency */
-    --primary: 217 91% 58%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary accent - amber for consistency with landing page */
+    --primary: 38 92% 50%;
+    --primary-foreground: 0 0% 10%;
     
     /* Secondary elements - better harmony with main colors */
     --secondary: 220 20% 14%;
@@ -66,25 +66,25 @@
     /* Borders - much more subtle for better blending */
     --border: 220 16% 16%;
     --input: 220 20% 15%;
-    --ring: 217 91% 58%;
+    --ring: 38 92% 50%;
     
     /* Chart colors - more harmonious palette */
-    --chart-1: 217 91% 58%;
+    --chart-1: 38 92% 50%;
     --chart-2: 142 70% 38%;
-    --chart-3: 47 90% 55%;
+    --chart-3: 32 95% 44%;
     --chart-4: 280 85% 65%;
-    --chart-5: 12 70% 58%;
+    --chart-5: 43 96% 56%;
     
     /* Custom theme-aware colors for consistency */
     --success: 142 70% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 47 90% 55%;
     --warning-foreground: 0 0% 10%;
-    --info: 217 91% 58%;
-    --info-foreground: 0 0% 100%;
+    --info: 38 92% 50%;
+    --info-foreground: 0 0% 10%;
     
     /* Navigation colors */
-    --nav-active: 217 91% 58%;
+    --nav-active: 38 92% 50%;
     --nav-inactive: 220 12% 60%;
     --nav-hover: 220 20% 20%;
   }
@@ -926,5 +926,16 @@
 
   .animate-level-badge {
     animation: level-badge 2s ease-in-out;
+  }
+
+  /* Points pop animation for number updates */
+  @keyframes points-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #FBBF24; }
+    100% { transform: scale(1); }
+  }
+
+  .animate-points-pop {
+    animation: points-pop 0.4s ease-out;
   }
 }

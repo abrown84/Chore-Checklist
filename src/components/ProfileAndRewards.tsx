@@ -7,6 +7,7 @@ import { useStats } from '../hooks/useStats'
 import { ProfileHeader } from './profile/ProfileHeader'
 import { AvatarCustomization } from './profile/AvatarCustomization'
 import { RewardsProgress } from './profile/RewardsProgress'
+import { NotificationSettings } from './NotificationSettings'
 
 export const ProfileAndRewards: React.FC = () => {
   // Context hooks
@@ -198,6 +199,9 @@ export const ProfileAndRewards: React.FC = () => {
         }}
         onRepairLevels={handleRepairLevels}
       />
+
+      {/* Notification Settings */}
+      <NotificationSettings />
 
       {/* Avatar Customization */}
       <AvatarCustomization

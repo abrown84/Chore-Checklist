@@ -85,9 +85,12 @@ export const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ chore
             </div>
           ))
         ) : (
-          <div className="text-center py-6 text-muted-foreground">
-            <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No recent activity</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <span className="text-5xl mb-3">⏰</span>
+            <h4 className="text-base font-semibold text-foreground mb-1">No Activity Yet</h4>
+            <p className="text-muted-foreground text-sm max-w-[200px]">
+              Complete a chore to see your activity here!
+            </p>
           </div>
         )}
       </div>

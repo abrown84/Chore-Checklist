@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
-import { Star, Crown, Target, Trophy, X, Award, Sparkles, Zap, Flame } from 'lucide-react'
+import { Star, Crown, Target, Trophy, X, Award, Sparkles, Zap, Flame, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const LevelUpCelebration: React.FC = () => {
   const { getUserStats } = useStats()
@@ -74,6 +75,39 @@ export const LevelUpCelebration: React.FC = () => {
   const triggerTestLevelUp = React.useCallback(() => {
     startCelebrationSequence()
   }, [startCelebrationSequence])
+
+  // Share achievement function
+  const handleShare = React.useCallback(async () => {
+    const levelData = LEVELS.find(level => level.level === currentLevel)
+    const shareText = `🎉 I just reached Level ${currentLevel} - ${levelData?.name || 'Champion'}! 🏆\n\nKeeping the house clean and earning rewards with Daily Bag!`
+
+    const shareData = {
+      title: `Level ${currentLevel} Achievement!`,
+      text: shareText,
+      url: window.location.origin,
+    }
+
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+        toast.success('Shared successfully!')
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`)
+        toast.success('Copied to clipboard!')
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        // User didn't cancel, there was an actual error
+        try {
+          await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`)
+          toast.success('Copied to clipboard!')
+        } catch {
+          toast.error('Could not share')
+        }
+      }
+    }
+  }, [currentLevel])
 
 
 
@@ -774,11 +808,31 @@ export const LevelUpCelebration: React.FC = () => {
           <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white drop-shadow-lg" />
         </button>
         
-        {/* Enhanced interactive hint with mobile responsiveness */}
-        <div 
+        {/* Share button */}
+        <button
+          onClick={handleShare}
           className={`
-            text-xs sm:text-sm font-medium mt-4 sm:mt-6 md:mt-8 
-            px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-full 
+            flex items-center gap-2 px-6 py-3 rounded-full
+            font-semibold transition-all duration-500 transform
+            hover:scale-105 active:scale-95
+            ${animationPhase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}
+          `}
+          style={{
+            background: 'linear-gradient(135deg, #06d6a0, #00b4d8)',
+            color: 'white',
+            boxShadow: '0 5px 20px rgba(6, 214, 160, 0.4)',
+            transitionDelay: '1.2s'
+          }}
+        >
+          <Share2 className="w-5 h-5" />
+          Share Achievement
+        </button>
+
+        {/* Enhanced interactive hint with mobile responsiveness */}
+        <div
+          className={`
+            text-xs sm:text-sm font-medium mt-4 sm:mt-6 md:mt-8
+            px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-full
             transition-all duration-1000
             ${animationPhase >= 2 ? 'opacity-70' : 'opacity-0'}
           `}

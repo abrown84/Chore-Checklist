@@ -52,11 +52,11 @@ export const DeadlineCountdown: React.FC<DeadlineCountdownProps> = ({ dueDate, c
   }
 
   const getUrgencyColor = () => {
-    if (isOverdue) return 'text-red-600 bg-red-50 border-red-200'
-    if (hoursRemaining < 6) return 'text-red-600 bg-red-50 border-red-200'
-    if (hoursRemaining < 24) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-    if (hoursRemaining < 48) return 'text-orange-600 bg-orange-50 border-orange-200'
-    return 'text-blue-600 bg-blue-50 border-blue-200'
+    if (isOverdue) return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800'
+    if (hoursRemaining < 6) return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 animate-pulse-subtle'
+    if (hoursRemaining < 24) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800'
+    if (hoursRemaining < 48) return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800'
+    return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800'
   }
 
   const getUrgencyIcon = () => {
@@ -65,7 +65,7 @@ export const DeadlineCountdown: React.FC<DeadlineCountdownProps> = ({ dueDate, c
   }
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium ${getUrgencyColor()}`}>
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-all duration-200 ${getUrgencyColor()}`}>
       {getUrgencyIcon()}
       <span>{timeRemaining}</span>
     </div>

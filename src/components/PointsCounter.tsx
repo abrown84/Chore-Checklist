@@ -1,4 +1,4 @@
-import React, { useMemo, memo } from 'react'
+import React, { useMemo, memo, useEffect, useRef, useState } from 'react'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
@@ -143,6 +143,20 @@ export const PointsCounter: React.FC = memo(() => {
   // Get level data
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
   const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
+
+  // Animation state for points counter
+  const [isAnimating, setIsAnimating] = useState(false)
+  const prevPointsRef = useRef(stats.earnedPoints)
+
+  // Trigger animation when points change
+  useEffect(() => {
+    if (prevPointsRef.current !== stats.earnedPoints) {
+      setIsAnimating(true)
+      const timer = setTimeout(() => setIsAnimating(false), 400)
+      prevPointsRef.current = stats.earnedPoints
+      return () => clearTimeout(timer)
+    }
+  }, [stats.earnedPoints])
   
   // Get level icon based on level
   const getLevelIcon = (level: number) => {
@@ -188,7 +202,9 @@ export const PointsCounter: React.FC = memo(() => {
         {/* Points Display */}
         <div className="text-center">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Available Points</div>
-          <div className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm">
+          <div
+            className={`text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm ${isAnimating ? 'animate-points-pop' : ''}`}
+          >
             {stats.earnedPoints || 0}
           </div>
           {stats.lifetimePoints !== undefined && stats.lifetimePoints !== stats.earnedPoints && (

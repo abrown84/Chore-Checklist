@@ -13,12 +13,31 @@ interface LevelOverviewProps {
 }
 
 export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members, memberStats }) => {
-  const { getDelayStyle } = useAnimationDelays({ 
+  const { getDelayStyle } = useAnimationDelays({
     baseDelay: 0.7,
-    count: APP_CONFIG.DISPLAY_LIMITS.LEVEL_OVERVIEW 
+    count: APP_CONFIG.DISPLAY_LIMITS.LEVEL_OVERVIEW
   })
 
   const topMembers = members.slice(0, APP_CONFIG.DISPLAY_LIMITS.LEVEL_OVERVIEW)
+
+  // Empty state
+  if (members.length === 0) {
+    return (
+      <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>
+        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+          <Award className="w-5 h-5 mr-2 text-chart-4 animate-float" />
+          Level Progress
+        </h3>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <span className="text-5xl mb-3">🌟</span>
+          <h4 className="text-base font-semibold text-foreground mb-1">No Members Yet</h4>
+          <p className="text-muted-foreground text-sm max-w-[180px]">
+            Add family members to track their progress!
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>

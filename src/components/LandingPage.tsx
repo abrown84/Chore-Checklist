@@ -370,12 +370,33 @@ export default function LandingPage() {
 						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
 							<Logo className="h-8 w-8" />
 						</div>
-						<span className="text-sm">© {new Date().getFullYear()} Daily Bag</span>
+						<div className="flex flex-col">
+							<span className="text-sm">© {new Date().getFullYear()} Daily Bag</span>
+							<span className="text-xs">
+								Built by{' '}
+								<a
+									href="https://github.com/abrown84"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-amber-500 hover:text-amber-400 hover:underline"
+								>
+									Alex Brown
+								</a>
+							</span>
+						</div>
 					</div>
 					<div className="flex items-center gap-6 text-sm text-muted-foreground">
 						<a href="#" className="hover:text-foreground">Privacy</a>
 						<a href="#" className="hover:text-foreground">Terms</a>
 						<a href="#" className="hover:text-foreground">Contact</a>
+						<a
+							href="https://github.com/abrown84/Chore-Checklist"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:text-foreground flex items-center gap-1"
+						>
+							GitHub
+						</a>
 					</div>
 				</div>
 			</footer>
