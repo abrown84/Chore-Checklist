@@ -126,7 +126,7 @@ function clearLegacyLocalStorage(): void {
         localStorage.removeItem(key)
       }
     }
-    console.log('✓ Cleared legacy localStorage data')
+    import.meta.env.DEV && console.log('✓ Cleared legacy localStorage data')
   } catch (error) {
     console.error('Error clearing localStorage:', error)
   }
@@ -198,7 +198,7 @@ export const useMigration = () => {
         return { success: true, migratedCount: 0, message: 'No data to migrate' }
       }
 
-      console.log('🔄 Starting migration...', {
+      import.meta.env.DEV && console.log('🔄 Starting migration...', {
         choresCount: data.chores.length,
         usersCount: data.users.length,
         hasUserStats: Object.keys(data.userStats).length > 0,
@@ -218,7 +218,7 @@ export const useMigration = () => {
       })
 
       if (result.success) {
-        console.log('✓ Migration successful:', result.message)
+        import.meta.env.DEV && console.log('✓ Migration successful:', result.message)
         
         // Clear all legacy localStorage data
         clearLegacyLocalStorage()

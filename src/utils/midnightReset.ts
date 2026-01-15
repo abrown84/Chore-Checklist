@@ -75,7 +75,7 @@ export function resetDailyChores(chores: Chore[]): Chore[] {
   const resetChores = chores.map(chore => {
     if (shouldResetChore(chore)) {
       resetCount++
-      console.log(`Resetting daily chore: ${chore.title} (was completed on ${chore.completedAt?.toLocaleDateString()})`)
+      import.meta.env.DEV && console.log(`Resetting daily chore: ${chore.title} (was completed on ${chore.completedAt?.toLocaleDateString()})`)
       
       // Reset the chore for today
       const dueDate = new Date(now)
@@ -96,7 +96,7 @@ export function resetDailyChores(chores: Chore[]): Chore[] {
   })
   
   if (resetCount > 0) {
-    console.log(`Total chores reset: ${resetCount}`)
+    import.meta.env.DEV && console.log(`Total chores reset: ${resetCount}`)
   }
   
   return resetChores

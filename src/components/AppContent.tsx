@@ -1,24 +1,34 @@
 import React, { lazy, Suspense } from 'react'
-import { ChoreList } from './ChoreList'
-import { AddChoreForm } from './AddChoreForm'
-import { PointsCounter } from './PointsCounter'
-import { LevelUpCelebration } from './LevelUpCelebration'
-import { PWAInstaller } from './PWAInstaller'
 
-// Lazy load route-based components for code splitting
-const Leaderboard = lazy(() => 
+// Lazy load ALL tab components for optimal code splitting
+const ChoreList = lazy(() =>
+  import('./ChoreList').then(module => ({ default: module.ChoreList }))
+)
+const AddChoreForm = lazy(() =>
+  import('./AddChoreForm').then(module => ({ default: module.AddChoreForm }))
+)
+const PointsCounter = lazy(() =>
+  import('./PointsCounter').then(module => ({ default: module.PointsCounter }))
+)
+const LevelUpCelebration = lazy(() =>
+  import('./LevelUpCelebration').then(module => ({ default: module.LevelUpCelebration }))
+)
+const PWAInstaller = lazy(() =>
+  import('./PWAInstaller').then(module => ({ default: module.PWAInstaller }))
+)
+const Leaderboard = lazy(() =>
   import('./Leaderboard').then(module => ({ default: module.Leaderboard }))
 )
-const HouseholdManager = lazy(() => 
+const HouseholdManager = lazy(() =>
   import('./HouseholdManager').then(module => ({ default: module.HouseholdManager }))
 )
-const ProfileAndRewards = lazy(() => 
+const ProfileAndRewards = lazy(() =>
   import('./ProfileAndRewards').then(module => ({ default: module.ProfileAndRewards }))
 )
-const PointRedemption = lazy(() => 
+const PointRedemption = lazy(() =>
   import('./PointRedemption').then(module => ({ default: module.PointRedemption }))
 )
-const AdminControlPanel = lazy(() => 
+const AdminControlPanel = lazy(() =>
   import('./AdminControlPanel').then(module => ({ default: module.AdminControlPanel }))
 )
 
@@ -38,16 +48,18 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
     <>
       {/* Tab Content */}
       {activeTab === 'chores' && (
-        <div className="space-y-8">
-          {/* Points Counter */}
-          <PointsCounter />
-          
-          {/* Chore List */}
-          <ChoreList />
-          
-          {/* Add Chore Form - Moved to bottom */}
-          <AddChoreForm />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-8">
+            {/* Points Counter */}
+            <PointsCounter />
+
+            {/* Chore List */}
+            <ChoreList />
+
+            {/* Add Chore Form - Moved to bottom */}
+            <AddChoreForm />
+          </div>
+        </Suspense>
       )}
 
       {activeTab === 'leaderboard' && (
@@ -91,10 +103,14 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
       )}
 
       {/* Celebrations */}
-      <LevelUpCelebration />
-      
+      <Suspense fallback={null}>
+        <LevelUpCelebration />
+      </Suspense>
+
       {/* PWA Installer */}
-      <PWAInstaller />
+      <Suspense fallback={null}>
+        <PWAInstaller />
+      </Suspense>
     </>
   )
 }

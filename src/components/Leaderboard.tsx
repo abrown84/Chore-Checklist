@@ -63,7 +63,7 @@ export const Leaderboard: React.FC = React.memo(() => {
     
     // Handle loading state
     if (globalLeaderboardData === undefined) {
-      console.log('🔍 Global leaderboard: Loading...')
+      import.meta.env.DEV && console.log('🔍 Global leaderboard: Loading...')
       return []
     }
     
@@ -73,7 +73,7 @@ export const Leaderboard: React.FC = React.memo(() => {
       return []
     }
     
-    console.log('🔍 Global leaderboard data received:', globalLeaderboardData)
+    import.meta.env.DEV && console.log('🔍 Global leaderboard data received:', globalLeaderboardData)
     
     if (!Array.isArray(globalLeaderboardData) || globalLeaderboardData.length === 0) {
       console.warn('⚠️ Global leaderboard: Empty array or invalid data', globalLeaderboardData)

@@ -97,7 +97,7 @@ class MockIntersectionObserver {
   // Helper method to simulate intersection
   simulateIntersection(target: Element, isIntersecting: boolean = true) {
     // This would call the actual callback in a real implementation
-    console.log(`Simulating intersection for element ${target.tagName}, intersecting: ${isIntersecting}`)
+    import.meta.env.DEV && console.log(`Simulating intersection for element ${target.tagName}, intersecting: ${isIntersecting}`)
   }
 }
 
@@ -116,7 +116,7 @@ class MockResizeObserver {
   // Helper method to simulate resize
   simulateResize(target: Element, size: { width: number; height: number }) {
     // This would call the actual callback in a real implementation
-    console.log(`Simulating resize for element ${target.tagName}, size: ${size.width}x${size.height}`)
+    import.meta.env.DEV && console.log(`Simulating resize for element ${target.tagName}, size: ${size.width}x${size.height}`)
   }
 }
 

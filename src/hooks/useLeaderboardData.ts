@@ -25,7 +25,7 @@ export const useLeaderboardData = ({
   redemptionData 
 }: UseLeaderboardDataProps) => {
   const processedLeaderboard = useMemo(() => {
-    console.log('🔍 useLeaderboardData Processing:', {
+    import.meta.env.DEV && console.log('🔍 useLeaderboardData Processing:', {
       inputMemberStats: memberStats,
       inputMembers: members,
       currentUserId,
@@ -36,11 +36,11 @@ export const useLeaderboardData = ({
       .map((stats) => {
         const user = members.find((m) => m.id === stats.userId)
         if (!user) {
-          console.log('⚠️ User not found for stats:', stats.userId, 'Available members:', members.map(m => m.id))
+          import.meta.env.DEV && console.log('⚠️ User not found for stats:', stats.userId, 'Available members:', members.map(m => m.id))
           return null
         }
 
-        console.log('✅ Processing user:', user.name, 'Stats:', stats)
+        import.meta.env.DEV && console.log('✅ Processing user:', user.name, 'Stats:', stats)
         
         const currentLevelData = LEVELS.find((level) => level.level === stats.currentLevel)
         const nextLevelData = LEVELS.find((level) => level.level === (stats.currentLevel || 1) + 1)
@@ -62,7 +62,7 @@ export const useLeaderboardData = ({
           isCurrentUser: user.id === currentUserId,
         }
         
-        console.log('✅ Processed item:', processedItem)
+        import.meta.env.DEV && console.log('✅ Processed item:', processedItem)
         return processedItem
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)

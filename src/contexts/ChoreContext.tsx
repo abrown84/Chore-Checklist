@@ -194,14 +194,14 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
     } else if (householdId) {
       // Convex mode: use mutation
       try {
-        console.log(`[ChoreContext] Completing chore ${id} for user ${completedBy}`);
+        import.meta.env.DEV && console.log(`[ChoreContext] Completing chore ${id} for user ${completedBy}`);
         const result = await completeChoreMutation({
           choreId: id as Id<"chores">,
           completedBy: completedBy as Id<"users">,
           proofPhotoId: proofPhotoId as Id<"_storage"> | undefined,
         });
-        console.log('✅ Chore completed successfully:', result);
-        console.log(`✅ Points awarded: ${result.finalPoints}`);
+        import.meta.env.DEV && console.log('✅ Chore completed successfully:', result);
+        import.meta.env.DEV && console.log(`✅ Points awarded: ${result.finalPoints}`);
         // The query will automatically update chores via useEffect
         // Force a small delay to ensure Convex query has updated
         // StatsContext will recalculate when chores prop changes

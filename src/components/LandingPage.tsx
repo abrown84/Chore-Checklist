@@ -8,13 +8,12 @@ import { Input } from './ui/input'
 import { ThemeToggle } from './ThemeToggle'
 import { useDemo } from '../contexts/DemoContext'
 import { PageWrapper } from './PageWrapper'
-import { useAuth } from '../hooks/useAuth'
 import { PWAInstallGuide } from './PWAInstallGuide'
+import { AuthModal } from './landing'
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, X } from 'lucide-react'
-import { validateEmail, validatePassword, validateName } from '../utils/validation'
+import { X } from 'lucide-react'
 import {
 	Users,
 	Trophy,
@@ -43,29 +42,13 @@ const features = [
 
 export default function LandingPage() {
 	const { enterDemoMode } = useDemo()
-	const { signIn, signUp } = useAuth()
 	const [showAuthModal, setShowAuthModal] = useState(false)
-	const [isSignUp, setIsSignUp] = useState(false)
-	const [email, setEmail] = useState('')
-	const [password, setPassword] = useState('')
-	const [confirmPassword, setConfirmPassword] = useState('')
-	const [name, setName] = useState('')
-	const [rememberMe, setRememberMe] = useState(true)
-	const [isLoading, setIsLoading] = useState(false)
-	const [error, setError] = useState('')
-	const [showPassword, setShowPassword] = useState(false)
-	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 	const [showInstallGuide, setShowInstallGuide] = useState(false)
 	const [showVideoModal, setShowVideoModal] = useState(false)
 	const videoRef = useRef<HTMLVideoElement>(null)
-	
+
 	// Fetch public global leaderboard
 	const globalLeaderboard = useQuery(api.stats.getPublicGlobalLeaderboard, { limit: 5 })
-	
-	const passwordRef = useRef<HTMLInputElement>(null)
-	const emailRef = useRef<HTMLInputElement>(null)
-	const nameRef = useRef<HTMLInputElement>(null)
 
 	// Check for hash on mount and when it changes
 	useEffect(() => {
@@ -78,120 +61,6 @@ export default function LandingPage() {
 		window.addEventListener('hashchange', checkHash)
 		return () => window.removeEventListener('hashchange', checkHash)
 	}, [])
-
-	// Help browsers with autofill
-	useEffect(() => {
-		const checkAutofill = () => {
-			if (emailRef.current && emailRef.current.value !== email) {
-				setEmail(emailRef.current.value)
-			}
-			if (passwordRef.current && passwordRef.current.value !== password) {
-				setPassword(passwordRef.current.value)
-			}
-			if (nameRef.current && nameRef.current.value !== name) {
-				setName(nameRef.current.value)
-			}
-		}
-		const timer = setTimeout(checkAutofill, 100)
-		return () => clearTimeout(timer)
-	}, [email, password, name])
-
-	// Clear errors when switching modes
-	useEffect(() => {
-		setError('')
-		setFieldErrors({})
-	}, [isSignUp])
-
-
-	const validateFields = (): boolean => {
-		const errors: Record<string, string> = {}
-		
-		const emailValidation = validateEmail(email)
-		if (!emailValidation.isValid) {
-			errors.email = emailValidation.errors[0]
-		}
-		
-		const passwordValidation = isSignUp 
-			? validatePassword(password, confirmPassword)
-			: validatePassword(password)
-		
-		if (!passwordValidation.isValid) {
-			errors.password = passwordValidation.errors[0]
-		}
-		
-		if (isSignUp) {
-			const nameValidation = validateName(name)
-			if (!nameValidation.isValid) {
-				errors.name = nameValidation.errors[0]
-			}
-		}
-		
-		setFieldErrors(errors)
-		return Object.keys(errors).length === 0
-	}
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-		e.stopPropagation()
-		setError('')
-		
-		console.log('Form submitted', { isSignUp, email: email.substring(0, 3) + '***' })
-		
-		if (!validateFields()) {
-			console.log('Validation failed')
-			return
-		}
-		
-		setIsLoading(true)
-		
-		try {
-			console.log('Attempting', isSignUp ? 'sign-up' : 'sign-in', 'for', email)
-			
-			if (isSignUp) {
-				await signUp(email, password, name)
-			} else {
-				await signIn(email, password)
-			}
-			
-			console.log('Auth action completed successfully')
-			
-			// Close modal - the reactive queries will update and ProtectedRoute will show the app
-			setShowAuthModal(false)
-			setIsLoading(false)
-			
-			if (window.location.hash === '#signin') {
-				window.history.replaceState(null, '', window.location.pathname)
-			}
-			
-			// The reactive queries should update automatically via Convex's useQuery
-			// ProtectedRoute will detect the auth state change and show the app
-		} catch (err: any) {
-			console.error('Auth action failed:', err)
-			const errorMessage = err?.message || 'An error occurred. Please try again.'
-			setError(errorMessage)
-			setIsLoading(false)
-		}
-	}
-
-	const toggleMode = () => {
-		setIsSignUp(!isSignUp)
-		setError('')
-		setFieldErrors({})
-		if (isSignUp) {
-			setEmail('')
-			setPassword('')
-		}
-		setName('')
-		setConfirmPassword('')
-	}
-
-	const getFieldError = (field: string): string | undefined => {
-		return fieldErrors[field]
-	}
-
-	const hasFieldError = (field: string): boolean => {
-		return !!getFieldError(field)
-	}
 
 	const openAuthModal = () => {
 		setShowAuthModal(true)
@@ -234,19 +103,14 @@ export default function LandingPage() {
 
 	// Animated background GIF from Giphy
 	const backgroundGifUrl = '/background.gif'
-	
+
 	// Background tranquil/peaceful sound effect
-	// Add a tranquil sound effect file to public/sounds/tranquil.mp3
-	// You can download free tranquil/ambient sound effects from:
-	// - https://mixkit.co/free-sound-effects/nature/ (recommended - free, no attribution required)
-	// - https://freesound.org (search for "tranquil", "peaceful", "ambient", or "nature" - check license)
-	// - https://pixabay.com/sound-effects/search/peaceful/
 	const backgroundAudioUrl = '/sounds/tranquil.mp3'
-	
+
 	return (
-		<PageWrapper 
-			showBackground={true} 
-			backgroundImage={backgroundGifUrl} 
+		<PageWrapper
+			showBackground={true}
+			backgroundImage={backgroundGifUrl}
 			backgroundOpacity={0.2}
 			backgroundAudio={backgroundAudioUrl}
 			audioVolume={0.2}
@@ -262,7 +126,7 @@ export default function LandingPage() {
 					</div>
 					<nav className="hidden items-center gap-4 lg:gap-6 md:flex">
 						<a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
-						<button 
+						<button
 							onClick={enterDemoMode}
 							className="text-sm text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer"
 						>
@@ -301,14 +165,14 @@ export default function LandingPage() {
 						Turn your to-do list into a leaderboard. Earn points, unlock achievements, and make household chores feel like winning.
 					</p>
 					<div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-						<Button 
+						<Button
 							onClick={enterDemoMode}
 							className="bg-amber-400 text-slate-900 hover:bg-amber-300 w-full sm:w-auto"
 						>
 							Try the demo <ChevronRight className="ml-1 h-4 w-4" />
 						</Button>
-						<Button 
-							variant="outline" 
+						<Button
+							variant="outline"
 							className="border-border bg-card/40 w-full sm:w-auto"
 							onClick={openVideoModal}
 						>
@@ -386,13 +250,10 @@ export default function LandingPage() {
 						</CardContent>
 						<CardFooter className="justify-between">
 							<div className="text-xs text-muted-foreground">Top households by total points earned.</div>
-							<Button 
-								variant="outline" 
+							<Button
+								variant="outline"
 								className="border-border"
-								onClick={() => {
-									setShowAuthModal(true)
-									window.location.hash = '#signin'
-								}}
+								onClick={openAuthModal}
 							>
 								Join the competition
 							</Button>
@@ -522,288 +383,7 @@ export default function LandingPage() {
 			{/* Auth Modal */}
 			<AnimatePresence>
 				{showAuthModal && (
-					<>
-						{/* Backdrop */}
-						<motion.div
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							onClick={closeAuthModal}
-							className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-						/>
-						{/* Modal */}
-						<motion.div
-							initial={{ opacity: 0, scale: 0.95, y: 20 }}
-							animate={{ opacity: 1, scale: 1, y: 0 }}
-							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-							onClick={(e) => e.stopPropagation()}
-						>
-							<Card className="w-full max-w-md border-border bg-card/95 backdrop-blur-md shadow-xl max-h-[90vh] overflow-y-auto">
-								<CardHeader className="pb-4">
-									<div className="flex items-center justify-between">
-										<div>
-											<h2 className="text-xl font-heading font-semibold">
-												{isSignUp ? 'Create Account' : 'Welcome Back'}
-											</h2>
-											<p className="text-sm text-muted-foreground mt-1">
-												{isSignUp 
-													? 'Join your family\'s chore management system' 
-													: 'Sign in to continue managing your chores'
-												}
-											</p>
-										</div>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={closeAuthModal}
-											className="h-8 w-8"
-										>
-											<X className="h-4 w-4" />
-										</Button>
-									</div>
-								</CardHeader>
-								<CardContent className="space-y-4">
-									<form onSubmit={handleSubmit} className="space-y-4">
-										{/* Name Field (Sign Up Only) */}
-										{isSignUp && (
-											<div className="space-y-2">
-												<label htmlFor="modal-name" className="block text-sm font-medium text-foreground">
-													Full Name
-												</label>
-												<div className="relative">
-													<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-														<User className="h-4 w-4 text-muted-foreground" />
-													</div>
-												<Input
-													ref={nameRef}
-													id="modal-name"
-													name="name"
-													type="text"
-													required={isSignUp}
-													value={name}
-													onChange={(e) => setName(e.target.value)}
-													className={`pl-10 text-base sm:text-sm min-h-[44px] ${
-														hasFieldError('name') 
-															? 'border-destructive bg-destructive/10' 
-															: ''
-													}`}
-													placeholder="Enter your full name"
-													autoComplete="name"
-													autoCapitalize="words"
-													autoCorrect="off"
-													spellCheck={false}
-													maxLength={50}
-												/>
-												</div>
-												{getFieldError('name') && (
-													<p className="text-sm text-destructive flex items-center">
-														<AlertCircle className="w-4 h-4 mr-1" />
-														{getFieldError('name')}
-													</p>
-												)}
-											</div>
-										)}
-
-										{/* Email Field */}
-										<div className="space-y-2">
-											<label htmlFor="modal-email" className="block text-sm font-medium text-foreground">
-												Email Address
-											</label>
-											<div className="relative">
-												<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-													<Mail className="h-4 w-4 text-muted-foreground" />
-												</div>
-												<Input
-													ref={emailRef}
-													id="modal-email"
-													name={isSignUp ? 'email' : 'username'}
-													type="email"
-													required
-													value={email}
-													onChange={(e) => setEmail(e.target.value)}
-													className={`pl-10 text-base sm:text-sm min-h-[44px] ${
-														hasFieldError('email') 
-															? 'border-destructive bg-destructive/10' 
-															: ''
-													}`}
-													placeholder="Enter your email"
-													autoComplete={isSignUp ? 'email' : 'username'}
-													autoCapitalize="none"
-													autoCorrect="off"
-													spellCheck={false}
-													maxLength={100}
-												/>
-											</div>
-											{getFieldError('email') && (
-												<p className="text-sm text-destructive flex items-center">
-													<AlertCircle className="w-4 h-4 mr-1" />
-													{getFieldError('email')}
-												</p>
-											)}
-										</div>
-
-										{/* Password Field */}
-										<div className="space-y-2">
-											<label htmlFor="modal-password" className="block text-sm font-medium text-foreground">
-												Password
-											</label>
-											<div className="relative">
-												<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-													<Lock className="h-4 w-4 text-muted-foreground" />
-												</div>
-												<Input
-													ref={passwordRef}
-													id="modal-password"
-													name="password"
-													type={showPassword ? 'text' : 'password'}
-													required
-													value={password}
-													onChange={(e) => setPassword(e.target.value)}
-													className={`pl-10 pr-10 text-base sm:text-sm min-h-[44px] ${
-														hasFieldError('password') 
-															? 'border-destructive bg-destructive/10' 
-															: ''
-													}`}
-													placeholder="Enter your password"
-													autoComplete={isSignUp ? 'new-password' : 'current-password'}
-													minLength={6}
-													maxLength={128}
-												/>
-												<button
-													type="button"
-													onClick={() => setShowPassword(!showPassword)}
-													className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
-												>
-													{showPassword ? (
-														<EyeOff className="h-4 w-4" />
-													) : (
-														<Eye className="h-4 w-4" />
-													)}
-												</button>
-											</div>
-											{getFieldError('password') && (
-												<p className="text-sm text-destructive flex items-center">
-													<AlertCircle className="w-4 h-4 mr-1" />
-													{getFieldError('password')}
-												</p>
-											)}
-											{isSignUp && (
-												<p className="text-xs text-muted-foreground">
-													Password must be at least 6 characters long
-												</p>
-											)}
-										</div>
-
-										{/* Confirm Password Field (Sign Up Only) */}
-										{isSignUp && (
-											<div className="space-y-2">
-												<label htmlFor="modal-confirmPassword" className="block text-sm font-medium text-foreground">
-													Confirm Password
-												</label>
-												<div className="relative">
-													<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-														<Lock className="h-4 w-4 text-muted-foreground" />
-													</div>
-													<Input
-														id="modal-confirmPassword"
-														name="confirmPassword"
-														type={showConfirmPassword ? 'text' : 'password'}
-														required={isSignUp}
-														value={confirmPassword}
-														onChange={(e) => setConfirmPassword(e.target.value)}
-														className="pl-10 pr-10 text-base sm:text-sm min-h-[44px]"
-														placeholder="Confirm your password"
-														autoComplete="new-password"
-														minLength={6}
-														maxLength={128}
-													/>
-													<button
-														type="button"
-														onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-														className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
-													>
-														{showConfirmPassword ? (
-															<EyeOff className="h-4 w-4" />
-														) : (
-															<Eye className="h-4 w-4" />
-														)}
-													</button>
-												</div>
-											</div>
-										)}
-
-										{/* Remember Me & Forgot Password (Sign In Only) */}
-										{!isSignUp && (
-											<div className="flex items-center justify-between">
-												<div className="flex items-center">
-													<input
-														id="modal-rememberMe"
-														name="rememberMe"
-														type="checkbox"
-														checked={rememberMe}
-														onChange={(e) => setRememberMe(e.target.checked)}
-														className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
-													/>
-													<label htmlFor="modal-rememberMe" className="ml-2 block text-sm text-foreground">
-														Remember me for 30 days
-													</label>
-											</div>
-										</div>
-									)}
-
-										{/* Error Display */}
-										{error && (
-											<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-												<p className="text-sm text-destructive flex items-center">
-													<AlertCircle className="w-4 h-4 mr-2" />
-													{error}
-												</p>
-											</div>
-										)}
-
-										{/* Submit Button */}
-										<Button
-											type="submit"
-											disabled={isLoading}
-											className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-[44px]"
-										>
-											{isLoading ? (
-												<div className="flex items-center justify-center">
-													<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 mr-2"></div>
-													{isSignUp ? 'Creating Account...' : 'Signing In...'}
-												</div>
-											) : (
-												isSignUp ? 'Create Account' : 'Sign In'
-											)}
-										</Button>
-									</form>
-
-									{/* Mode Toggle */}
-									<div className="text-center pt-2">
-										<p className="text-sm text-muted-foreground">
-											{isSignUp ? 'Already have an account?' : "Don't have an account?"}
-											<button
-												type="button"
-												onClick={toggleMode}
-												className="ml-1 text-amber-400 hover:text-amber-300 font-medium transition-colors duration-200"
-											>
-												{isSignUp ? 'Sign In' : 'Sign Up'}
-											</button>
-										</p>
-									</div>
-
-									{/* Security Notice */}
-									<div className="text-center pt-2">
-										<div className="inline-flex items-center gap-2 rounded-full bg-secondary/70 px-3 py-1 text-xs text-muted-foreground ring-1 ring-border">
-											<ShieldCheckIcon className="h-3.5 w-3.5" />
-											Your data is stored securely
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						</motion.div>
-					</>
+					<AuthModal isOpen={showAuthModal} onClose={closeAuthModal} />
 				)}
 			</AnimatePresence>
 
@@ -949,5 +529,3 @@ export default function LandingPage() {
 		</PageWrapper>
 	)
 }
-
-

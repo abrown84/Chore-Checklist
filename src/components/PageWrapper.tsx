@@ -56,14 +56,14 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       if (newMutedState) {
         // Mute: pause the audio
         audio.pause()
-        console.log('🔇 Audio muted')
+        import.meta.env.DEV && console.log('🔇 Audio muted')
       } else {
         // Unmute: try to play the audio
         if (audio.readyState >= 2) {
           audio.play().then(() => {
-            console.log('🔊 Audio unmuted and playing')
+            import.meta.env.DEV && console.log('🔊 Audio unmuted and playing')
           }).catch((err) => {
-            console.log('Audio play failed after unmute:', err)
+            import.meta.env.DEV && console.log('Audio play failed after unmute:', err)
           })
         } else {
           console.warn('Audio not ready yet, readyState:', audio.readyState)
@@ -173,14 +173,14 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       if (isMuted) {
         // Mute: pause the audio
         audio.pause()
-        console.log('🔇 Audio muted via effect')
+        import.meta.env.DEV && console.log('🔇 Audio muted via effect')
       } else {
         // Unmute: try to play the audio if ready
         if (audio.readyState >= 2) {
           audio.play().catch((err) => {
-            console.log('Audio play failed in effect:', err)
+            import.meta.env.DEV && console.log('Audio play failed in effect:', err)
           })
-          console.log('🔊 Audio unmuted via effect')
+          import.meta.env.DEV && console.log('🔊 Audio unmuted via effect')
         }
       }
     }

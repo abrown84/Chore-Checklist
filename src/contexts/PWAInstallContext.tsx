@@ -26,7 +26,7 @@ export const PWAInstallProvider: React.FC<{ children: ReactNode }> = ({ children
       const isInStandaloneMode = (window.navigator as any).standalone === true;
       const installed = isStandalone || isInStandaloneMode;
       setIsInstalled(installed);
-      console.log('PWA Install Context initialized', {
+      import.meta.env.DEV && console.log('PWA Install Context initialized', {
         isInstalled: installed,
         isStandalone,
         isInStandaloneMode,
@@ -40,18 +40,18 @@ export const PWAInstallProvider: React.FC<{ children: ReactNode }> = ({ children
     // Handle beforeinstallprompt event - this will be captured once
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      console.log('✅ PWA install prompt captured!');
+      import.meta.env.DEV && console.log('✅ PWA install prompt captured!');
       promptCapturedRef.current = true;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     // Log when listener is set up
-    console.log('Setting up beforeinstallprompt listener');
+    import.meta.env.DEV && console.log('Setting up beforeinstallprompt listener');
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Check if app was just installed
     window.addEventListener('appinstalled', () => {
-      console.log('App was installed');
+      import.meta.env.DEV && console.log('App was installed');
       setIsInstalled(true);
       setDeferredPrompt(null);
     });

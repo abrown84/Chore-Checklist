@@ -141,9 +141,9 @@ export const HouseholdManager: React.FC = () => {
           text: shareText,
         })
         return
-      } catch (error: any) {
+      } catch (error) {
         // User cancelled or share failed, fall through to copy
-        if (error.name !== 'AbortError') {
+        if (error instanceof Error && error.name !== 'AbortError') {
           console.error('Share failed:', error)
         }
       }
@@ -182,9 +182,9 @@ export const HouseholdManager: React.FC = () => {
       await leaveHousehold({ householdId })
       setShowLeaveConfirm(false)
       alert('You have left the household.')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error leaving household:', error)
-      alert(error.message || 'Failed to leave household. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to leave household. Please try again.')
     }
   }, [householdId, leaveHousehold])
 
@@ -195,18 +195,18 @@ export const HouseholdManager: React.FC = () => {
       if (result.success) {
         alert('Successfully joined the household!')
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error accepting invite:', error)
-      alert(error.message || 'Failed to accept invite. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to accept invite. Please try again.')
     }
   }, [acceptInviteMutation])
 
   const handleDeclineMyInvite = useCallback(async (inviteId: Id<'userInvites'>) => {
     try {
       await declineInviteMutation({ inviteId })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error declining invite:', error)
-      alert(error.message || 'Failed to decline invite. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to decline invite. Please try again.')
     }
   }, [declineInviteMutation])
 
@@ -218,9 +218,9 @@ export const HouseholdManager: React.FC = () => {
         householdId,
         userId,
       })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing member:', error)
-      alert(error.message || 'Failed to remove member. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to remove member. Please try again.')
     }
   }, [householdId, removeMember])
 
@@ -238,9 +238,9 @@ export const HouseholdManager: React.FC = () => {
       })
       setShowSettingsFeedback(true)
       setTimeout(() => setShowSettingsFeedback(false), 2000)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating household settings:', error)
-      alert(error.message || 'Failed to update settings. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to update settings. Please try again.')
     }
   }, [householdId, household, householdSettings, updateHousehold])
 
@@ -258,9 +258,9 @@ export const HouseholdManager: React.FC = () => {
       })
       setShowSettingsFeedback(true)
       setTimeout(() => setShowSettingsFeedback(false), 2000)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating household settings:', error)
-      alert(error.message || 'Failed to update settings. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to update settings. Please try again.')
     }
   }, [householdId, household, householdSettings, updateHousehold])
 
@@ -269,16 +269,16 @@ export const HouseholdManager: React.FC = () => {
     try {
       const result = await regenerateJoinCode({ householdId })
       alert(`New join code: ${result.joinCode}`)
-    } catch (error: any) {
-      alert(error.message || 'Failed to regenerate code')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to regenerate code')
     }
   }, [householdId, regenerateJoinCode])
 
   const handleCancelInvite = useCallback(async (inviteId: Id<'userInvites'>) => {
     try {
       await cancelInvite({ inviteId })
-    } catch (error: any) {
-      alert(error.message || 'Failed to cancel invite')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to cancel invite')
     }
   }, [cancelInvite])
 
@@ -348,9 +348,9 @@ export const HouseholdManager: React.FC = () => {
         alert('Successfully joined the household!')
         setJoinCode('')
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error joining household:', error)
-      alert(error.message || 'Failed to join household. Please check the code and try again.')
+      alert(error instanceof Error ? error.message : 'Failed to join household. Please check the code and try again.')
     } finally {
       setIsJoining(false)
     }

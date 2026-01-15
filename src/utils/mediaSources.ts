@@ -310,7 +310,7 @@ export const MediaUtils = {
       const audio = new Audio(SOUND_SOURCES.freesound.getSoundUrl(category, type));
       await audio.play();
     } catch (error) {
-      console.log('Sound playback failed:', error);
+      import.meta.env.DEV && console.log('Sound playback failed:', error);
     }
   },
   
@@ -319,7 +319,7 @@ export const MediaUtils = {
     try {
       await SOUND_SOURCES.webAudio.generateTone(frequency, duration);
     } catch (error) {
-      console.log('Sound generation failed:', error);
+      import.meta.env.DEV && console.log('Sound generation failed:', error);
     }
   },
   

@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { Authenticated, Unauthenticated, AuthLoading } from 'convex/react'
 import { useDemo } from '../contexts/DemoContext'
-import LandingPage from './LandingPage'
+
+// Lazy load LandingPage (953 lines) - only needed for unauthenticated users
+const LandingPage = lazy(() => import('./LandingPage'))
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -33,14 +35,18 @@ function AuthenticatedContent({ children }: { children: React.ReactNode }) {
  */
 function UnauthenticatedContent({ children }: { children: React.ReactNode }) {
   const { isDemoMode } = useDemo()
-  
+
   // If in demo mode, show the app content
   if (isDemoMode) {
     return <>{children}</>
   }
-  
-  // Otherwise show landing page
-  return <LandingPage />
+
+  // Otherwise show landing page (lazy loaded)
+  return (
+    <Suspense fallback={<AuthLoadingScreen />}>
+      <LandingPage />
+    </Suspense>
+  )
 }
 
 /**

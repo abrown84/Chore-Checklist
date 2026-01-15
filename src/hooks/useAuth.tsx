@@ -76,7 +76,7 @@ export function useAuth() {
         convexSignOut().catch(console.error)
       } else if (inactiveTime > INACTIVITY_WARNING) {
         // Could trigger a warning UI here
-        console.log('Session will expire soon due to inactivity')
+        import.meta.env.DEV && console.log('Session will expire soon due to inactivity')
       }
     }, 60000)
 
@@ -105,7 +105,7 @@ export function useAuth() {
       await convexSignIn(email, password)
       setSessionExpired(false)
       setLastActivity(Date.now())
-    } catch (error: any) {
+    } catch (error) {
       // Error is already formatted by useConvexAuth
       throw error
     }
@@ -133,7 +133,7 @@ export function useAuth() {
       await convexSignUp(email, password, name)
       setSessionExpired(false)
       setLastActivity(Date.now())
-    } catch (error: any) {
+    } catch (error) {
       // Error is already formatted by useConvexAuth
       throw error
     }
@@ -157,17 +157,17 @@ export function useAuth() {
   const updateUser = useCallback((_updates: Partial<User>) => {
     // User updates are handled through Convex mutations
     // This is a placeholder for components that expect this method
-    console.log('updateUser called - use Convex mutations directly for user updates')
+    import.meta.env.DEV && console.log('updateUser called - use Convex mutations directly for user updates')
   }, [])
 
   // Legacy methods kept for backwards compatibility
   const promoteToAdmin = useCallback(() => {
-    console.log('promoteToAdmin called - use Convex mutations directly')
+    import.meta.env.DEV && console.log('promoteToAdmin called - use Convex mutations directly')
   }, [])
 
   const checkAndFixAdminStatus = useCallback(() => {
     // Admin status is now managed in Convex
-    console.log('checkAndFixAdminStatus called - admin status managed in Convex')
+    import.meta.env.DEV && console.log('checkAndFixAdminStatus called - admin status managed in Convex')
   }, [])
 
   // Session management placeholders (for backwards compatibility)

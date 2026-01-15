@@ -32,7 +32,7 @@ export const PointRedemption: React.FC = () => {
   const currentUser = userState.currentUser
   const currentUserStats = memberStats.find(s => s.userId === currentUser?.id)
   
-  console.log('🎯 Redemption: Stats lookup', {
+  import.meta.env.DEV && console.log('🎯 Redemption: Stats lookup', {
     currentUserId: currentUser?.id,
     memberStatsCount: memberStats.length,
     currentUserStats: currentUserStats ? {
@@ -131,7 +131,7 @@ export const PointRedemption: React.FC = () => {
       return
     }
     
-    console.log('🎯 Redemption: Checking points', {
+    import.meta.env.DEV && console.log('🎯 Redemption: Checking points', {
       pointsRequested: points,
       earnedPoints: currentUserStats.earnedPoints,
       lifetimePoints: currentUserStats.lifetimePoints,
@@ -183,7 +183,7 @@ export const PointRedemption: React.FC = () => {
           // Calculate what level the user was at BEFORE redemption
           const levelBeforeRedemption = calculateUserLevel(userStats.earnedPoints)
           
-          console.log(`Setting level persistence for user ${request.userId}:`, {
+          import.meta.env.DEV && console.log(`Setting level persistence for user ${request.userId}:`, {
             pointsBeforeRedemption: userStats.earnedPoints,
             levelBeforeRedemption,
             pointsToDeduct: request.pointsRequested,

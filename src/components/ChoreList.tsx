@@ -75,9 +75,9 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId, storageId))
       .then((result: any) => {
-        console.log('✅ Chore completion result:', result)
+        import.meta.env.DEV && console.log('✅ Chore completion result:', result)
         if (result && typeof result === 'object' && 'finalPoints' in result) {
-          console.log(`✅ Points awarded: ${result.finalPoints}`)
+          import.meta.env.DEV && console.log(`✅ Points awarded: ${result.finalPoints}`)
         }
         // Convex queries are reactive and will automatically update when the userStats table changes
         // The completeChore mutation already calls calculateUserStats which updates the stats
@@ -177,9 +177,9 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId))
       .then((result: any) => {
-        console.log('✅ Chore completion result:', result)
+        import.meta.env.DEV && console.log('✅ Chore completion result:', result)
         if (result && typeof result === 'object' && 'finalPoints' in result) {
-          console.log(`✅ Points awarded: ${result.finalPoints}`)
+          import.meta.env.DEV && console.log(`✅ Points awarded: ${result.finalPoints}`)
         }
         // Convex queries are reactive and will automatically update when the userStats table changes
         // The completeChore mutation already calls calculateUserStats which updates the stats

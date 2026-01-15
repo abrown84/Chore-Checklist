@@ -19,15 +19,15 @@ export const registerPWA = () => {
     const updateSW = registerSW({
       onNeedRefresh() {
         // Handle when a new version is available
-        console.log('New version available');
+        import.meta.env.DEV && console.log('New version available');
       },
       onOfflineReady() {
         // Handle when the app is ready for offline use
-        console.log('App ready for offline use');
+        import.meta.env.DEV && console.log('App ready for offline use');
       },
       onRegistered(swRegistration: any) {
         // Handle when service worker is registered
-        console.log('Service Worker registered');
+        import.meta.env.DEV && console.log('Service Worker registered');
         
         // Check for updates every hour
         setInterval(() => {
@@ -42,7 +42,7 @@ export const registerPWA = () => {
         if (error?.message?.includes('Corruption') || error?.message?.includes('checksum')) {
           console.warn('Cache corruption detected, clearing cache...');
           clearCorruptedCache().then(() => {
-            console.log('Cache cleared, please refresh the page');
+            import.meta.env.DEV && console.log('Cache cleared, please refresh the page');
             // Optionally reload after a short delay
             setTimeout(() => {
               window.location.reload();
@@ -61,12 +61,12 @@ export const registerPWA = () => {
 // Handle offline/online events
 export const setupOfflineHandling = () => {
   const handleOnline = () => {
-    console.log('App is online');
+    import.meta.env.DEV && console.log('App is online');
     // You can add custom logic here for when the app comes back online
   };
 
   const handleOffline = () => {
-    console.log('App is offline');
+    import.meta.env.DEV && console.log('App is offline');
     // You can add custom logic here for when the app goes offline
   };
 
@@ -89,7 +89,7 @@ export const clearCorruptedCache = async (): Promise<void> => {
       await Promise.all(
         cacheNames.map(cacheName => caches.delete(cacheName))
       );
-      console.log('All caches cleared');
+      import.meta.env.DEV && console.log('All caches cleared');
     }
 
     // Unregister all service workers
@@ -98,7 +98,7 @@ export const clearCorruptedCache = async (): Promise<void> => {
       await Promise.all(
         registrations.map(registration => registration.unregister())
       );
-      console.log('All service workers unregistered');
+      import.meta.env.DEV && console.log('All service workers unregistered');
     }
 
     // Clear IndexedDB if needed

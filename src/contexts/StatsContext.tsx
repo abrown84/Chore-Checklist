@@ -219,7 +219,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
       
       // Debug logging (remove after fixing)
       if (currentUser?.id === userId) {
-        console.log('🔍 Stats Debug:', {
+        import.meta.env.DEV && console.log('🔍 Stats Debug:', {
           userId,
           userIdStr,
           hasConvexStat: !!convexStat,
@@ -257,7 +257,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         // Debug logging - show what we're getting from Convex
         if (currentUser?.id === userId) {
           const calculatedRedeemedPoints = lifetimePoints - earnedPoints
-          console.log('🔍 Convex Stats for Current User:', {
+          import.meta.env.DEV && console.log('🔍 Convex Stats for Current User:', {
             userId,
             'Raw earnedPoints from Convex': convexStat.earnedPoints,
             'Raw lifetimePoints from Convex': convexStat.lifetimePoints,
@@ -316,7 +316,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
         
         // Debug logging for current user
         if (currentUser?.id === userId) {
-          console.log('⚠️ Using local calculation (no Convex stats):', {
+          import.meta.env.DEV && console.log('⚠️ Using local calculation (no Convex stats):', {
             lifetimePoints,
             redeemedPoints,
             earnedPoints,
@@ -455,7 +455,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
     // Point deductions are now handled through redemption requests in Convex
     // This method is kept for backward compatibility but doesn't directly update deductions
     // Instead, deductions are tracked through the pointDeductions table
-    console.log('updateUserPoints called - deductions are now tracked in Convex')
+    import.meta.env.DEV && console.log('updateUserPoints called - deductions are now tracked in Convex')
   }, [])
 
   const refreshStats = useCallback(() => {
@@ -479,7 +479,7 @@ export const StatsProvider = ({ children, chores, members }: StatsProviderProps)
   const persistUserStats = useCallback((_userId: string, _stats: UserStats) => {
     // Stats are now stored in Convex, no need to persist manually
     // The stats are recalculated server-side when chores are completed
-    console.log('persistUserStats called - stats are now stored in Convex')
+    import.meta.env.DEV && console.log('persistUserStats called - stats are now stored in Convex')
   }, [])
   
   const setLevelPersistenceForUser = useCallback(async (

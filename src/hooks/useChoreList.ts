@@ -92,7 +92,7 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
     })
     
     // Debug logging to help identify filtering issues
-    console.log('Filter state:', { 
+    import.meta.env.DEV && console.log('Filter state:', { 
       filter, 
       categoryFilter, 
       totalChores: chores.length, 

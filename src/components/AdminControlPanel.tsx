@@ -1,17 +1,13 @@
 import React, { useState, useMemo } from 'react'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useUsers } from '../contexts/UserContext'
-import { getDisplayName } from '../utils/convexHelpers'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Input } from './ui/input'
-import { Avatar } from './ui/Avatar'
-import { Id } from '../../convex/_generated/dataModel'
-import { toast } from 'sonner'
+import { AdminUsersSection, AdminChoresSection, AdminDataSection } from './admin'
 import {
   Settings,
   Users,
@@ -23,16 +19,6 @@ import {
   BarChart3,
   UserCheck,
   Clock,
-  Edit,
-  Trash2,
-  Save,
-  X,
-  ChevronUp,
-  ChevronDown,
-  Coins,
-  RotateCcw,
-  Loader2,
-  AlertTriangle,
 } from 'lucide-react'
 
 export const AdminControlPanel: React.FC = () => {
@@ -40,21 +26,6 @@ export const AdminControlPanel: React.FC = () => {
   const { state: userState } = useUsers()
   const householdId = useCurrentHousehold()
   const [activeSection, setActiveSection] = useState<'overview' | 'users' | 'households' | 'chores' | 'activity' | 'data'>('overview')
-  const [editingUserId, setEditingUserId] = useState<Id<'users'> | null>(null)
-  const [editingChoreId, setEditingChoreId] = useState<Id<'chores'> | null>(null)
-  const [choreEditData, setChoreEditData] = useState<{
-    title?: string
-    points?: number
-    difficulty?: 'easy' | 'medium' | 'hard'
-    category?: 'daily' | 'weekly' | 'monthly' | 'seasonal'
-  }>({})
-  const [adjustingPointsUserId, setAdjustingPointsUserId] = useState<Id<'users'> | null>(null)
-  const [pointsAdjustment, setPointsAdjustment] = useState('')
-  const [adjustmentReason, setAdjustmentReason] = useState('')
-  const [showResetChoresConfirm, setShowResetChoresConfirm] = useState(false)
-  const [showResetAllDataConfirm, setShowResetAllDataConfirm] = useState(false)
-  const [isResettingChores, setIsResettingChores] = useState(false)
-  const [isResettingAllData, setIsResettingAllData] = useState(false)
 
   // Get current user's household membership role (this is what determines admin permissions)
   const currentUserRole = useMemo(() => {
@@ -65,14 +36,6 @@ export const AdminControlPanel: React.FC = () => {
 
   // Check if user is admin
   const isAdmin = currentUserRole === 'admin'
-
-  // Mutations
-  const updateMemberRole = useMutation(api.households.updateMemberRole)
-  const updateChore = useMutation(api.chores.updateChore)
-  const deleteChore = useMutation(api.chores.deleteChore)
-  const adjustUserPoints = useMutation(api.users.adminAdjustUserPoints)
-  const resetAllChores = useMutation(api.chores.resetAllChores)
-  const resetAllData = useMutation(api.chores.resetAllData)
 
   // Queries
   const currentHousehold = useQuery(
@@ -128,39 +91,6 @@ export const AdminControlPanel: React.FC = () => {
     { id: 'data', label: 'Data Management', icon: Shield },
   ]
 
-  const handleResetChores = async () => {
-    if (!householdId) return
-    setIsResettingChores(true)
-    try {
-      const result = await resetAllChores({ householdId })
-      setShowResetChoresConfirm(false)
-      toast.success(
-        result.message || 
-        `Successfully reset ${result.resetCount} chore(s) and added ${result.addedCount || 0} default chore(s).`
-      )
-    } catch (error: any) {
-      console.error('Error resetting chores:', error)
-      toast.error(error.message || 'Failed to reset chores. Please try again.')
-    } finally {
-      setIsResettingChores(false)
-    }
-  }
-
-  const handleResetAllData = async () => {
-    if (!householdId) return
-    setIsResettingAllData(true)
-    try {
-      const result = await resetAllData({ householdId })
-      setShowResetAllDataConfirm(false)
-      toast.success(result.message || 'All data has been reset successfully.')
-    } catch (error: any) {
-      console.error('Error resetting all data:', error)
-      toast.error(error.message || 'Failed to reset all data. Please try again.')
-    } finally {
-      setIsResettingAllData(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -187,7 +117,7 @@ export const AdminControlPanel: React.FC = () => {
             <Button
               key={section.id}
               variant={activeSection === section.id ? 'default' : 'ghost'}
-              onClick={() => setActiveSection(section.id as any)}
+              onClick={() => setActiveSection(section.id as typeof activeSection)}
               className="flex items-center gap-2"
             >
               <Icon className="w-4 h-4" />
@@ -207,9 +137,7 @@ export const AdminControlPanel: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Active members
-              </p>
+              <p className="text-xs text-muted-foreground">Active members</p>
             </CardContent>
           </Card>
 
@@ -220,9 +148,7 @@ export const AdminControlPanel: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalChores}</div>
-              <p className="text-xs text-muted-foreground">
-                {completedChores} completed
-              </p>
+              <p className="text-xs text-muted-foreground">{completedChores} completed</p>
             </CardContent>
           </Card>
 
@@ -233,9 +159,7 @@ export const AdminControlPanel: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Earned by all users
-              </p>
+              <p className="text-xs text-muted-foreground">Earned by all users</p>
             </CardContent>
           </Card>
 
@@ -248,232 +172,19 @@ export const AdminControlPanel: React.FC = () => {
               <div className="text-2xl font-bold">
                 {totalChores > 0 ? Math.round((completedChores / totalChores) * 100) : 0}%
               </div>
-              <p className="text-xs text-muted-foreground">
-                Chores completed
-              </p>
+              <p className="text-xs text-muted-foreground">Chores completed</p>
             </CardContent>
           </Card>
         </div>
       )}
 
       {/* Users Section */}
-      {activeSection === 'users' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Household Members
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {householdMembers && householdMembers.length > 0 ? (
-              <div className="space-y-3">
-                {householdMembers.map((member) => {
-                  if (!member) return null
-                  
-                  const memberStats = householdStats?.find(s => s.userId === member._id)
-                  const isEditing = editingUserId === member._id
-                  const currentRole = (member.role || 'member') as 'admin' | 'parent' | 'teen' | 'kid' | 'member'
-                  
-                  const handleRoleChange = async (newRole: 'admin' | 'parent' | 'teen' | 'kid' | 'member') => {
-                    if (!householdId || !member._id) return
-                    
-                    try {
-                      await updateMemberRole({
-                        householdId,
-                        userId: member._id,
-                        role: newRole,
-                      })
-                      toast.success(`Role updated to ${newRole}`)
-                      setEditingUserId(null)
-                    } catch (error: any) {
-                      toast.error(error.message || 'Failed to update role')
-                    }
-                  }
-
-                  const handleAdjustPoints = async () => {
-                    if (!householdId || !member._id || !pointsAdjustment) return
-                    
-                    const pointsChange = parseInt(pointsAdjustment)
-                    if (isNaN(pointsChange) || pointsChange === 0) {
-                      toast.error('Please enter a valid non-zero point amount')
-                      return
-                    }
-
-                    try {
-                      const result = await adjustUserPoints({
-                        userId: member._id,
-                        householdId,
-                        pointsChange,
-                        reason: adjustmentReason || undefined,
-                      })
-                      toast.success(
-                        `Points ${pointsChange > 0 ? 'added' : 'subtracted'}: ${Math.abs(pointsChange)} points. New total: ${result.newPoints}`
-                      )
-                      setAdjustingPointsUserId(null)
-                      setPointsAdjustment('')
-                      setAdjustmentReason('')
-                    } catch (error: any) {
-                      toast.error(error.message || 'Failed to adjust points')
-                    }
-                  }
-
-                  const isAdjustingPoints = adjustingPointsUserId === member._id
-
-                  return (
-                    <div
-                      key={member._id}
-                      className="p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <Avatar
-                          avatarUrl={member.avatarUrl}
-                          userName={getDisplayName(member.name, member.email)}
-                          userId={member._id}
-                          size="md"
-                        />
-                          <div className="flex-1">
-                            <div className="font-medium">{getDisplayName(member.name, member.email)}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                              {isEditing ? (
-                                <select
-                                  value={currentRole}
-                                  onChange={(e) => handleRoleChange(e.target.value as any)}
-                                  className="text-xs border border-border rounded px-2 py-1 bg-background"
-                                  onBlur={() => setEditingUserId(null)}
-                                  autoFocus
-                                >
-                                  <option value="admin">Admin</option>
-                                  <option value="parent">Parent</option>
-                                  <option value="teen">Teen</option>
-                                  <option value="kid">Kid</option>
-                                  <option value="member">Member</option>
-                                </select>
-                              ) : (
-                                <>
-                                  <Badge variant="outline" className="text-xs">
-                                    {currentRole}
-                                  </Badge>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="font-semibold flex items-center gap-1">
-                              <Coins className="w-4 h-4 text-amber-500" />
-                              {memberStats?.earnedPoints || 0} pts
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Level {memberStats?.currentLevel || member.level || 1}
-                            </div>
-                          </div>
-                          {!isEditing && !isAdjustingPoints && (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingUserId(member._id)}
-                                className="flex items-center gap-1"
-                              >
-                                {currentRole === 'admin' ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronUp className="w-4 h-4" />
-                                )}
-                                Change Role
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAdjustingPointsUserId(member._id)}
-                                className="flex items-center gap-1"
-                              >
-                                <Coins className="w-4 h-4" />
-                                Adjust Points
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Point Adjustment Form */}
-                      {isAdjustingPoints && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Coins className="w-4 h-4 text-amber-500" />
-                            <span className="font-medium text-sm">Adjust Points for {getDisplayName(member.name, member.email)}</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">
-                                Points Change (use - for subtraction)
-                              </label>
-                              <Input
-                                type="number"
-                                value={pointsAdjustment}
-                                onChange={(e) => setPointsAdjustment(e.target.value)}
-                                placeholder="e.g., 50 or -25"
-                                className="w-full"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">
-                                Reason (optional)
-                              </label>
-                              <Input
-                                type="text"
-                                value={adjustmentReason}
-                                onChange={(e) => setAdjustmentReason(e.target.value)}
-                                placeholder="e.g., Bonus for good behavior"
-                                className="w-full"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              onClick={handleAdjustPoints}
-                              className="flex items-center gap-1"
-                            >
-                              <Save className="w-4 h-4" />
-                              Apply Adjustment
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setAdjustingPointsUserId(null)
-                                setPointsAdjustment('')
-                                setAdjustmentReason('')
-                              }}
-                              className="flex items-center gap-1"
-                            >
-                              <X className="w-4 h-4" />
-                              Cancel
-                            </Button>
-                          </div>
-                          {pointsAdjustment && !isNaN(parseInt(pointsAdjustment)) && (
-                            <div className="text-xs text-muted-foreground">
-                              Current: {memberStats?.earnedPoints || 0} pts → New: {Math.max(0, (memberStats?.earnedPoints || 0) + parseInt(pointsAdjustment))} pts
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No members found</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {activeSection === 'users' && householdId && (
+        <AdminUsersSection
+          householdId={householdId}
+          householdMembers={householdMembers}
+          householdStats={householdStats}
+        />
       )}
 
       {/* Households Section */}
@@ -549,198 +260,7 @@ export const AdminControlPanel: React.FC = () => {
 
       {/* Chores Section */}
       {activeSection === 'chores' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5" />
-              Chore Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {allChores && allChores.length > 0 ? (
-              <div className="space-y-2">
-                <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Total</div>
-                    <div className="text-2xl font-bold">{allChores.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Completed</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {allChores.filter(c => c.status === 'completed').length}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Pending</div>
-                    <div className="text-2xl font-bold text-amber-600">
-                      {allChores.filter(c => c.status === 'pending').length}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {allChores.map((chore) => {
-                    const isEditing = editingChoreId === chore._id
-                    
-                    const handleSaveChore = async () => {
-                      if (!chore._id) return
-                      
-                      try {
-                        await updateChore({
-                          choreId: chore._id,
-                          ...choreEditData,
-                        })
-                        toast.success('Chore updated successfully')
-                        setEditingChoreId(null)
-                        setChoreEditData({})
-                      } catch (error: any) {
-                        toast.error(error.message || 'Failed to update chore')
-                      }
-                    }
-
-                    const handleDeleteChore = async () => {
-                      if (!chore._id) return
-                      if (!window.confirm(`Are you sure you want to delete "${chore.title}"?`)) return
-                      
-                      try {
-                        await deleteChore({ choreId: chore._id })
-                        toast.success('Chore deleted successfully')
-                      } catch (error: any) {
-                        toast.error(error.message || 'Failed to delete chore')
-                      }
-                    }
-
-                    const handleStartEdit = () => {
-                      setEditingChoreId(chore._id)
-                      setChoreEditData({
-                        title: chore.title,
-                        points: chore.points,
-                        difficulty: chore.difficulty || 'medium',
-                        category: chore.category || 'daily',
-                      })
-                    }
-
-                    return (
-                      <div
-                        key={chore._id}
-                        className="p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors"
-                      >
-                        {isEditing ? (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Title</label>
-                              <Input
-                                value={choreEditData.title || ''}
-                                onChange={(e) => setChoreEditData({ ...choreEditData, title: e.target.value })}
-                                className="w-full"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Points</label>
-                                <Input
-                                  type="number"
-                                  value={choreEditData.points || ''}
-                                  onChange={(e) => setChoreEditData({ ...choreEditData, points: parseInt(e.target.value) || 0 })}
-                                  className="w-full"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Difficulty</label>
-                                <select
-                                  value={choreEditData.difficulty || 'medium'}
-                                  onChange={(e) => setChoreEditData({ ...choreEditData, difficulty: e.target.value as any })}
-                                  className="w-full border border-border rounded px-3 py-2 bg-background text-sm"
-                                >
-                                  <option value="easy">Easy</option>
-                                  <option value="medium">Medium</option>
-                                  <option value="hard">Hard</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Category</label>
-                              <select
-                                value={choreEditData.category || 'daily'}
-                                onChange={(e) => setChoreEditData({ ...choreEditData, category: e.target.value as any })}
-                                className="w-full border border-border rounded px-3 py-2 bg-background text-sm"
-                              >
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="seasonal">Seasonal</option>
-                              </select>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={handleSaveChore}
-                                className="flex-1"
-                              >
-                                <Save className="w-4 h-4 mr-1" />
-                                Save
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingChoreId(null)
-                                  setChoreEditData({})
-                                }}
-                                className="flex-1"
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="font-medium">{chore.title}</div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {chore.status}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {chore.difficulty || 'medium'}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {chore.category || 'daily'}
-                                </Badge>
-                                <span>{chore.points} pts</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleStartEdit}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleDeleteChore}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <ClipboardList className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No chores found</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AdminChoresSection allChores={allChores} />
       )}
 
       {/* Activity Section */}
@@ -794,173 +314,9 @@ export const AdminControlPanel: React.FC = () => {
       )}
 
       {/* Data Management Section */}
-      {activeSection === 'data' && (
-        <div className="space-y-4">
-          <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-orange-600" />
-                Data Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Reset Chores */}
-              <div>
-                <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-2 flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  Reset Chores
-                </h3>
-                <p className="text-sm text-orange-700 dark:text-orange-300 mb-3 break-words">
-                  Reset all completed chores back to pending status and add any missing default chores. This will clear completion data, update due dates based on each chore's category, and ensure all default chores are available.
-                </p>
-                <Button
-                  onClick={() => setShowResetChoresConfirm(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-orange-500 text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/50 font-semibold"
-                  disabled={isResettingChores}
-                >
-                  {isResettingChores ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset All Chores
-                    </>
-                  )}
-                </Button>
-                {showResetChoresConfirm && (
-                  <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-400 rounded-lg">
-                    <p className="text-xs font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                      ⚠️ Confirm Reset
-                    </p>
-                    <p className="text-xs text-orange-800 dark:text-orange-200 mb-3 break-words">
-                      This will reset all completed chores to pending status and add default chores:
-                      <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs">
-                        <li>All completed chores will be set to pending</li>
-                        <li>Completion data will be cleared</li>
-                        <li>Due dates will be recalculated based on category</li>
-                        <li>Default chores that don't exist will be added</li>
-                        <li>Chore completion history will be preserved</li>
-                      </ul>
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={handleResetChores}
-                        size="sm"
-                        className="bg-orange-700 hover:bg-orange-800 flex-1 text-xs"
-                        disabled={isResettingChores}
-                      >
-                        {isResettingChores ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Resetting...
-                          </>
-                        ) : (
-                          'Yes, Reset Chores'
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => setShowResetChoresConfirm(false)}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs"
-                        disabled={isResettingChores}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-orange-300 dark:border-orange-700"></div>
-
-              {/* Reset All Data */}
-              <div>
-                <h3 className="font-medium text-red-900 dark:text-red-100 mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Reset All Data
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mb-3 break-words">
-                  This will permanently delete all chores, completion history, user stats, points, levels, redemption requests, and point deductions for this household. This action cannot be undone.
-                </p>
-                <Button
-                  onClick={() => setShowResetAllDataConfirm(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500 text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold"
-                  disabled={isResettingAllData}
-                >
-                  {isResettingAllData ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset All Data
-                    </>
-                  )}
-                </Button>
-                {showResetAllDataConfirm && (
-                  <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 border-2 border-red-400 rounded-lg">
-                    <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-2">
-                      ⚠️ WARNING: This action cannot be undone!
-                    </p>
-                    <p className="text-xs text-red-800 dark:text-red-200 mb-3 break-words">
-                      Resetting all data will permanently delete:
-                      <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs">
-                        <li>All chores (completed and pending)</li>
-                        <li>All chore completion history</li>
-                        <li>All user stats and statistics</li>
-                        <li>All user points and levels (reset to 0 and 1)</li>
-                        <li>All redemption requests</li>
-                        <li>All point deduction records</li>
-                      </ul>
-                      <p className="mt-2 font-semibold">
-                        Household members and settings will be preserved.
-                      </p>
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={handleResetAllData}
-                        size="sm"
-                        className="bg-red-700 hover:bg-red-800 flex-1 text-xs"
-                        disabled={isResettingAllData}
-                      >
-                        {isResettingAllData ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Resetting...
-                          </>
-                        ) : (
-                          'Yes, Reset All Data'
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => setShowResetAllDataConfirm(false)}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs"
-                        disabled={isResettingAllData}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {activeSection === 'data' && householdId && (
+        <AdminDataSection householdId={householdId} />
       )}
     </div>
   )
 }
-
