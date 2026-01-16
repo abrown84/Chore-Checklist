@@ -5,7 +5,7 @@ import { registerRoutes } from "@convex-dev/stripe";
 
 const http = httpRouter();
 
-// Register Convex Auth routes
+// Register Convex Auth HTTP routes (handles sign-in, sign-out, etc.)
 auth.addHttpRoutes(http);
 
 // Type helper for Stripe subscription objects from webhooks

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { animate } from 'animejs'
 import { Volume2, VolumeX } from 'lucide-react'
 
 interface PageWrapperProps {
@@ -169,7 +169,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
     if (audioRef.current && backgroundAudio) {
       const audio = audioRef.current
       audio.muted = isMuted
-      
+
       if (isMuted) {
         // Mute: pause the audio
         audio.pause()
@@ -186,10 +186,37 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
     }
   }, [isMuted, backgroundAudio])
 
-  const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
-  }
+  // Refs for staggered content animation
+  const contentRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+
+  // Original entrance animation - smooth reveal with subtle depth
+  useEffect(() => {
+    if (contentRef.current) {
+      // Main content slides up with a soft blur-in
+      animate(contentRef.current, {
+        opacity: [0, 1],
+        translateY: [30, 0],
+        filter: ['blur(8px)', 'blur(0px)'],
+        duration: 500,
+        ease: 'outQuart',
+      })
+    }
+
+    // Staggered header animation if present
+    if (headerRef.current && (title || description)) {
+      const headerElements = headerRef.current.querySelectorAll('h1, p')
+      if (headerElements.length > 0) {
+        animate(headerElements, {
+          opacity: [0, 1],
+          translateY: [15, 0],
+          duration: 400,
+          delay: (_el: unknown, i: number) => 150 + i * 80,
+          ease: 'outCubic',
+        })
+      }
+    }
+  }, [title, description])
 
   return (
     <div className={`min-h-full ${className}`}>
@@ -265,22 +292,21 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
       )}
 
       {/* Page Content */}
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={fadeUp}
+      <div
+        ref={contentRef}
         className="relative z-10"
+        style={{ opacity: 0, transform: 'translateY(20px)' }}
       >
-        {/* Optional Page Header */}
+        {/* Optional Page Header - staggered reveal */}
         {(title || description) && (
-          <div className="mb-6 sm:mb-8">
+          <div ref={headerRef} className="mb-6 sm:mb-8">
             {title && (
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-foreground mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-foreground mb-2" style={{ opacity: 0 }}>
                 {title}
               </h1>
             )}
             {description && (
-              <p className="text-muted-foreground font-body text-base sm:text-lg max-w-3xl">
+              <p className="text-muted-foreground font-body text-base sm:text-lg max-w-3xl" style={{ opacity: 0 }}>
                 {description}
               </p>
             )}
@@ -289,7 +315,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 
         {/* Page Content */}
         {children}
-      </motion.div>
+      </div>
     </div>
   )
 }

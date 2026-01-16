@@ -34,8 +34,7 @@ export function useSubscription(): SubscriptionState {
   // Subscribe to a plan (redirects to Stripe Payment Link)
   const subscribe = useCallback(async (
     plan: SubscriptionPlan,
-    billingInterval: BillingInterval,
-    _options?: { includeTrial?: boolean }
+    billingInterval: BillingInterval
   ) => {
     if (plan === 'free') {
       console.log('Free plan selected - no checkout needed')
@@ -83,10 +82,10 @@ export function useSubscription(): SubscriptionState {
   // Manage subscription (same as cancel - portal handles everything)
   const manageSubscription = cancelSubscription
 
-  // Start trial - subscribe with 14-day free trial (credit card required)
+  // Start trial - subscribe to premium monthly
+  // Note: Trial periods are configured in Stripe Dashboard on the price itself
   const startTrial = useCallback(async () => {
-    // Pass includeTrial to get 14-day trial period with card upfront
-    await subscribe('premium', 'monthly', { includeTrial: true })
+    await subscribe('premium', 'monthly')
   }, [subscribe])
 
   // Derive subscription state

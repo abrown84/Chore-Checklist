@@ -1,140 +1,192 @@
-# Daily Bag - Project Instructions
+# Chore Checklist - Project Guide
 
-## Overview
-**Daily Bag** is a gamified family chore management app with points, levels, and streaks. Built for household coordination with parent/child roles.
+## Project Overview
+
+A gamified household chore management app with points, levels, redemptions, and social features. Built with React, TypeScript, Vite, Convex (backend), and Tailwind CSS.
 
 ## Tech Stack
-- **Frontend**: React 18 + TypeScript + Vite
-- **Backend**: Convex (serverless functions + real-time database)
-- **Auth**: @convex-dev/auth (email/password)
-- **UI**: Radix UI primitives + Tailwind CSS + shadcn/ui patterns
-- **Animation**: Framer Motion
-- **Testing**: Jest + Testing Library + Playwright
-- **PWA**: vite-plugin-pwa + Workbox
+
+- **Frontend**: React 18, TypeScript, Vite
+- **Backend**: Convex (real-time database & functions)
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Payments**: Stripe (subscriptions & payment links)
+- **Auth**: Convex Auth
+- **Icons**: Lucide React
+- **Animations**: Custom CSS + potential anime.js integration
 
 ## Project Structure
+
 ```
 src/
-├── components/     # React components (organized by feature)
-├── hooks/          # Custom React hooks
-├── contexts/       # React context providers
-├── config/         # App configuration
-├── lib/            # Shared utilities
-├── types/          # TypeScript types
-├── utils/          # Helper functions
-└── styles/         # CSS/Tailwind styles
+├── components/          # React components
+│   ├── ui/             # Reusable UI components (shadcn/ui)
+│   ├── chores/         # Chore-related components
+│   ├── leaderboard/    # Leaderboard components
+│   ├── landing/        # Landing page components
+│   └── profile/        # Profile/settings components
+├── contexts/           # React Context providers
+├── hooks/              # Custom React hooks
+├── config/             # Configuration files
+├── types/              # TypeScript type definitions
+└── utils/              # Utility functions
 
-convex/
-├── schema.ts       # Database schema (source of truth)
-├── auth.ts         # Authentication setup
-├── users.ts        # User mutations/queries
-├── households.ts   # Household management
-├── chores.ts       # Chore CRUD and completion
-├── stats.ts        # Points, levels, streaks
-├── redemptions.ts  # Point redemption system
-├── invites.ts      # Household invites
-└── cronFunctions.ts # Scheduled jobs
+convex/                 # Convex backend functions
+├── chores.ts          # Chore CRUD operations
+├── users.ts           # User management
+├── stats.ts           # Statistics & leaderboards
+├── stripe.ts          # Payment integration
+└── schema.ts          # Database schema
 ```
 
-## Database Schema (Key Tables)
-- `users` - User profiles with points, level, role
-- `households` - Family groups with settings, join codes
-- `householdMembers` - Many-to-many user<->household
-- `chores` - Tasks with points, difficulty, category, status
-- `choreCompletions` - Completion history with bonuses
-- `userStats` - Pre-calculated stats (streaks, levels, efficiency)
-- `redemptionRequests` - Point-to-cash redemption tracking
+## Key Features
 
-## User Roles
-- `admin` - Full control
-- `parent` - Manage household, approve redemptions
-- `teen` - Can complete chores, limited management
-- `kid` - Complete assigned chores only
-- `member` - Basic participation
+1. **Chore Management** - Create, assign, complete chores with points
+2. **Gamification** - Levels (1-10), XP, streaks, achievements
+3. **Leaderboard** - Household & global rankings with multiple modes
+4. **Redemption System** - Convert points to real money (100 pts = $1)
+5. **Subscriptions** - Free/Pro/Premium tiers via Stripe
+6. **Multi-household** - Users can belong to multiple households
+7. **Real-time Updates** - Convex provides live data sync
+
+## Important Conventions
+
+### Component Structure
+- Use functional components with TypeScript
+- Export memo-wrapped components for performance: `export const MyComponent: React.FC = React.memo(() => {...})`
+- Always add `displayName` after memo: `MyComponent.displayName = 'MyComponent'`
+
+### State Management
+- Use Contexts for global state (UserContext, ChoreContext, StatsContext, RedemptionContext)
+- Custom hooks for reusable logic
+- Convex's `useQuery` and `useMutation` for backend data
+
+### Styling Guidelines
+- Use Tailwind utility classes
+- Responsive design: mobile-first (sm:, md:, lg:, xl:)
+- Dark mode: always include dark: variants
+- Animations: use custom CSS animations defined in index.css
+- Color scheme: Primary (indigo), accent (purple), success (green), warning (yellow), destructive (red)
+
+### File Naming
+- Components: PascalCase (e.g., `ChoreList.tsx`)
+- Hooks: camelCase with `use` prefix (e.g., `useSubscription.ts`)
+- Utilities: camelCase (e.g., `convexHelpers.ts`)
+- Types: PascalCase interfaces (e.g., `Chore`, `UserStats`)
 
 ## Key Patterns
 
-### Convex Functions
-```typescript
-// Query pattern
-export const myQuery = query({
-  args: { ... },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    // ...
-  },
-});
-
-// Mutation pattern
-export const myMutation = mutation({
-  args: { ... },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    // ...
-  },
-});
+### Feature Gates
+Check subscription tier before allowing premium features:
+```tsx
+const { hasFeature } = useSubscription()
+if (hasFeature('advanced_analytics')) {
+  // Show premium feature
+}
 ```
 
-### Auth Hook
-```typescript
-import { useConvexAuth } from "@/hooks/useConvexAuth";
-const { user, isLoading, isAuthenticated } = useConvexAuth();
+### Convex Queries
+```tsx
+const data = useQuery(api.moduleName.functionName, { arg: value })
+// Returns undefined while loading, null on error, data when ready
 ```
 
-### Convex Client
-```typescript
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-
-const data = useQuery(api.chores.list, { householdId });
-const createChore = useMutation(api.chores.create);
+### Mutations
+```tsx
+const mutate = useMutation(api.moduleName.functionName)
+await mutate({ arg: value })
 ```
 
-## Commands
-```bash
-npm run dev          # Start dev server (Vite + Convex)
-npm run build        # Production build
-npm test             # Run Jest tests
-npm run lint         # ESLint
-npx convex dev       # Convex dev server (run separately)
-npx convex deploy    # Deploy Convex to production
-```
+### Responsive Design
+- Always test on mobile (320px), tablet (768px), desktop (1024px+)
+- Use flex/grid with responsive breakpoints
+- Hide non-essential info on mobile: `hidden md:block`
+
+## Development Notes
+
+### Icons
+- Use Lucide React: `import { IconName } from 'lucide-react'`
+- Common icons: Trophy, Star, Coins, DollarSign, CheckCircle, Target, Award
+
+### Animations
+- Predefined animations in `index.css`: animate-fade-in, animate-slide-in, animate-float, animate-bounce-in
+- Use `transition-all duration-300` for smooth hovers
+
+### Points & Currency
+- Conversion rate: 100 points = $1.00 (stored in `APP_CONFIG.REDEMPTION.POINTS_PER_DOLLAR`)
+- Use `conversionRate` from RedemptionContext
+
+### Levels System
+- 10 levels defined in `src/types/chore.ts`
+- Each level has: level number, points required, icon, title, description
+- Level up triggers celebration modal
+
+## Common Tasks
+
+### Adding a New Component
+1. Create file in appropriate folder (`src/components/`)
+2. Use TypeScript with proper interfaces
+3. Wrap in `React.memo()` if performance-sensitive
+4. Add `displayName` property
+5. Export from component file
+
+### Adding a Convex Function
+1. Add function to appropriate file in `convex/`
+2. Use Convex v2 syntax: `export const myFunc = query/mutation({...})`
+3. Define args with validators: `args: { userId: v.id("users") }`
+4. Return typed data
+
+### Modifying the Leaderboard
+- Main component: `src/components/Leaderboard.tsx`
+- List rendering: `src/components/leaderboard/LeaderboardList.tsx`
+- Data processing: `src/hooks/useLeaderboardData.ts`
+- Ranking modes: POINTS, EFFICIENCY, LIFETIME, CHORES (defined in `config/constants.ts`)
+
+### Stripe Integration
+- Product IDs stored in `src/config/stripe.ts`
+- Webhook handling in `convex/stripe.ts`
+- Payment links for subscriptions
+- Test mode vs live mode based on environment
 
 ## Environment Variables
-Required in `.env.local`:
+
+Required in `.env`:
 ```
-CONVEX_DEPLOYMENT=dev:your-deployment
-VITE_CONVEX_URL=https://your-deployment.convex.cloud
+VITE_CONVEX_URL=<convex_deployment_url>
+CONVEX_DEPLOYMENT=<deployment_id>
+STRIPE_SECRET_KEY=<stripe_key>
+STRIPE_WEBHOOK_SECRET=<webhook_secret>
 ```
 
-## Conventions
-- Components: PascalCase (`ChoreCard.tsx`)
-- Hooks: camelCase with `use` prefix (`useChores.ts`)
-- Convex functions: camelCase (`createChore`, `getHousehold`)
-- Types: PascalCase with descriptive names (`ChoreStatus`, `UserRole`)
-- Use Radix + Tailwind for new UI components
-- Follow existing patterns in similar files
+## Design Philosophy
 
-## Business Model (Planned)
+1. **Mobile-first** - Most users will be on phones
+2. **Gamification** - Make chores fun with points, levels, achievements
+3. **Family-friendly** - Clean, colorful, approachable UI
+4. **Real-time** - Updates should feel instant (thanks to Convex)
+5. **Performance** - Memoization, lazy loading, optimized re-renders
+6. **Accessibility** - Semantic HTML, ARIA labels, keyboard navigation
 
-### Free Tier
-- 1 household, up to 4 members
-- Unlimited chores
-- Basic points & levels system
-- Leaderboard
-- Point redemption
+## What NOT to Do
 
-### Premium Tier ($4.99/mo or $39.99/yr)
-- Unlimited household members
-- Multiple households
-- Custom avatar uploads
-- Advanced analytics & reports
-- Custom themes/colors
-- Recurring chore templates
-- Export data (CSV/PDF)
+- ❌ Don't create generic "TODO" or "FIXME" comments
+- ❌ Don't add features without user request
+- ❌ Don't break mobile responsiveness
+- ❌ Don't remove dark mode support
+- ❌ Don't hardcode values that should be in config
+- ❌ Don't commit console.logs (except behind `import.meta.env.DEV`)
+- ❌ Don't bypass feature gates for premium features
 
-### Implementation Notes
-- Stripe for payments
-- Soft paywall approach (show features, prompt upgrade)
-- 14-day free trial
-- No ads
+## Useful Links
+
+- Convex Docs: https://docs.convex.dev
+- Tailwind: https://tailwindcss.com/docs
+- shadcn/ui: https://ui.shadcn.com
+- Lucide Icons: https://lucide.dev
+
+## Recent Changes
+
+- Updated leaderboard design with cleaner cards and better visual hierarchy
+- Added subscription management system with Stripe integration
+- Implemented redemption economy (points → money)
+- Added global leaderboard (household rankings)
+- Refactored authentication with Convex Auth

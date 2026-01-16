@@ -1,5 +1,5 @@
-import React, { useState, ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useRef, ReactNode } from 'react'
+import { animate } from 'animejs'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { Lock, Crown, Sparkles, ArrowRight } from 'lucide-react'
@@ -104,12 +104,25 @@ export const FeatureGatePrompt: React.FC<FeatureGatePromptProps> = ({
 }) => {
   const featureMessage = useFeatureMessage(feature)
   const isAtLimit = currentLimit !== null && currentLimit !== undefined && currentUsage >= currentLimit
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Animate in on mount
+  useEffect(() => {
+    if (containerRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [10, 0],
+        duration: 400,
+        ease: 'outQuart',
+      })
+    }
+  }, [])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
+      ref={containerRef}
       className={cn('w-full', className)}
+      style={{ opacity: 0 }}
     >
       <Card className="border-amber-400/30 bg-gradient-to-br from-amber-400/5 to-orange-400/5">
         <CardContent className="p-4 sm:p-6">
@@ -165,7 +178,7 @@ export const FeatureGatePrompt: React.FC<FeatureGatePromptProps> = ({
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }
 
@@ -187,6 +200,18 @@ export const FeatureLockedOverlay: React.FC<FeatureLockedOverlayProps> = ({
     onUpgradePrompt: () => setShowUpgradeModal(true),
   })
   const featureMessage = useFeatureMessage(feature)
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  // Animate overlay on mount
+  useEffect(() => {
+    if (!hasAccess && overlayRef.current) {
+      animate(overlayRef.current, {
+        opacity: [0, 1],
+        duration: 300,
+        ease: 'outQuart',
+      })
+    }
+  }, [hasAccess])
 
   if (hasAccess) {
     return <>{children}</>
@@ -201,10 +226,10 @@ export const FeatureLockedOverlay: React.FC<FeatureLockedOverlayProps> = ({
         </div>
 
         {/* Overlay */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
+          ref={overlayRef}
           className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg"
+          style={{ opacity: 0 }}
         >
           <Button
             onClick={() => setShowUpgradeModal(true)}
@@ -214,7 +239,7 @@ export const FeatureLockedOverlay: React.FC<FeatureLockedOverlayProps> = ({
             <Lock className="h-4 w-4 mr-2 text-amber-400" />
             <span>Unlock with Premium</span>
           </Button>
-        </motion.div>
+        </div>
       </div>
 
       <UpgradeModal

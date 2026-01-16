@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './styles/globals.css'
 import { initializePWA } from './pwa'
+import { hideSplashScreen } from './components/AppLoadingScreen'
 
 // Enhanced global error handler for keyboard events and other errors
 // This prevents third-party script errors (like browser extensions) from breaking the app
@@ -119,3 +120,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+// Hide the HTML splash screen once React has mounted
+// Small delay to ensure smooth transition
+requestAnimationFrame(() => {
+  hideSplashScreen()
+})

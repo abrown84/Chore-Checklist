@@ -14,6 +14,21 @@ export function usePaymentResult() {
     if (hasHandled.current) return
 
     const params = new URLSearchParams(window.location.search)
+
+    // Handle session_id from Stripe embedded checkout return URL
+    const sessionId = params.get('session_id')
+    if (sessionId && !hasHandled.current) {
+      hasHandled.current = true
+      // Stripe redirected back after successful checkout
+      toast.success('Payment successful!', {
+        description: 'Welcome to Daily Bag Premium! Your subscription is now active.',
+        duration: 5000,
+      })
+      // Clean up URL
+      cleanupUrl()
+      return
+    }
+
     const paymentStatus = params.get('payment')
 
     if (paymentStatus === 'success') {
@@ -62,6 +77,7 @@ export function usePaymentResult() {
 function cleanupUrl() {
   const url = new URL(window.location.href)
   url.searchParams.delete('payment')
+  url.searchParams.delete('session_id')
   url.searchParams.delete('success')
   url.searchParams.delete('canceled')
 

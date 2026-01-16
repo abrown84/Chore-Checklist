@@ -300,16 +300,26 @@ export const completeChore = mutation({
       .query("userStats")
       .withIndex("by_user_household", (q: any) => q.eq("userId", args.completedBy).eq("householdId", chore.householdId))
       .first();
-    
+
+    const previousLevel = statsBefore?.currentLevel || 1;
+
     if (statsBefore) {
-      console.log(`[completeChore] Stats BEFORE completion - earnedPoints: ${statsBefore.earnedPoints}, lifetimePoints: ${statsBefore.lifetimePoints}`)
+      console.log(`[completeChore] Stats BEFORE completion - earnedPoints: ${statsBefore.earnedPoints}, lifetimePoints: ${statsBefore.lifetimePoints}, level: ${previousLevel}`)
     }
-    
+
     const updatedStats = await calculateUserStats(ctx, args.completedBy, chore.householdId);
-    
+
     const calculatedPointsRedeemed = updatedStats.lifetimePoints - updatedStats.earnedPoints
     console.log(`[completeChore] Stats updated - earnedPoints: ${updatedStats.earnedPoints}, lifetimePoints: ${updatedStats.lifetimePoints}, calculated pointsRedeemed: ${calculatedPointsRedeemed}`)
-    
+
+    // Check if user leveled up
+    const newLevel = updatedStats.currentLevel;
+    const leveledUp = newLevel > previousLevel;
+
+    if (leveledUp) {
+      console.log(`[completeChore] 🎉 LEVEL UP! ${previousLevel} → ${newLevel}`)
+    }
+
     // Double-check the stats were saved correctly by reading them back
     const verifyStats = await ctx.db
       .query("userStats")
@@ -328,6 +338,9 @@ export const completeChore = mutation({
       bonusMessage,
       isEarly,
       isLate,
+      leveledUp,
+      newLevel,
+      previousLevel,
     };
   },
 });

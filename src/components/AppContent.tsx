@@ -34,6 +34,9 @@ const AdminControlPanel = lazy(() =>
 const AboutPage = lazy(() =>
   import('./AboutPage').then(module => ({ default: module.AboutPage }))
 )
+const A2UIDemo = lazy(() =>
+  import('./A2UIDemo').then(module => ({ default: module.A2UIDemo }))
+)
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -109,6 +112,14 @@ export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
         <Suspense fallback={<LoadingFallback />}>
           <div className="space-y-6">
             <AboutPage />
+          </div>
+        </Suspense>
+      )}
+
+      {activeTab === 'a2ui' && (
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="space-y-6">
+            <A2UIDemo />
           </div>
         </Suspense>
       )}

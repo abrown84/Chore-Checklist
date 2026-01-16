@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
+import { useConvexAuth } from 'convex/react'
 import { Chore } from '../types/chore'
 import { User, UserStats } from '../types/user'
 import { convexDefaultChores } from '../utils/convexDefaultChores'
@@ -28,9 +29,22 @@ interface DemoProviderProps {
 }
 
 export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useConvexAuth()
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [demoStats, setDemoStats] = useState<UserStats[]>([])
   const [demoChores, setDemoChores] = useState<Chore[]>([])
+
+  // Exit demo mode when user becomes authenticated
+  React.useEffect(() => {
+    if (isAuthenticated && isDemoMode) {
+      // Clear demo mode without page reload since user is now authenticated
+      localStorage.removeItem('demoMode')
+      localStorage.removeItem('demoChores')
+      setIsDemoMode(false)
+      setDemoStats([])
+      setDemoChores([])
+    }
+  }, [isAuthenticated, isDemoMode])
 
   const enterDemoMode = () => {
     try {
@@ -307,18 +321,24 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
   }
 
   // Check for demo mode on mount and restore data if needed
+  // But don't restore if user is authenticated
   React.useEffect(() => {
+    // If authenticated, don't restore demo mode
+    if (isAuthenticated) {
+      // Clear any stale demo mode from localStorage
+      localStorage.removeItem('demoMode')
+      return
+    }
+
     try {
       const storedDemoMode = localStorage.getItem('demoMode')
 
       if (storedDemoMode === 'true') {
-
         setIsDemoMode(true)
-        
+
         // If we're restoring demo mode, we need to regenerate the data
         // since it was cleared when the component unmounted
         if (demoChores.length === 0) {
-
           const generatedChores = getDemoChores()
           const generatedStats = getDemoStatsFromChores(generatedChores)
           setDemoChores(generatedChores)
@@ -330,7 +350,7 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
       // If localStorage is not available, default to false
       setIsDemoMode(false)
     }
-  }, [demoChores.length])
+  }, [demoChores.length, isAuthenticated])
 
   const value: DemoContextType = {
     isDemoMode,

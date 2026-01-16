@@ -1,6 +1,6 @@
 
 import { Logo } from './Logo'
-import { motion, AnimatePresence } from 'framer-motion'
+import { animate } from 'animejs'
 import { Button } from './ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
@@ -26,16 +26,11 @@ import {
 	ChevronRight,
 } from 'lucide-react'
 
-const fadeUp = {
-	hidden: { opacity: 0, y: 16 },
-	show: { opacity: 1, y: 0 },
-}
-
 const features = [
-	{ icon: Users, title: 'Multi‑user households', text: 'Parent, teen, kid roles with fine‑grained permissions and parent approval for redemptions.' },
-	{ icon: Coins, title: 'Points → Rewards', text: 'XP, streaks, and cash-outs that keep momentum. Parents approve kids\' redemptions.' },
-	{ icon: Trophy, title: 'Leaderboards', text: 'Weekly and all‑time standings drive friendly competition.' },
-	{ icon: CalendarCheck, title: 'Schedules & Routines', text: 'Recurring tasks, reminders, and auto‑rotations.' },
+	{ icon: Users, title: 'Multi-user households', text: 'Parent, teen, kid roles with fine-grained permissions and parent approval for redemptions.' },
+	{ icon: Coins, title: 'Points -> Rewards', text: 'XP, streaks, and cash-outs that keep momentum. Parents approve kids\' redemptions.' },
+	{ icon: Trophy, title: 'Leaderboards', text: 'Weekly and all-time standings drive friendly competition.' },
+	{ icon: CalendarCheck, title: 'Schedules & Routines', text: 'Recurring tasks, reminders, and auto-rotations.' },
 	{ icon: ShieldCheckIcon, title: 'Progress & Safety', text: 'Audit logs, parent approvals, and role-based controls.' },
 	{ icon: Sparkles, title: 'Customization', text: 'Themes, avatars, and profile perks as you level up.' },
 ]
@@ -46,9 +41,98 @@ export default function LandingPage() {
 	const [showInstallGuide, setShowInstallGuide] = useState(false)
 	const [showVideoModal, setShowVideoModal] = useState(false)
 	const videoRef = useRef<HTMLVideoElement>(null)
+	const heroRef = useRef<HTMLDivElement>(null)
+	const featuresRef = useRef<HTMLDivElement>(null)
+	const installGuideBackdropRef = useRef<HTMLDivElement>(null)
+	const installGuideModalRef = useRef<HTMLDivElement>(null)
+	const videoBackdropRef = useRef<HTMLDivElement>(null)
+	const videoModalRef = useRef<HTMLDivElement>(null)
 
 	// Fetch public global leaderboard
 	const globalLeaderboard = useQuery(api.stats.getPublicGlobalLeaderboard, { limit: 5 })
+
+	// Animate hero section on mount
+	useEffect(() => {
+		if (heroRef.current) {
+			animate(heroRef.current, {
+				opacity: [0, 1],
+				translateY: [16, 0],
+				duration: 500,
+				ease: 'outQuart',
+			})
+		}
+	}, [])
+
+	// Animate feature cards with stagger
+	useEffect(() => {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						animate('.feature-card', {
+							opacity: [0, 1],
+							translateY: [12, 0],
+							duration: 400,
+							delay: (_el, i) => i * 50,
+							ease: 'outQuart',
+						})
+						observer.disconnect()
+					}
+				})
+			},
+			{ threshold: 0.2 }
+		)
+
+		if (featuresRef.current) {
+			observer.observe(featuresRef.current)
+		}
+
+		return () => observer.disconnect()
+	}, [])
+
+	// Animate install guide modal
+	useEffect(() => {
+		if (showInstallGuide) {
+			if (installGuideBackdropRef.current) {
+				animate(installGuideBackdropRef.current, {
+					opacity: [0, 1],
+					duration: 200,
+					ease: 'outQuart',
+				})
+			}
+			if (installGuideModalRef.current) {
+				animate(installGuideModalRef.current, {
+					opacity: [0, 1],
+					scale: [0.95, 1],
+					translateY: [20, 0],
+					duration: 300,
+					ease: 'outQuart',
+				})
+			}
+		}
+	}, [showInstallGuide])
+
+	// Animate video modal
+	useEffect(() => {
+		if (showVideoModal) {
+			if (videoBackdropRef.current) {
+				animate(videoBackdropRef.current, {
+					opacity: [0, 1],
+					duration: 200,
+					ease: 'outQuart',
+				})
+			}
+			if (videoModalRef.current) {
+				animate(videoModalRef.current, {
+					opacity: [0, 1],
+					scale: [0.95, 1],
+					translateY: [20, 0],
+					duration: 300,
+					ease: 'outQuart',
+				})
+			}
+		}
+	}, [showVideoModal])
 
 	// Check for hash on mount and when it changes
 	useEffect(() => {
@@ -145,12 +229,10 @@ export default function LandingPage() {
 			</header>
 
 			<section className="mx-auto max-w-7xl px-4 sm:px-6 pb-12 sm:pb-16 pt-16 sm:pt-20 md:pb-24 md:pt-28 lg:pt-32">
-				<motion.div
-					initial="hidden"
-					whileInView="show"
-					viewport={{ once: true, amount: 0.4 }}
-					variants={fadeUp}
+				<div
+					ref={heroRef}
 					className="mx-auto max-w-3xl text-center"
+					style={{ opacity: 0 }}
 				>
 					<div className="inline-flex items-center gap-2 rounded-full bg-secondary/70 px-3 py-1 text-xs text-muted-foreground ring-1 ring-border">
 						<Star className="h-3.5 w-3.5" />
@@ -182,23 +264,21 @@ export default function LandingPage() {
 					<div className="mt-4 sm:mt-6 text-xs text-muted-foreground">
 						Trusted by busy parents and motivated kids in 1,000+ homes
 					</div>
-				</motion.div>
+				</div>
 			</section>
 
 			<section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 pb-16 sm:pb-20">
-				<div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{features.map((f, i) => (
-						<motion.div key={f.title} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-							<Card className="h-full border-border bg-card/40 backdrop-blur-sm">
-								<CardHeader className="flex flex-row items-center gap-3 pb-2">
-									<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-										<f.icon className="h-5 w-5" />
-									</div>
-									<h3 className="text-lg font-heading font-semibold">{f.title}</h3>
-								</CardHeader>
-								<CardContent className="pt-0 text-muted-foreground font-body">{f.text}</CardContent>
-							</Card>
-						</motion.div>
+				<div ref={featuresRef} className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+					{features.map((f) => (
+						<Card key={f.title} className="feature-card h-full border-border bg-card/40 backdrop-blur-sm" style={{ opacity: 0 }}>
+							<CardHeader className="flex flex-row items-center gap-3 pb-2">
+								<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+									<f.icon className="h-5 w-5" />
+								</div>
+								<h3 className="text-lg font-heading font-semibold">{f.title}</h3>
+							</CardHeader>
+							<CardContent className="pt-0 text-muted-foreground font-body">{f.text}</CardContent>
+						</Card>
 					))}
 				</div>
 			</section>
@@ -217,7 +297,7 @@ export default function LandingPage() {
 								<div className="text-center py-8 text-muted-foreground">Loading leaderboard...</div>
 							) : globalLeaderboard && globalLeaderboard.length > 0 ? (
 								globalLeaderboard.map((household, idx) => {
-									const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`
+									const rankIcon = idx === 0 ? '1' : idx === 1 ? '2' : idx === 2 ? '3' : `${idx + 1}`
 									const avgLevel = household.members && household.members.length > 0
 										? Math.round(household.members.reduce((sum: number, m: { level?: number }) => sum + (m.level || 1), 0) / household.members.length)
 										: 1
@@ -230,7 +310,7 @@ export default function LandingPage() {
 												<div>
 													<div className="font-medium">{household.householdName}</div>
 													<div className="text-xs text-muted-foreground">
-														{household.memberCount} {household.memberCount === 1 ? 'member' : 'members'} • Avg Lv {avgLevel}
+														{household.memberCount} {household.memberCount === 1 ? 'member' : 'members'} - Avg Lv {avgLevel}
 													</div>
 												</div>
 											</div>
@@ -306,15 +386,16 @@ export default function LandingPage() {
 						<CardHeader>
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-semibold">Free</h3>
-								<Badge className="bg-muted">Best for starters</Badge>
+								<Badge className="bg-muted">Get started</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-2 text-muted-foreground">
 							<div className="text-3xl font-extrabold">$0</div>
 							<ul className="mt-2 list-inside list-disc space-y-1 text-sm">
-								<li>Up to 4 members</li>
-								<li>Daily chores and streaks</li>
-								<li>Basic leaderboard</li>
+								<li>Up to 10 chores</li>
+								<li>Up to 4 household members</li>
+								<li>Basic rewards & leaderboard</li>
+								<li>Level progression</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
@@ -322,24 +403,25 @@ export default function LandingPage() {
 						</CardFooter>
 					</Card>
 
-					<Card className="border-amber-500/40 bg-card/40 backdrop-blur-sm">
+					<Card className="border-amber-500/40 bg-card/40 backdrop-blur-sm ring-2 ring-amber-500/20">
 						<CardHeader>
 							<div className="flex items-center justify-between">
-								<h3 className="text-xl font-semibold">Pro</h3>
-								<Badge className="bg-amber-400 text-slate-900">Popular</Badge>
+								<h3 className="text-xl font-semibold">Premium</h3>
+								<Badge className="bg-amber-400 text-slate-900">Most Popular</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-2 text-muted-foreground">
-							<div className="text-3xl font-extrabold">$6 <span className="text-base font-normal text-muted-foreground">/ month / home</span></div>
+							<div className="text-3xl font-extrabold">$4.99 <span className="text-base font-normal text-muted-foreground">/ month</span></div>
+							<p className="text-xs text-amber-600">or $39.99/year (save 33%)</p>
 							<ul className="mt-2 list-inside list-disc space-y-1 text-sm">
-								<li>Up to 10 members</li>
-								<li>Cash‑out rules + allowance caps</li>
-								<li>Task rotations, approvals, audit log</li>
-								<li>Advanced analytics + exports</li>
+								<li>Unlimited chores & members</li>
+								<li>Custom rewards</li>
+								<li>Photo verification</li>
+								<li>Advanced analytics & exports</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300">Upgrade</Button>
+							<Button className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300">Start free trial</Button>
 						</CardFooter>
 					</Card>
 				</div>
@@ -349,7 +431,7 @@ export default function LandingPage() {
 				<h2 className="mb-6 text-center text-3xl font-bold">FAQ</h2>
 				<div className="divide-y divide-border">
 					{[
-						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve kids\' cash‑outs.' },
+						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve kids\' cash-outs.' },
 						{ q: 'Can I use it with roommates?', a: 'Yes. Roles and rewards are fully customizable for families or shared houses.' },
 						{ q: 'Is there parental control?', a: 'Parents approve redemptions, edit XP values, and review audit logs. Teens and kids require approval.' },
 						{ q: 'Will there be iOS and Android apps?', a: 'Yes. Web first, native apps follow shortly after beta.' },
@@ -371,7 +453,7 @@ export default function LandingPage() {
 							<Logo className="h-8 w-8" />
 						</div>
 						<div className="flex flex-col">
-							<span className="text-sm">© {new Date().getFullYear()} Daily Bag</span>
+							<span className="text-sm">&copy; {new Date().getFullYear()} Daily Bag</span>
 							<span className="text-xs">
 								Built by{' '}
 								<a
@@ -402,151 +484,141 @@ export default function LandingPage() {
 			</footer>
 
 			{/* Auth Modal */}
-			<AnimatePresence>
-				{showAuthModal && (
-					<AuthModal isOpen={showAuthModal} onClose={closeAuthModal} />
-				)}
-			</AnimatePresence>
+			{showAuthModal && (
+				<AuthModal isOpen={showAuthModal} onClose={closeAuthModal} />
+			)}
 
 			{/* Install Guide Modal */}
-			<AnimatePresence>
-				{showInstallGuide && (
-					<>
-						{/* Backdrop */}
-						<motion.div
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							onClick={() => setShowInstallGuide(false)}
-							className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-						/>
-						{/* Modal */}
-						<motion.div
-							initial={{ opacity: 0, scale: 0.95, y: 20 }}
-							animate={{ opacity: 1, scale: 1, y: 0 }}
-							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-							onClick={(e) => e.stopPropagation()}
-						>
-							<Card className="w-full max-w-2xl border-border bg-card/95 backdrop-blur-md shadow-xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
-								<CardHeader className="pb-4">
-									<div className="flex items-center justify-between">
-										<div>
-											<h2 className="text-xl font-heading font-semibold">
-												Install Daily Bag
-											</h2>
-											<p className="text-sm text-muted-foreground mt-1">
-												Follow these steps to install the app on your device
-											</p>
-										</div>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => setShowInstallGuide(false)}
-											className="h-8 w-8"
-										>
-											<X className="h-4 w-4" />
-										</Button>
+			{showInstallGuide && (
+				<>
+					{/* Backdrop */}
+					<div
+						ref={installGuideBackdropRef}
+						onClick={() => setShowInstallGuide(false)}
+						className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+						style={{ opacity: 0 }}
+					/>
+					{/* Modal */}
+					<div
+						ref={installGuideModalRef}
+						className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+						onClick={(e) => e.stopPropagation()}
+						style={{ opacity: 0 }}
+					>
+						<Card className="w-full max-w-2xl border-border bg-card/95 backdrop-blur-md shadow-xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
+							<CardHeader className="pb-4">
+								<div className="flex items-center justify-between">
+									<div>
+										<h2 className="text-xl font-heading font-semibold">
+											Install Daily Bag
+										</h2>
+										<p className="text-sm text-muted-foreground mt-1">
+											Follow these steps to install the app on your device
+										</p>
 									</div>
-								</CardHeader>
-								<CardContent className="max-h-[70vh] overflow-y-auto">
-									<PWAInstallGuide />
-								</CardContent>
-								<CardFooter className="flex justify-between">
 									<Button
-										variant="outline"
+										variant="ghost"
+										size="icon"
 										onClick={() => setShowInstallGuide(false)}
+										className="h-8 w-8"
 									>
-										Close
+										<X className="h-4 w-4" />
 									</Button>
-									<Button
-										onClick={() => {
-											setShowInstallGuide(false)
-											openAuthModal()
-										}}
-										className="bg-amber-400 text-slate-900 hover:bg-amber-300"
-									>
-										Sign In Instead
-									</Button>
-								</CardFooter>
-							</Card>
-						</motion.div>
-					</>
-				)}
-			</AnimatePresence>
+								</div>
+							</CardHeader>
+							<CardContent className="max-h-[70vh] overflow-y-auto">
+								<PWAInstallGuide />
+							</CardContent>
+							<CardFooter className="flex justify-between">
+								<Button
+									variant="outline"
+									onClick={() => setShowInstallGuide(false)}
+								>
+									Close
+								</Button>
+								<Button
+									onClick={() => {
+										setShowInstallGuide(false)
+										openAuthModal()
+									}}
+									className="bg-amber-400 text-slate-900 hover:bg-amber-300"
+								>
+									Sign In Instead
+								</Button>
+							</CardFooter>
+						</Card>
+					</div>
+				</>
+			)}
 
 			{/* Video Overview Modal */}
-			<AnimatePresence>
-				{showVideoModal && (
-					<>
-						{/* Backdrop */}
-						<motion.div
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							onClick={closeVideoModal}
-							onTouchStart={closeVideoModal}
-							className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
-						/>
-						{/* Modal */}
-						<motion.div
-							initial={{ opacity: 0, scale: 0.95, y: 20 }}
-							animate={{ opacity: 1, scale: 1, y: 0 }}
-							exit={{ opacity: 0, scale: 0.95, y: 20 }}
-							className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
-							onClick={(e) => e.stopPropagation()}
-							onTouchStart={(e) => e.stopPropagation()}
-						>
-							<div className="relative w-full max-w-4xl mx-auto">
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={closeVideoModal}
-									onTouchStart={closeVideoModal}
-									className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/70 hover:bg-black/90 active:bg-black text-white backdrop-blur-sm touch-manipulation"
-									aria-label="Close video"
+			{showVideoModal && (
+				<>
+					{/* Backdrop */}
+					<div
+						ref={videoBackdropRef}
+						onClick={closeVideoModal}
+						onTouchStart={closeVideoModal}
+						className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+						style={{ opacity: 0 }}
+					/>
+					{/* Modal */}
+					<div
+						ref={videoModalRef}
+						className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
+						onClick={(e) => e.stopPropagation()}
+						onTouchStart={(e) => e.stopPropagation()}
+						style={{ opacity: 0 }}
+					>
+						<div className="relative w-full max-w-4xl mx-auto">
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={closeVideoModal}
+								onTouchStart={closeVideoModal}
+								className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/70 hover:bg-black/90 active:bg-black text-white backdrop-blur-sm touch-manipulation"
+								aria-label="Close video"
+							>
+								<X className="h-5 w-5 sm:h-6 sm:w-6" />
+							</Button>
+							<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: '16/9' }}>
+								<video
+									ref={videoRef}
+									className="w-full h-full object-contain"
+									controls
+									autoPlay
+									playsInline
+									muted={true}
+									preload="auto"
+									onClick={(e) => {
+										e.stopPropagation();
+										// Unmute when user clicks the video
+										if (videoRef.current) {
+											videoRef.current.muted = false;
+										}
+									}}
+									onTouchStart={(e) => {
+										e.stopPropagation();
+										// Unmute when user touches the video
+										if (videoRef.current) {
+											videoRef.current.muted = false;
+										}
+									}}
+									onPlay={() => {
+										// Ensure video is unmuted when playing (after user interaction)
+										if (videoRef.current) {
+											videoRef.current.muted = false;
+										}
+									}}
 								>
-									<X className="h-5 w-5 sm:h-6 sm:w-6" />
-								</Button>
-								<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: '16/9' }}>
-									<video
-										ref={videoRef}
-										className="w-full h-full object-contain"
-										controls
-										autoPlay
-										playsInline
-										muted={true}
-										preload="auto"
-										onClick={(e) => {
-											e.stopPropagation();
-											// Unmute when user clicks the video
-											if (videoRef.current) {
-												videoRef.current.muted = false;
-											}
-										}}
-										onTouchStart={(e) => {
-											e.stopPropagation();
-											// Unmute when user touches the video
-											if (videoRef.current) {
-												videoRef.current.muted = false;
-											}
-										}}
-										onPlay={() => {
-											// Ensure video is unmuted when playing (after user interaction)
-											if (videoRef.current) {
-												videoRef.current.muted = false;
-											}
-										}}
-									>
-										<source src="/1130.mp4" type="video/mp4" />
-										Your browser does not support the video tag.
-									</video>
-								</div>
+									<source src="/1130.mp4" type="video/mp4" />
+									Your browser does not support the video tag.
+								</video>
 							</div>
-						</motion.div>
-					</>
-				)}
-			</AnimatePresence>
+						</div>
+					</div>
+				</>
+			)}
 		</PageWrapper>
 	)
 }

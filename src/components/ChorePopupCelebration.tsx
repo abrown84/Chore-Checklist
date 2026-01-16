@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Star, Zap, Plus } from 'lucide-react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { animate } from 'animejs'
+import { Star, Zap, Plus, Sparkles } from 'lucide-react'
 
 interface PopupCelebration {
   id: string
@@ -40,87 +41,175 @@ interface DamagePopupItemProps {
 }
 
 const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove }) => {
-  const [isVisible, setIsVisible] = useState(true)
-  const elementRef = useRef<HTMLDivElement>(null)
-  
-  // Generate random movement parameters for each popup
-  const [movement] = useState(() => ({
-    driftX: (Math.random() - 0.5) * 100, // Random horizontal drift
-    driftY: Math.random() * -80 - 40,     // Upward drift with variation
-    rotation: (Math.random() - 0.5) * 30, // Random rotation
-    scale: 0.8 + Math.random() * 0.6,     // Random size variation
-    bounceFactor: 0.7 + Math.random() * 0.6 // Bounce intensity
-  }))
+  const containerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+  const glowRef = useRef<HTMLDivElement>(null)
+  const sparkleRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  // Determine color and style based on popup type
+  // Generate consistent movement for each popup - memoize to prevent re-generation
+  const movement = useMemo(() => ({
+    driftX: (Math.random() - 0.5) * 60,
+    driftY: -80 - Math.random() * 40,
+    rotation: (Math.random() - 0.5) * 15,
+  }), [])
+
+  // More sparkles for bigger points - makes high-value completions feel epic
+  const sparkleCount = celebration.points >= 30 ? 8 : celebration.points >= 15 ? 5 : 3
+
+  // Pre-generate sparkle positions
+  const sparklePositions = useMemo(() =>
+    [...Array(sparkleCount)].map((_, i) => ({
+      left: '50%',
+      top: '50%',
+      angle: (i / sparkleCount) * Math.PI * 2,
+      distance: 25 + Math.random() * 30,
+    })), [sparkleCount])
+
+  useEffect(() => {
+    const container = containerRef.current
+    const inner = innerRef.current
+    const glow = glowRef.current
+    const sparkles = sparkleRefs.current.filter(Boolean) as HTMLDivElement[]
+
+    if (!container || !inner || !glow) return
+
+    // Store animation instances for cleanup
+    const animations: ReturnType<typeof animate>[] = []
+
+    // Explosive entrance - snap in with dramatic bounce
+    const entranceAnim = animate(container, {
+      opacity: [0, 1],
+      scale: [0.3, 1.5, 0.9, 1.2, 1],
+      duration: 500,
+      ease: 'outElastic',
+    })
+    animations.push(entranceAnim)
+
+    // Bouncy arc motion upward with slight curve
+    const floatAnim = animate(container, {
+      translateY: [0, -30, movement.driftY * 1.2],
+      translateX: [0, movement.driftX * 0.3, movement.driftX * 1.5],
+      rotate: [0, movement.rotation * 3, movement.rotation],
+      duration: 1400,
+      delay: 150,
+      ease: 'outCubic',
+    })
+    animations.push(floatAnim)
+
+    // Smooth fade with scale down and blur
+    const fadeAnim = animate(container, {
+      opacity: [1, 1, 0.7, 0],
+      scale: [1, 1.1, 0.8, 0.4],
+      filter: ['blur(0px)', 'blur(0px)', 'blur(2px)', 'blur(8px)'],
+      duration: 600,
+      delay: 1100,
+      ease: 'inQuad',
+    })
+    animations.push(fadeAnim)
+
+    // Punchy inner pulse - heartbeat style
+    const pulseAnim = animate(inner, {
+      scale: [1, 1.15, 1, 1.08, 1],
+      duration: 500,
+      delay: 50,
+      ease: 'outQuart',
+    })
+    animations.push(pulseAnim)
+
+    // Expanding glow rings
+    const glowAnimation = animate(glow, {
+      opacity: [0, 0.9, 0.6, 0],
+      scale: [0.5, 1.8, 2.5],
+      duration: 1000,
+      ease: 'outQuart',
+    })
+    animations.push(glowAnimation)
+
+    // Sparkle burst - radial explosion pattern
+    sparkles.forEach((sparkle, i) => {
+      const pos = sparklePositions[i]
+      if (!pos) return
+      const sparkleAnimation = animate(sparkle, {
+        opacity: [0, 1, 1, 0],
+        scale: [0, 1.8, 1.2, 0],
+        translateX: [0, Math.cos(pos.angle) * pos.distance],
+        translateY: [0, Math.sin(pos.angle) * pos.distance - 15],
+        rotate: [0, 360],
+        duration: 600,
+        delay: 80 + i * 30,
+        ease: 'outQuart',
+      })
+      animations.push(sparkleAnimation)
+    })
+
+    // Remove the popup after animation completes
+    const timer = setTimeout(() => {
+      onRemove(celebration.id)
+    }, 1800)
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timer)
+      animations.forEach(anim => {
+        anim.pause()
+        anim.revert()
+      })
+    }
+  }, [celebration.id, onRemove, movement, sparklePositions])
+
   const getPopupStyle = () => {
     const type = celebration.type || 'points'
     const points = celebration.points
-    
+
     switch (type) {
       case 'bonus':
         return {
-          color: '#22c55e', // Green
-          bgColor: 'from-green-400 to-emerald-500',
-          textColor: 'text-white',
-          glow: 'shadow-green-400/50',
-          icon: <Plus className="w-4 h-4" />,
+          gradient: 'from-emerald-400 via-green-500 to-emerald-600',
+          icon: <Sparkles className="w-3.5 h-3.5" />,
+          shadow: 'shadow-emerald-500/50',
           prefix: '+'
         }
       case 'streak':
         return {
-          color: '#f59e0b', // Orange
-          bgColor: 'from-yellow-400 to-orange-500',
-          textColor: 'text-white',
-          glow: 'shadow-orange-400/50',
-          icon: <Zap className="w-4 h-4" />,
-          prefix: '+'
+          gradient: 'from-amber-400 via-orange-500 to-amber-600',
+          icon: <Zap className="w-3.5 h-3.5 fill-current" />,
+          shadow: 'shadow-orange-500/50',
+          prefix: '🔥'
         }
       case 'level':
         return {
-          color: '#8b5cf6', // Purple
-          bgColor: 'from-purple-400 to-violet-600',
-          textColor: 'text-white',
-          glow: 'shadow-purple-400/50',
-          icon: <Star className="w-4 h-4" />,
-          prefix: 'LVL+'
+          gradient: 'from-purple-400 via-violet-500 to-purple-600',
+          icon: <Star className="w-3.5 h-3.5 fill-current" />,
+          shadow: 'shadow-purple-500/50',
+          prefix: '⭐'
         }
       default:
-        // Dynamic color based on point value
         if (points >= 50) {
           return {
-            color: '#dc2626', // Red for high points
-            bgColor: 'from-red-400 to-red-600',
-            textColor: 'text-white',
-            glow: 'shadow-red-400/50',
-            icon: <Star className="w-4 h-4" />,
+            gradient: 'from-rose-400 via-pink-500 to-rose-600',
+            icon: <Star className="w-3.5 h-3.5 fill-current" />,
+            shadow: 'shadow-rose-500/50',
             prefix: '+'
           }
         } else if (points >= 25) {
           return {
-            color: '#7c3aed', // Purple for medium points
-            bgColor: 'from-purple-400 to-purple-600',
-            textColor: 'text-white',
-            glow: 'shadow-purple-400/50',
-            icon: <Zap className="w-4 h-4" />,
+            gradient: 'from-violet-400 via-purple-500 to-violet-600',
+            icon: <Sparkles className="w-3.5 h-3.5" />,
+            shadow: 'shadow-violet-500/50',
             prefix: '+'
           }
         } else if (points >= 10) {
           return {
-            color: '#2563eb', // Blue for moderate points
-            bgColor: 'from-blue-400 to-blue-600',
-            textColor: 'text-white',
-            glow: 'shadow-blue-400/50',
-            icon: <Plus className="w-4 h-4" />,
+            gradient: 'from-blue-400 via-cyan-500 to-blue-600',
+            icon: <Plus className="w-3.5 h-3.5" />,
+            shadow: 'shadow-blue-500/50',
             prefix: '+'
           }
         } else {
           return {
-            color: '#059669', // Green for low points
-            bgColor: 'from-emerald-400 to-green-500',
-            textColor: 'text-white',
-            glow: 'shadow-green-400/50',
-            icon: <Plus className="w-4 h-4" />,
+            gradient: 'from-teal-400 via-emerald-500 to-teal-600',
+            icon: <Plus className="w-3.5 h-3.5" />,
+            shadow: 'shadow-teal-500/50',
             prefix: '+'
           }
         }
@@ -128,100 +217,85 @@ const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove
   }
 
   const style = getPopupStyle()
-
-  useEffect(() => {
-    // Start exit animation after 0.8 seconds (faster dissolve)
-    const exitTimer = setTimeout(() => {
-      setIsVisible(false)
-    }, 800)
-
-    // Remove from parent after animation completes
-    const removeTimer = setTimeout(() => {
-      onRemove(celebration.id)
-    }, 1200)
-
-    return () => {
-      clearTimeout(exitTimer)
-      clearTimeout(removeTimer)
-    }
-  }, [celebration.id, onRemove])
+  const fontSize = Math.min(56, Math.max(36, 36 + celebration.points / 2))
 
   return (
     <div
-      ref={elementRef}
-      className={`absolute transform transition-all duration-500 ease-out pointer-events-none ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
+      ref={containerRef}
+      className="absolute pointer-events-none"
       style={{
         left: celebration.x,
         top: celebration.y,
-        transform: isVisible 
-          ? `translate(${movement.driftX}px, ${movement.driftY}px) scale(${movement.scale}) rotate(${movement.rotation}deg)` 
-          : `translate(${movement.driftX * 1.5}px, ${movement.driftY * 2}px) scale(${movement.scale * 0.5}) rotate(${movement.rotation * 2}deg)`,
-        zIndex: Math.floor(Math.random() * 100) + 1000, // Random stacking
+        transform: 'translate(-50%, -50%)',
+        opacity: 0,
       }}
     >
-      {/* Main damage number with game-like styling */}
-      <div className={`relative animate-bounce`} style={{ animationDuration: `${0.6 + Math.random() * 0.4}s` }}>
-        {/* Glow effect behind text */}
-        <div 
-          className={`absolute inset-0 blur-sm opacity-70 rounded-lg ${style.glow}`}
-          style={{ 
-            backgroundColor: style.color,
-            transform: 'scale(1.1)'
-          }}
+      {/* Main popup */}
+      <div ref={innerRef} className="relative">
+        {/* Glow effect */}
+        <div
+          ref={glowRef}
+          className={`absolute inset-0 blur-xl ${style.shadow} rounded-full`}
+          style={{ opacity: 0 }}
         />
-        
-        {/* Main text container */}
-        <div 
-          className={`relative bg-gradient-to-br ${style.bgColor} px-3 py-1 rounded-lg border-2 border-white/30 shadow-2xl`}
-          style={{
-            fontSize: `${Math.max(16, Math.min(32, 16 + celebration.points / 5))}px`, // Size based on points
-            fontWeight: '900',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-          }}
-        >
-          <div className={`flex items-center space-x-1 ${style.textColor} font-black tracking-wider`}>
+
+        {/* Main number display - game style with high contrast */}
+        <div className="relative flex items-center gap-3">
+          {/* Icon with massive glow */}
+          <div
+            className="text-white scale-150"
+            style={{
+              filter: 'drop-shadow(0 0 12px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,255,255,0.6))'
+            }}
+          >
             {style.icon}
-            <span className="font-mono">
-              {style.prefix}{celebration.points}
-            </span>
+          </div>
+
+          {/* Number with thick stroke and multiple shadows for maximum visibility */}
+          <div
+            className="relative font-black select-none"
+            style={{
+              fontSize: `${fontSize}px`,
+              color: '#FFFFFF',
+              textShadow: `
+                -4px -4px 0 #000,
+                4px -4px 0 #000,
+                -4px 4px 0 #000,
+                4px 4px 0 #000,
+                -4px 0 0 #000,
+                4px 0 0 #000,
+                0 -4px 0 #000,
+                0 4px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                2px 2px 0 #000,
+                0 0 30px rgba(255, 255, 255, 1),
+                0 0 60px rgba(255, 255, 255, 0.8),
+                0 6px 20px rgba(0, 0, 0, 0.9)
+              `,
+              letterSpacing: '-0.02em',
+              fontFamily: 'Impact, "Arial Black", sans-serif',
+              fontWeight: 900,
+              WebkitTextStroke: '1px rgba(255, 255, 255, 0.3)',
+            }}
+          >
+            {style.prefix}{celebration.points}
           </div>
         </div>
-        
-        {/* Floating sparkle effects */}
-        <div className="absolute -top-1 -right-1">
-          <div 
-            className="w-2 h-2 rounded-full animate-ping" 
-            style={{ 
-              backgroundColor: style.color,
-              animationDelay: `${Math.random() * 0.5}s`,
-              animationDuration: '0.8s'
-            }} 
-          />
-        </div>
-        <div className="absolute -bottom-1 -left-1">
-          <div 
-            className="w-1 h-1 rounded-full animate-pulse" 
-            style={{ 
-              backgroundColor: style.color,
-              animationDelay: `${Math.random() * 0.5}s`
-            }} 
-          />
-        </div>
-        
-        {/* Random particle trails */}
-        {[...Array(3)].map((_, i) => (
+
+        {/* Sparkles - radial burst */}
+        {sparklePositions.map((pos, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 rounded-full animate-bounce"
+            ref={(el) => { sparkleRefs.current[i] = el }}
+            className="absolute w-2 h-2 rounded-full bg-white shadow-lg"
             style={{
-              backgroundColor: style.color,
-              left: `${-10 + Math.random() * 20}px`,
-              top: `${-10 + Math.random() * 20}px`,
-              animationDelay: `${i * 0.2}s`,
-              animationDuration: `${0.8 + Math.random() * 0.4}s`,
-              opacity: 0.7
+              left: pos.left,
+              top: pos.top,
+              transform: 'translate(-50%, -50%)',
+              opacity: 0,
+              boxShadow: '0 0 6px 2px rgba(255,255,255,0.8)',
             }}
           />
         ))}
@@ -234,89 +308,40 @@ const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove
 export const usePopupCelebrations = () => {
   const [celebrations, setCelebrations] = useState<PopupCelebration[]>([])
 
-  const addCelebration = (points: number, choreTitle: string, x: number, y: number, type?: 'points' | 'bonus' | 'streak' | 'level') => {
-    // Create multiple popups for better visual impact
-    const popups: PopupCelebration[] = []
-    
-    // Main points popup
-    const mainPopup: PopupCelebration = {
+  const addCelebration = (
+    points: number,
+    choreTitle: string,
+    x: number,
+    y: number,
+    type?: 'points' | 'bonus' | 'streak' | 'level'
+  ) => {
+    const popup: PopupCelebration = {
       id: `celebration-${Date.now()}-${Math.random()}`,
       points,
       choreTitle,
-      x: x + (Math.random() - 0.5) * 40, // Add some position variation
+      x: x + (Math.random() - 0.5) * 20,
       y: y + (Math.random() - 0.5) * 20,
       timestamp: Date.now(),
       type: type || 'points'
     }
-    popups.push(mainPopup)
 
-    // Add bonus popups for higher point values (like in the image)
-    if (points >= 15) {
-      // Add a smaller bonus popup
-      const bonusPopup: PopupCelebration = {
-        id: `bonus-${Date.now()}-${Math.random()}`,
-        points: Math.floor(points * 0.3),
-        choreTitle,
-        x: x + (Math.random() - 0.5) * 80,
-        y: y + (Math.random() - 0.5) * 40,
-        timestamp: Date.now() + Math.random() * 200, // Slight delay
-        type: 'bonus'
-      }
-      popups.push(bonusPopup)
-    }
+    setCelebrations(prev => [...prev, popup])
 
-    if (points >= 30) {
-      // Add another variety popup for really high scores
-      const streakPopup: PopupCelebration = {
-        id: `streak-${Date.now()}-${Math.random()}`,
-        points: Math.floor(points * 0.2),
-        choreTitle,
-        x: x + (Math.random() - 0.5) * 100,
-        y: y + (Math.random() - 0.5) * 60,
-        timestamp: Date.now() + Math.random() * 400,
-        type: 'streak'
-      }
-      popups.push(streakPopup)
-    }
-
-    // Add level up popup if it's a level type
-    if (type === 'level') {
-      const levelPopup: PopupCelebration = {
-        id: `level-${Date.now()}-${Math.random()}`,
-        points: 1, // Level number
-        choreTitle: 'LEVEL UP!',
-        x: x + (Math.random() - 0.5) * 60,
-        y: y - 50 + (Math.random() - 0.5) * 30,
-        timestamp: Date.now() + Math.random() * 300,
-        type: 'level'
-      }
-      popups.push(levelPopup)
-    }
-    
-    // Add all popups with slight delays for staggered effect
-    popups.forEach((popup, index) => {
+    // Add a smaller bonus popup for high values
+    if (points >= 20 && type !== 'bonus') {
       setTimeout(() => {
-        setCelebrations(prev => [...prev, popup])
-      }, index * 100) // 100ms delay between each popup
-    })
-  }
-
-  const addMultipleCelebrations = (celebrationData: Array<{points: number, x: number, y: number, type?: 'points' | 'bonus' | 'streak' | 'level'}>) => {
-    // For when you want to manually create multiple popups (like the image shows)
-    celebrationData.forEach((data, index) => {
-      setTimeout(() => {
-        const popup: PopupCelebration = {
-          id: `multi-${Date.now()}-${index}-${Math.random()}`,
-          points: data.points,
-          choreTitle: '',
-          x: data.x + (Math.random() - 0.5) * 30,
-          y: data.y + (Math.random() - 0.5) * 30,
+        const bonusPopup: PopupCelebration = {
+          id: `bonus-${Date.now()}-${Math.random()}`,
+          points: Math.floor(points * 0.25),
+          choreTitle,
+          x: x + (Math.random() - 0.5) * 60,
+          y: y + (Math.random() - 0.5) * 40,
           timestamp: Date.now(),
-          type: data.type || 'points'
+          type: 'bonus'
         }
-        setCelebrations(prev => [...prev, popup])
-      }, index * 50) // Quick succession like in gaming
-    })
+        setCelebrations(prev => [...prev, bonusPopup])
+      }, 100)
+    }
   }
 
   const removeCelebration = (id: string) => {
@@ -326,7 +351,6 @@ export const usePopupCelebrations = () => {
   return {
     celebrations,
     addCelebration,
-    addMultipleCelebrations,
     removeCelebration
   }
 }

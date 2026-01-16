@@ -1,4 +1,4 @@
-import React, { useEffect, memo, useState } from 'react'
+import React, { useEffect, memo, useState, useRef, useCallback } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, CATEGORY_COLORS } from '../../types/chore'
@@ -6,6 +6,7 @@ import { Calendar, Edit, Image as ImageIcon, X, Check, Sun, CalendarDays, Calend
 import { isOverdue as checkIsOverdue, normalizeDueDate } from '../../utils/dateHelpers'
 import { EditChoreForm } from '../EditChoreForm'
 import { DeadlineCountdown } from './DeadlineCountdown'
+import { animateElement } from '../../hooks/useAnime'
 
 // Category icons with their respective colors
 const CATEGORY_ICONS = {
@@ -33,19 +34,23 @@ interface ChoreItemProps {
   index: number
 }
 
-export const ChoreItem = memo<ChoreItemProps>(({ 
-  chore, 
-  onComplete, 
-  onDelete: _onDelete, 
+export const ChoreItem = memo<ChoreItemProps>(({
+  chore,
+  onComplete,
+  onDelete: _onDelete,
   onEdit,
-  isAnimating, 
-  isCompleting, 
-  onAnimationComplete, 
-  index 
+  isAnimating,
+  isCompleting,
+  onAnimationComplete,
+  index
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [showPhotoPreview, setShowPhotoPreview] = useState(false)
   const isOverdue = chore.dueDate ? checkIsOverdue(chore.dueDate) : false
+
+  // Refs for anime.js animations
+  const containerRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't complete if chore is already completed, editing, or clicking on buttons/interactive elements
@@ -60,15 +65,46 @@ export const ChoreItem = memo<ChoreItemProps>(({
     onComplete(chore.id, e)
   }
   
-  // Handle animation completion
+  // Handle completion animation with anime.js
   useEffect(() => {
-    if (isCompleting) {
-      const timer = setTimeout(() => {
-        onAnimationComplete(chore.id)
-      }, 500) // Fade out duration
-      return () => clearTimeout(timer)
+    if (isCompleting && containerRef.current) {
+      const animation = animateElement(containerRef.current, {
+        opacity: [1, 0],
+        scale: [1, 0.95],
+        translateY: [0, -8],
+        duration: 500,
+        ease: 'outQuart',
+        complete: () => {
+          onAnimationComplete(chore.id)
+        }
+      })
+
+      return () => {
+        animation?.pause()
+      }
     }
   }, [isCompleting, chore.id, onAnimationComplete])
+
+  // Hover animation handlers for card
+  const handleMouseEnter = useCallback(() => {
+    if (cardRef.current && !chore.completed && !isCompleting) {
+      animateElement(cardRef.current, {
+        scale: 1.02,
+        duration: 200,
+        ease: 'outQuart'
+      })
+    }
+  }, [chore.completed, isCompleting])
+
+  const handleMouseLeave = useCallback(() => {
+    if (cardRef.current && !chore.completed && !isCompleting) {
+      animateElement(cardRef.current, {
+        scale: 1,
+        duration: 200,
+        ease: 'outQuart'
+      })
+    }
+  }, [chore.completed, isCompleting])
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -95,21 +131,21 @@ export const ChoreItem = memo<ChoreItemProps>(({
         />
       )}
     <div
-      className={`transition-all duration-500 ease-in-out ${
-        isCompleting 
-          ? 'opacity-0 scale-95 -translate-y-2 max-h-0 overflow-hidden' 
-          : 'opacity-100 scale-100 translate-y-0 max-h-[500px]'
-      }`}
+      ref={containerRef}
+      className={`${isCompleting ? 'overflow-hidden' : ''}`}
       style={{
-        transitionDelay: isCompleting ? '0ms' : `${index * 50}ms`
+        animationDelay: `${index * 50}ms`
       }}
     >
       <Card
+        ref={cardRef}
         onClick={!chore.completed ? handleCardClick : undefined}
-        className={`relative transition-all duration-200 bg-card/80 backdrop-blur-sm border-l-4 ${PRIORITY_BORDER_COLORS[chore.priority]} ${
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`relative transition-shadow duration-200 bg-card/80 backdrop-blur-sm border-l-4 hover:scale-100 ${PRIORITY_BORDER_COLORS[chore.priority]} ${
           isAnimating
             ? 'scale-105 shadow-lg shadow-green-500/30 ring-2 ring-green-500/50'
-            : 'hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:scale-[1.01]'
+            : 'hover:shadow-lg hover:shadow-primary/10'
         } ${
           chore.completed
             ? 'bg-success/10 border-success/30 dark:bg-success/10 dark:border-success/30 shadow-green-500/20'

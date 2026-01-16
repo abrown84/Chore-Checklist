@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { animate } from 'animejs'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   EmbeddedCheckoutProvider,
@@ -22,7 +22,6 @@ interface EmbeddedCheckoutModalProps {
   isOpen: boolean
   onClose: () => void
   billingInterval: BillingInterval
-  includeTrial?: boolean
   onComplete?: () => void
 }
 
@@ -30,14 +29,72 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
   isOpen,
   onClose,
   billingInterval,
-  includeTrial = true,
   onComplete,
 }) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  const backdropRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   const createEmbeddedCheckout = useAction(api.stripe.createEmbeddedCheckoutSession)
+
+  // Handle mount/unmount animations
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true)
+    }
+  }, [isOpen])
+
+  // Animate in when visible
+  useEffect(() => {
+    if (isVisible && backdropRef.current && modalRef.current) {
+      // Animate backdrop
+      animate(backdropRef.current, {
+        opacity: [0, 1],
+        duration: 300,
+        ease: 'outQuart',
+      })
+
+      // Animate modal
+      animate(modalRef.current, {
+        opacity: [0, 1],
+        scale: [0.95, 1],
+        translateY: [20, 0],
+        duration: 400,
+        ease: 'outQuart',
+      })
+    }
+  }, [isVisible])
+
+  // Handle close with animation
+  const handleClose = useCallback(() => {
+    if (backdropRef.current && modalRef.current) {
+      // Animate out
+      animate(backdropRef.current, {
+        opacity: [1, 0],
+        duration: 200,
+        ease: 'inQuart',
+      })
+
+      animate(modalRef.current, {
+        opacity: [1, 0],
+        scale: [1, 0.95],
+        translateY: [0, 20],
+        duration: 200,
+        ease: 'inQuart',
+        onComplete: () => {
+          setIsVisible(false)
+          onClose()
+        },
+      })
+    } else {
+      setIsVisible(false)
+      onClose()
+    }
+  }, [onClose])
 
   // Fetch client secret when modal opens
   useEffect(() => {
@@ -57,7 +114,6 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
 
     createEmbeddedCheckout({
       billingInterval,
-      includeTrial,
     })
       .then((result) => {
         if (result?.clientSecret) {
@@ -73,119 +129,119 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
       .finally(() => {
         setIsLoading(false)
       })
-  }, [isOpen, billingInterval, includeTrial, createEmbeddedCheckout])
+  }, [isOpen, billingInterval, createEmbeddedCheckout])
 
   // Handle checkout completion
   const handleComplete = useCallback(() => {
+    console.log('Checkout completed successfully')
+    // Note: Stripe will redirect to return_url automatically
+    // The modal will remain open until redirect happens
+    // The usePaymentResult hook will show success toast after redirect
     onComplete?.()
-    onClose()
-  }, [onComplete, onClose])
+  }, [onComplete])
+
+  if (!isVisible) {
+    return null
+  }
 
   const modalContent = (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
-          />
+    <>
+      {/* Backdrop */}
+      <div
+        ref={backdropRef}
+        onClick={handleClose}
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+        style={{ opacity: 0 }}
+      />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', duration: 0.5 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
-          >
-            <div className="w-full max-w-xl max-h-[90vh] overflow-hidden relative pointer-events-auto flex flex-col rounded-2xl border border-amber-500/30 bg-card shadow-2xl shadow-amber-500/10">
-              {/* Premium Header */}
-              <div className="relative overflow-hidden">
-                {/* Gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card/80" />
+      {/* Modal */}
+      <div
+        ref={modalRef}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
+        style={{ opacity: 0 }}
+      >
+        <div className="w-full max-w-xl max-h-[90vh] overflow-hidden relative pointer-events-auto flex flex-col rounded-2xl border border-amber-500/10 bg-card shadow-2xl shadow-amber-500/10">
+          {/* Premium Header */}
+          <div className="relative overflow-hidden">
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card/80" />
 
-                {/* Header content */}
-                <div className="relative flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
-                      <Crown className="h-5 w-5 text-slate-900" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">Premium Checkout</h3>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Lock className="h-3 w-3 text-green-400" />
-                        <span>Secure payment</span>
-                      </div>
-                    </div>
+            {/* Header content */}
+            <div className="relative flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                  <Crown className="h-5 w-5 text-slate-900" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Premium Checkout</h3>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Lock className="h-3 w-3 text-green-400" />
+                    <span>Secure payment</span>
                   </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="h-8 w-8 rounded-full hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Checkout Content */}
+          <div className="flex-1 overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {isLoading && (
+              <div className="flex items-center justify-center h-[400px] p-8">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-400/30 border-t-amber-400" />
+                    <Crown className="absolute inset-0 m-auto h-4 w-4 text-amber-400" />
+                  </div>
+                  <p className="text-muted-foreground">Preparing your checkout...</p>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center h-[400px] p-8">
+                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                  <div className="p-4 rounded-full bg-red-500/10 border border-red-500/30">
+                    <X className="h-6 w-6 text-red-400" />
+                  </div>
+                  <p className="text-foreground font-medium">Unable to load checkout</p>
+                  <p className="text-sm text-muted-foreground">{error}</p>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="h-8 w-8 rounded-full hover:bg-white/10"
+                    variant="outline"
+                    onClick={handleClose}
+                    className="mt-2"
                   >
-                    <X className="h-4 w-4" />
+                    Close
                   </Button>
                 </div>
               </div>
+            )}
 
-              {/* Checkout Content */}
-              <div className="flex-1 overflow-y-auto">
-                {isLoading && (
-                  <div className="flex items-center justify-center h-[400px] p-8">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="relative">
-                        <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-400/30 border-t-amber-400" />
-                        <Crown className="absolute inset-0 m-auto h-4 w-4 text-amber-400" />
-                      </div>
-                      <p className="text-muted-foreground">Preparing your checkout...</p>
-                    </div>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="flex items-center justify-center h-[400px] p-8">
-                    <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-                      <div className="p-4 rounded-full bg-red-500/10 border border-red-500/30">
-                        <X className="h-6 w-6 text-red-400" />
-                      </div>
-                      <p className="text-foreground font-medium">Unable to load checkout</p>
-                      <p className="text-sm text-muted-foreground">{error}</p>
-                      <Button
-                        variant="outline"
-                        onClick={onClose}
-                        className="mt-2"
-                      >
-                        Close
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {clientSecret && stripePromise && !isLoading && !error && (
-                  <div id="checkout">
-                    <EmbeddedCheckoutProvider
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        onComplete: handleComplete,
-                      }}
-                    >
-                      <EmbeddedCheckout />
-                    </EmbeddedCheckoutProvider>
-                  </div>
-                )}
+            {clientSecret && stripePromise && !isLoading && !error && (
+              <div id="checkout">
+                <EmbeddedCheckoutProvider
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    onComplete: handleComplete,
+                  }}
+                >
+                  <EmbeddedCheckout />
+                </EmbeddedCheckoutProvider>
               </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   )
 
   return createPortal(modalContent, document.body)

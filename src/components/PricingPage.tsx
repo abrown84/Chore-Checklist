@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useRef, useEffect } from 'react'
+import { animate } from 'animejs'
 import { PageWrapper } from './PageWrapper'
 import { PricingCard } from './PricingCard'
 import { Card, CardContent } from './ui/card'
@@ -71,14 +71,82 @@ export const PricingPage: React.FC = () => {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const [showCheckout, setShowCheckout] = useState(false)
 
+  // Animation refs
+  const trustBadgesRef = useRef<HTMLDivElement>(null)
+  const billingToggleRef = useRef<HTMLDivElement>(null)
+  const comparisonRef = useRef<HTMLDivElement>(null)
+  const faqSectionRef = useRef<HTMLDivElement>(null)
+  const guaranteeRef = useRef<HTMLDivElement>(null)
+  const faqCardsRef = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    // Animate trust badges
+    if (trustBadgesRef.current) {
+      animate(trustBadgesRef.current, {
+        opacity: [0, 1],
+        translateY: [10, 0],
+        duration: 500,
+        ease: 'outQuart',
+      })
+    }
+    // Animate billing toggle
+    if (billingToggleRef.current) {
+      animate(billingToggleRef.current, {
+        opacity: [0, 1],
+        translateY: [10, 0],
+        duration: 500,
+        delay: 100,
+        ease: 'outQuart',
+      })
+    }
+    // Animate comparison table
+    if (comparisonRef.current) {
+      animate(comparisonRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 500,
+        delay: 200,
+        ease: 'outQuart',
+      })
+    }
+    // Animate FAQ section header
+    if (faqSectionRef.current) {
+      animate(faqSectionRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 500,
+        delay: 300,
+        ease: 'outQuart',
+      })
+    }
+    // Animate FAQ cards
+    faqCardsRef.current.forEach((card, index) => {
+      if (card) {
+        animate(card, {
+          opacity: [0, 1],
+          translateY: [10, 0],
+          duration: 400,
+          delay: 100 + index * 50,
+          ease: 'outQuart',
+        })
+      }
+    })
+    // Animate guarantee section
+    if (guaranteeRef.current) {
+      animate(guaranteeRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 500,
+        delay: 400,
+        ease: 'outQuart',
+      })
+    }
+  }, [])
+
   const handleSelectPlan = (planId: SubscriptionPlan) => {
     if (planId === 'free' || planId === currentPlan) return
-    // Open embedded checkout modal
+    // Open embedded checkout modal instead of redirecting
     setShowCheckout(true)
-  }
-
-  const handleCheckoutComplete = () => {
-    setShowCheckout(false)
   }
 
   const yearlyPrice = PLANS.premium.yearlyPrice
@@ -94,10 +162,9 @@ export const PricingPage: React.FC = () => {
     >
       <div className="max-w-5xl mx-auto space-y-12">
         {/* Trust badges */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center justify-center gap-4 sm:gap-8"
+        <div
+          ref={trustBadgesRef}
+          className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 opacity-0"
         >
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4 text-green-400" />
@@ -115,14 +182,12 @@ export const PricingPage: React.FC = () => {
             <Star className="h-4 w-4 text-yellow-400" />
             <span>4.9/5 Rating</span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Billing toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex justify-center"
+        <div
+          ref={billingToggleRef}
+          className="flex justify-center opacity-0"
         >
           <div className="flex items-center gap-2 p-1.5 rounded-full bg-secondary/50 border border-border">
             <button
@@ -151,7 +216,7 @@ export const PricingPage: React.FC = () => {
               </span>
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Pricing cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
@@ -172,10 +237,9 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* Feature comparison table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+        <div
+          ref={comparisonRef}
+          className="opacity-0"
         >
           <Card className="overflow-hidden">
             <CardContent className="p-0">
@@ -248,14 +312,12 @@ export const PricingPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* FAQ section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-6"
+        <div
+          ref={faqSectionRef}
+          className="space-y-6 opacity-0"
         >
           <div className="text-center">
             <h2 className="text-2xl font-heading font-bold text-foreground">
@@ -268,11 +330,10 @@ export const PricingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {faqs.map((faq, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
+                ref={(el) => { faqCardsRef.current[index] = el }}
+                className="opacity-0"
               >
                 <Card
                   className={cn(
@@ -293,19 +354,16 @@ export const PricingPage: React.FC = () => {
                           <h3 className="font-medium text-foreground text-sm">
                             {faq.question}
                           </h3>
-                          <motion.div
-                            initial={false}
-                            animate={{
-                              height: expandedFaq === index ? 'auto' : 0,
-                              opacity: expandedFaq === index ? 1 : 0,
-                            }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
+                          <div
+                            className={cn(
+                              'overflow-hidden transition-all duration-200',
+                              expandedFaq === index ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+                            )}
                           >
                             <p className="text-sm text-muted-foreground mt-2">
                               {faq.answer}
                             </p>
-                          </motion.div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
@@ -318,17 +376,15 @@ export const PricingPage: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Money-back guarantee */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="text-center"
+        <div
+          ref={guaranteeRef}
+          className="text-center opacity-0"
         >
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30">
             <CardContent className="p-6 sm:p-8">
@@ -348,7 +404,7 @@ export const PricingPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* Contact support */}
         <div className="text-center pb-8">
@@ -364,13 +420,10 @@ export const PricingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Embedded Checkout Modal */}
       <EmbeddedCheckoutModal
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
         billingInterval={billingInterval}
-        includeTrial={true}
-        onComplete={handleCheckoutComplete}
       />
     </PageWrapper>
   )

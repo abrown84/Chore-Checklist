@@ -25,7 +25,7 @@ export const ChoreList: React.FC = memo(() => {
   const [completingChores, setCompletingChores] = useState<Set<string>>(new Set())
   
   // Photo upload state
-  const [photoUploadChore, setPhotoUploadChore] = useState<{ id: string; title: string } | null>(null)
+  const [photoUploadChore, setPhotoUploadChore] = useState<{ id: string; title: string; clickX: number; clickY: number } | null>(null)
 
   // Popup celebration hook
   const { celebrations, addCelebration, removeCelebration } = usePopupCelebrations()
@@ -40,13 +40,17 @@ export const ChoreList: React.FC = memo(() => {
   // Stats are automatically recalculated in the context when chores change
   // No need for explicit effect
 
-  const handleCompleteChore = useCallback((choreId: string, _event?: React.MouseEvent) => {
+  const handleCompleteChore = useCallback((choreId: string, event?: React.MouseEvent) => {
     // Find the chore to get points
     const chore = state.chores.find(c => c.id === choreId)
     if (!chore) return
 
+    // Capture click coordinates or use center of screen as fallback
+    const clickX = event?.clientX ?? window.innerWidth / 2
+    const clickY = event?.clientY ?? window.innerHeight / 2
+
     // Show photo upload dialog first (optional)
-    setPhotoUploadChore({ id: choreId, title: chore.title })
+    setPhotoUploadChore({ id: choreId, title: chore.title, clickX, clickY })
   }, [state.chores])
 
   const handlePhotoUploaded = useCallback(async (storageId: string) => {
@@ -75,10 +79,33 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId, storageId))
       .then((result: any) => {
-        import.meta.env.DEV && console.log('✅ Chore completion result:', result)
+        console.log('✅ Chore completion result:', result)
         if (result && typeof result === 'object' && 'finalPoints' in result) {
-          import.meta.env.DEV && console.log(`✅ Points awarded: ${result.finalPoints}`)
+          console.log(`✅ Points awarded: ${result.finalPoints}`)
         }
+
+        // Check if user leveled up from backend
+        console.log('[LevelUp] Checking result for leveledUp:', {
+          hasResult: !!result,
+          leveledUp: result?.leveledUp,
+          newLevel: result?.newLevel,
+          previousLevel: result?.previousLevel,
+          fullResult: result
+        })
+
+        if (result?.leveledUp) {
+          console.log(`🎉 DISPATCHING LEVEL UP EVENT! ${result.previousLevel} → ${result.newLevel}`)
+          // Dispatch custom event for LevelUpCelebration to catch
+          window.dispatchEvent(new CustomEvent('levelUp', {
+            detail: {
+              newLevel: result.newLevel,
+              previousLevel: result.previousLevel
+            }
+          }))
+        } else {
+          console.log('[LevelUp] No level up in result')
+        }
+
         // Convex queries are reactive and will automatically update when the userStats table changes
         // The completeChore mutation already calls calculateUserStats which updates the stats
         // No need to force refresh - it may cause race conditions or overwrite the stats
@@ -103,27 +130,26 @@ export const ChoreList: React.FC = memo(() => {
       })
 
     // Get click position and trigger multiple popup celebrations (like damage popups in games)
-    // Note: event might not be available when called from photo upload, use center of screen
-    if (chore) {
+    if (chore && photoUploadChore) {
       const points = chore.finalPoints || chore.points
-      // Use center of screen for celebrations when called from photo upload (no event)
-      const clickX = window.innerWidth / 2
-      const clickY = window.innerHeight / 2
-      
+      // Use stored click coordinates from when the chore was clicked
+      const clickX = photoUploadChore.clickX
+      const clickY = photoUploadChore.clickY
+
       // Determine celebration type based on various factors
       let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
-      
+
       // Check if this is a streak or special completion
       if (chore.bonusMessage) {
         celebrationType = 'bonus'
       }
-      
+
       // Check if user leveled up (you might want to add level tracking logic here)
       const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
       if (userStats && points >= 30) { // High value chores might indicate level potential
         celebrationType = 'streak'
       }
-      
+
       // Trigger the damage popup style celebration
       addCelebration(points, chore.title, clickX, clickY, celebrationType)
       
@@ -177,10 +203,33 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId))
       .then((result: any) => {
-        import.meta.env.DEV && console.log('✅ Chore completion result:', result)
+        console.log('✅ Chore completion result (skip photo):', result)
         if (result && typeof result === 'object' && 'finalPoints' in result) {
-          import.meta.env.DEV && console.log(`✅ Points awarded: ${result.finalPoints}`)
+          console.log(`✅ Points awarded: ${result.finalPoints}`)
         }
+
+        // Check if user leveled up from backend
+        console.log('[LevelUp] Checking result for leveledUp:', {
+          hasResult: !!result,
+          leveledUp: result?.leveledUp,
+          newLevel: result?.newLevel,
+          previousLevel: result?.previousLevel,
+          fullResult: result
+        })
+
+        if (result?.leveledUp) {
+          console.log(`🎉 DISPATCHING LEVEL UP EVENT! ${result.previousLevel} → ${result.newLevel}`)
+          // Dispatch custom event for LevelUpCelebration to catch
+          window.dispatchEvent(new CustomEvent('levelUp', {
+            detail: {
+              newLevel: result.newLevel,
+              previousLevel: result.previousLevel
+            }
+          }))
+        } else {
+          console.log('[LevelUp] No level up in result')
+        }
+
         // Convex queries are reactive and will automatically update when the userStats table changes
         // The completeChore mutation already calls calculateUserStats which updates the stats
         // No need to force refresh - it may cause race conditions or overwrite the stats
@@ -202,18 +251,20 @@ export const ChoreList: React.FC = memo(() => {
         setPhotoUploadChore(null)
       })
 
-    // Trigger celebrations
-    const points = chore.finalPoints || chore.points
-    const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
-    let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
-    if (chore.bonusMessage) {
-      celebrationType = 'bonus'
+    // Trigger celebrations using stored click coordinates
+    if (photoUploadChore) {
+      const points = chore.finalPoints || chore.points
+      const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
+      let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
+      if (chore.bonusMessage) {
+        celebrationType = 'bonus'
+      }
+      if (userStats && points >= 30) {
+        celebrationType = 'streak'
+      }
+      // Use stored click coordinates from when the chore was clicked
+      addCelebration(points, chore.title, photoUploadChore.clickX, photoUploadChore.clickY, celebrationType)
     }
-    if (userStats && points >= 30) {
-      celebrationType = 'streak'
-    }
-    // Use center of screen for celebrations when no event available
-    addCelebration(points, chore.title, window.innerWidth / 2, window.innerHeight / 2, celebrationType)
 
     setTimeout(() => {
       setAnimatingChores(prev => {

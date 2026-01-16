@@ -8,6 +8,7 @@ import { ProfileHeader } from './profile/ProfileHeader'
 import { AvatarCustomization } from './profile/AvatarCustomization'
 import { RewardsProgress } from './profile/RewardsProgress'
 import { NotificationSettings } from './NotificationSettings'
+import { SubscriptionManagement } from './profile/SubscriptionManagement'
 
 export const ProfileAndRewards: React.FC = () => {
   // Context hooks
@@ -224,6 +225,9 @@ export const ProfileAndRewards: React.FC = () => {
         getUserStats={getUserStats}
         currentUser={currentUser}
       />
+
+      {/* Subscription Management */}
+      <SubscriptionManagement />
     </div>
   )
 }

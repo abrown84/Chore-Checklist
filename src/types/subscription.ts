@@ -40,7 +40,7 @@ export interface SubscriptionState {
   trialDaysRemaining: number | null
   // Subscription actions
   startTrial: () => Promise<void>
-  subscribe: (plan: SubscriptionPlan, billingInterval: BillingInterval, options?: { includeTrial?: boolean }) => Promise<void>
+  subscribe: (plan: SubscriptionPlan, billingInterval: BillingInterval) => Promise<void>
   cancelSubscription: () => Promise<void>
   manageSubscription: () => Promise<void>
 }

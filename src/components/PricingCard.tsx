@@ -1,5 +1,5 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import React, { useRef, useEffect } from 'react'
+import { animate } from 'animejs'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -24,6 +24,19 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   isLoading = false,
   index = 0,
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (cardRef.current) {
+      animate(cardRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 500,
+        delay: index * 100,
+        ease: 'outQuart',
+      })
+    }
+  }, [])
   const price = billingInterval === 'yearly' ? plan.yearlyPrice / 12 : plan.monthlyPrice
   const totalPrice = billingInterval === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice
   const isFreePlan = plan.id === 'free'
@@ -42,11 +55,9 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="relative"
+    <div
+      ref={cardRef}
+      className="relative opacity-0"
     >
       {/* Popular badge */}
       {plan.isPopular && !isCurrentPlan && (
@@ -186,6 +197,6 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }

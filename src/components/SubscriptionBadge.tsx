@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { Crown, Clock, Sparkles, ChevronRight } from 'lucide-react'
 import { useSubscription } from '../hooks/useSubscription'
 import { UpgradeModal } from './UpgradeModal'
@@ -45,14 +44,13 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   if (!isPremium && !isTrialing) {
     return (
       <>
-        <motion.button
+        <button
           onClick={handleClick}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full font-medium transition-colors duration-200',
+            'inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200',
             'bg-secondary/70 text-muted-foreground hover:bg-secondary hover:text-foreground',
             'border border-border/50 hover:border-border',
+            'hover:scale-[1.02] active:scale-[0.98]',
             sizeClasses[size],
             showManageLink && 'cursor-pointer',
             className
@@ -63,7 +61,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
           {showManageLink && (
             <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
           )}
-        </motion.button>
+        </button>
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
@@ -76,16 +74,15 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   if (isTrialing && trialDaysRemaining !== null) {
     return (
       <>
-        <motion.button
+        <button
           onClick={handleClick}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full font-medium transition-colors duration-200',
+            'inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200',
             trialDaysRemaining <= 3
               ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30'
               : 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30',
             'border',
+            'hover:scale-[1.02] active:scale-[0.98]',
             sizeClasses[size],
             showManageLink && 'cursor-pointer',
             className
@@ -103,7 +100,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
           {showManageLink && (
             <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
           )}
-        </motion.button>
+        </button>
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
@@ -114,15 +111,14 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
 
   // Premium badge
   return (
-    <motion.button
+    <button
       onClick={handleClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full font-medium transition-colors duration-200',
+        'inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200',
         'bg-gradient-to-r from-amber-400/20 to-orange-400/20',
         'text-amber-400 border border-amber-400/30',
         'hover:from-amber-400/30 hover:to-orange-400/30',
+        'hover:scale-[1.02] active:scale-[0.98]',
         sizeClasses[size],
         showManageLink && 'cursor-pointer',
         className
@@ -133,7 +129,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
       {showManageLink && (
         <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
       )}
-    </motion.button>
+    </button>
   )
 }
 
@@ -156,19 +152,18 @@ export const SubscriptionBadgeCompact: React.FC<{
   if (!isPremium && !isTrialing) {
     return (
       <>
-        <motion.button
+        <button
           onClick={handleClick}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            'p-2 rounded-full transition-colors duration-200',
+            'p-2 rounded-full transition-all duration-200',
             'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground',
+            'hover:scale-110 active:scale-95',
             className
           )}
           title="Upgrade to Premium"
         >
           <Sparkles className="h-4 w-4" />
-        </motion.button>
+        </button>
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
@@ -180,21 +175,20 @@ export const SubscriptionBadgeCompact: React.FC<{
   if (isTrialing) {
     return (
       <>
-        <motion.button
+        <button
           onClick={handleClick}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            'p-2 rounded-full transition-colors duration-200',
+            'p-2 rounded-full transition-all duration-200',
             trialDaysRemaining !== null && trialDaysRemaining <= 3
               ? 'bg-orange-500/20 text-orange-400'
               : 'bg-blue-500/20 text-blue-400',
+            'hover:scale-110 active:scale-95',
             className
           )}
           title={`Trial - ${trialDaysRemaining} days remaining`}
         >
           <Clock className="h-4 w-4" />
-        </motion.button>
+        </button>
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
@@ -204,18 +198,17 @@ export const SubscriptionBadgeCompact: React.FC<{
   }
 
   return (
-    <motion.button
+    <button
       onClick={handleClick}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.95 }}
       className={cn(
-        'p-2 rounded-full transition-colors duration-200',
+        'p-2 rounded-full transition-all duration-200',
         'bg-amber-400/20 text-amber-400',
+        'hover:scale-110 active:scale-95',
         className
       )}
       title="Premium Member"
     >
       <Crown className="h-4 w-4" />
-    </motion.button>
+    </button>
   )
 }

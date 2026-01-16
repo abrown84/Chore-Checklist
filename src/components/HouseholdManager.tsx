@@ -510,7 +510,7 @@ export const HouseholdManager: React.FC = () => {
               <div className="text-sm text-muted-foreground">Members</div>
             </div>
           </div>
-          
+
           {!canManageHousehold && (
             <div className="mt-4 p-3 bg-card/40 backdrop-blur-sm border border-border rounded-lg">
               <p className="text-sm text-muted-foreground break-words">
@@ -519,41 +519,6 @@ export const HouseholdManager: React.FC = () => {
               </p>
             </div>
           )}
-          
-          {/* Leave Household Button */}
-          <div className="mt-6 pt-6 border-t border-border space-y-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowLeaveConfirm(true)}
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
-            >
-              <UserMinus className="w-4 h-4 mr-2" />
-              Leave Household
-            </Button>
-            {showLeaveConfirm && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-3 break-words">
-                  Are you sure you want to leave this household? You will lose access to all chores and data.
-                </p>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleLeaveHousehold}
-                    className="bg-red-600 hover:bg-red-700 flex-1"
-                  >
-                    Yes, Leave
-                  </Button>
-                  <Button
-                    onClick={() => setShowLeaveConfirm(false)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-          </div>
         </CardContent>
       </Card>
 
@@ -908,6 +873,54 @@ export const HouseholdManager: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Leave Household - At Bottom */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-red-600">
+            <UserMinus className="w-6 h-6" />
+            <span>Leave Household</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4 break-words">
+            If you leave this household, you will lose access to all chores and data. This action cannot be undone.
+          </p>
+          <div className="space-y-3">
+            {!showLeaveConfirm ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowLeaveConfirm(true)}
+                className="w-full border-red-300 text-red-600 hover:bg-red-50"
+              >
+                <UserMinus className="w-4 h-4 mr-2" />
+                Leave Household
+              </Button>
+            ) : (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 mb-3 font-semibold break-words">
+                  Are you sure you want to leave this household?
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    onClick={handleLeaveHousehold}
+                    className="bg-red-600 hover:bg-red-700 flex-1"
+                  >
+                    Yes, Leave Household
+                  </Button>
+                  <Button
+                    onClick={() => setShowLeaveConfirm(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

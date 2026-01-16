@@ -1,8 +1,6 @@
 import React from 'react'
 import { Star, CheckCircle, Target, Users } from 'lucide-react'
 import { useHouseholdStats } from '../../hooks/useHouseholdStats'
-import { useAnimationDelays } from '../../hooks/useAnimationDelays'
-import { APP_CONFIG } from '../../config/constants'
 
 interface HouseholdStatsProps {
   memberStats: any[]
@@ -10,16 +8,12 @@ interface HouseholdStatsProps {
   membersCount: number
 }
 
-export const HouseholdStats: React.FC<HouseholdStatsProps> = React.memo(({ 
-  memberStats, 
-  chores, 
-  membersCount 
+export const HouseholdStats: React.FC<HouseholdStatsProps> = React.memo(({
+  memberStats,
+  chores,
+  membersCount
 }) => {
   const stats = useHouseholdStats({ memberStats, chores, membersCount })
-  const { getDelayStyle } = useAnimationDelays({ 
-    baseDelay: APP_CONFIG.ANIMATION_DELAYS.FADE_IN,
-    count: 4 
-  })
 
   const statCards = [
     {
@@ -86,22 +80,19 @@ export const HouseholdStats: React.FC<HouseholdStatsProps> = React.memo(({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {statCards.map((card, index) => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {statCards.map((card) => (
         <div
           key={card.label}
-          className={`bg-gradient-to-br ${card.gradient} p-6 rounded-xl border ${card.border} shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 animate-fade-in group`}
-          style={getDelayStyle(index)}
+          className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-4 border border-border/50 backdrop-blur-sm hover:scale-[1.02] transition-transform"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-sm font-medium ${card.labelColor} mb-1`}>{card.label}</p>
-              <p className={`text-3xl font-bold ${card.textColor} group-hover:scale-105 transition-transform duration-300`}>{card.value}</p>
-            </div>
-            <div className={`p-3.5 ${card.iconBg} ${card.iconRing} rounded-full shadow-lg animate-float`} style={{ animationDelay: `${0.5 + index * 0.5}s` }}>
-              <card.icon className={`w-6 h-6 ${card.iconColor}`} />
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`p-2 ${card.iconBg} rounded-lg`}>
+              <card.icon className="w-4 h-4 text-white" />
             </div>
           </div>
+          <div className="text-2xl font-black text-foreground">{card.value}</div>
+          <div className="text-xs text-muted-foreground uppercase tracking-wide">{card.label}</div>
         </div>
       ))}
     </div>

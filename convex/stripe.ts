@@ -15,20 +15,33 @@ const stripeClient = new StripeSubscriptions(components.stripe, {
 // These should be set in Convex dashboard:
 // - STRIPE_PRICE_MONTHLY: price_xxx for $4.99/mo
 // - STRIPE_PRICE_YEARLY: price_xxx for $39.99/yr
+// Trial periods should be configured in Stripe Dashboard on the prices themselves
 
-// Trial period in days
-const TRIAL_PERIOD_DAYS = 14;
+// Admin/Creator emails who get free premium access
+// Add your email here to bypass subscription requirements
+const ADMIN_EMAILS = [
+  "konfliktquake@gmail.com", // Creator email
+];
+
+/**
+ * Check if a user is an admin/creator (gets free premium access)
+ */
+async function isAdmin(ctx: any, userId: string): Promise<boolean> {
+  const user = await ctx.db.get(userId);
+  if (!user?.email) return false;
+
+  return ADMIN_EMAILS.includes(user.email.toLowerCase());
+}
 
 /**
  * Create a Stripe Checkout session for premium subscription
- * Includes 14-day free trial with credit card required upfront
+ * Note: Trial periods should be configured in Stripe Dashboard on the Price itself
  */
 export const createCheckoutSession = action({
   args: {
     priceId: v.string(),
     successUrl: v.optional(v.string()),
     cancelUrl: v.optional(v.string()),
-    includeTrial: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -46,19 +59,7 @@ export const createCheckoutSession = action({
       name: identity.name ?? undefined,
     });
 
-    // Check if user already had a trial (prevent trial abuse)
-    const existingSubscriptions = await ctx.runQuery(
-      components.stripe.public.listSubscriptionsByUserId,
-      { userId: userId }
-    );
-    const hadPreviousTrial = existingSubscriptions.some(
-      (sub: { status: string }) => sub.status === "trialing" || sub.status === "active" || sub.status === "canceled"
-    );
-
-    // Include trial only if requested and user hasn't had one before
-    const includeTrial = args.includeTrial !== false && !hadPreviousTrial;
-
-    // Create checkout session with trial period
+    // Create checkout session
     const session = await stripeClient.createCheckoutSession(ctx, {
       priceId: args.priceId,
       customerId: customer.customerId,
@@ -69,12 +70,6 @@ export const createCheckoutSession = action({
         userId: userId,
         convexUserId: userId,
       },
-      // Add trial period - card is collected but not charged until trial ends
-      ...(includeTrial && {
-        subscriptionData: {
-          trial_period_days: TRIAL_PERIOD_DAYS,
-        },
-      }),
     });
 
     return {
@@ -87,11 +82,11 @@ export const createCheckoutSession = action({
 /**
  * Create an embedded Stripe Checkout session for in-app payment modal
  * Returns a client_secret for the frontend to render the checkout
+ * Note: Trial periods should be configured in Stripe Dashboard on the Price itself
  */
 export const createEmbeddedCheckoutSession = action({
   args: {
     billingInterval: v.union(v.literal("monthly"), v.literal("yearly")),
-    includeTrial: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -117,22 +112,11 @@ export const createEmbeddedCheckoutSession = action({
       name: identity.name ?? undefined,
     });
 
-    // Check if user already had a trial (prevent trial abuse)
-    const existingSubscriptions = await ctx.runQuery(
-      components.stripe.public.listSubscriptionsByUserId,
-      { userId: userId }
-    );
-    const hadPreviousTrial = existingSubscriptions.some(
-      (sub: { status: string }) => sub.status === "trialing" || sub.status === "active" || sub.status === "canceled"
-    );
-
-    const includeTrial = args.includeTrial !== false && !hadPreviousTrial;
-
     // Use Stripe SDK directly for embedded checkout (requires ui_mode: 'embedded')
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-    const returnUrl = `${process.env.SITE_URL ?? "http://localhost:5173"}?payment={CHECKOUT_SESSION_ID}`;
+    const returnUrl = `${process.env.SITE_URL ?? "http://localhost:5173"}?session_id={CHECKOUT_SESSION_ID}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -150,9 +134,6 @@ export const createEmbeddedCheckoutSession = action({
           userId: userId,
           convexUserId: userId,
         },
-        ...(includeTrial && {
-          trial_period_days: TRIAL_PERIOD_DAYS,
-        }),
       },
     });
 
@@ -204,6 +185,21 @@ export const getUserSubscription = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return null;
+    }
+
+    // Check if user is admin/creator - they get free premium access
+    const userIsAdmin = await isAdmin(ctx, userId);
+    if (userIsAdmin) {
+      return {
+        plan: "premium" as PlanType,
+        status: "active",
+        isActive: true,
+        isPremium: true,
+        limits: PLAN_LIMITS.premium,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
+        isAdmin: true, // Flag to identify admin users
+      };
     }
 
     // Query our local subscriptions table
@@ -259,6 +255,12 @@ export const isFeatureEnabled = query({
       return false;
     }
 
+    // Check if user is admin/creator - they get all features
+    const userIsAdmin = await isAdmin(ctx, userId);
+    if (userIsAdmin) {
+      return true;
+    }
+
     // Query subscription status
     const subscription = await ctx.db
       .query("subscriptions")
@@ -291,6 +293,12 @@ export const getUserPlanLimits = query({
       return PLAN_LIMITS.free;
     }
 
+    // Check if user is admin/creator - they get premium limits
+    const userIsAdmin = await isAdmin(ctx, userId);
+    if (userIsAdmin) {
+      return PLAN_LIMITS.premium;
+    }
+
     const subscription = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -314,6 +322,18 @@ export const canCreateHousehold = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return { canCreate: false, reason: "Not authenticated" };
+    }
+
+    // Check if user is admin/creator - they can create unlimited households
+    const userIsAdmin = await isAdmin(ctx, userId);
+    if (userIsAdmin) {
+      return {
+        canCreate: true,
+        currentCount: 0,
+        maxAllowed: PLAN_LIMITS.premium.maxHouseholds,
+        isPremium: true,
+        reason: undefined,
+      };
     }
 
     // Get user's current households count (where they are admin)
@@ -382,6 +402,18 @@ export const canAddHouseholdMember = query({
       .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
       .collect();
 
+    // Check if household creator is admin - they get unlimited members
+    const creatorIsAdmin = await isAdmin(ctx, household.createdBy);
+    if (creatorIsAdmin) {
+      return {
+        canAdd: true,
+        currentCount: members.length,
+        maxAllowed: PLAN_LIMITS.premium.maxMembersPerHousehold,
+        isPremium: true,
+        reason: undefined,
+      };
+    }
+
     // Get the household creator's subscription status
     const creatorSubscription = await ctx.db
       .query("subscriptions")
@@ -413,6 +445,7 @@ export const canAddHouseholdMember = query({
 
 /**
  * Get available subscription plans with pricing
+ * Note: Price IDs are NOT exposed to client for security
  */
 export const getSubscriptionPlans = query({
   args: {},
@@ -432,8 +465,7 @@ export const getSubscriptionPlans = query({
       premiumMonthly: {
         name: "Premium Monthly",
         price: 4.99,
-        interval: "month",
-        priceId: process.env.STRIPE_PRICE_MONTHLY,
+        interval: "month" as const,
         features: [
           "Unlimited households",
           "Unlimited members",
@@ -445,8 +477,7 @@ export const getSubscriptionPlans = query({
       premiumYearly: {
         name: "Premium Yearly",
         price: 39.99,
-        interval: "year",
-        priceId: process.env.STRIPE_PRICE_YEARLY,
+        interval: "year" as const,
         savings: "Save $20/year",
         features: [
           "Unlimited households",

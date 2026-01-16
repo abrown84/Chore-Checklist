@@ -31,36 +31,36 @@ interface LeaderboardListProps {
   conversionRate?: number
 }
 
-// Get medal styling for top 3 positions
+// Get medal styling for top 3 positions - More unique design
 const getMedalStyle = (rank: number) => {
   switch (rank) {
-    case 0: // Gold
+    case 0: // Gold - Vibrant golden glow
       return {
-        bg: 'bg-gradient-to-br from-yellow-100 via-yellow-50 to-amber-100 dark:from-yellow-900/40 dark:via-yellow-800/30 dark:to-amber-900/40',
-        border: 'border-yellow-400 dark:border-yellow-600',
-        ring: 'ring-2 ring-yellow-300/50 dark:ring-yellow-500/30',
-        shadow: 'shadow-lg shadow-yellow-200/50 dark:shadow-yellow-900/30',
+        bg: 'bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-100 dark:from-yellow-950/30 dark:via-amber-950/40 dark:to-yellow-900/30',
+        rankBg: 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white',
+        border: 'border-l-4 border-yellow-500 dark:border-yellow-400',
+        glow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)] dark:shadow-[0_0_20px_rgba(234,179,8,0.2)]',
       }
-    case 1: // Silver
+    case 1: // Silver - Cool metallic
       return {
-        bg: 'bg-gradient-to-br from-gray-100 via-slate-50 to-gray-200 dark:from-gray-700/40 dark:via-slate-700/30 dark:to-gray-600/40',
-        border: 'border-gray-400 dark:border-gray-500',
-        ring: 'ring-2 ring-gray-300/50 dark:ring-gray-500/30',
-        shadow: 'shadow-lg shadow-gray-200/50 dark:shadow-gray-900/30',
+        bg: 'bg-gradient-to-r from-slate-50 via-gray-50 to-slate-100 dark:from-slate-950/30 dark:via-gray-950/40 dark:to-slate-900/30',
+        rankBg: 'bg-gradient-to-br from-slate-400 to-gray-500 text-white',
+        border: 'border-l-4 border-slate-400 dark:border-slate-300',
+        glow: 'shadow-[0_0_20px_rgba(148,163,184,0.3)] dark:shadow-[0_0_20px_rgba(148,163,184,0.2)]',
       }
-    case 2: // Bronze
+    case 2: // Bronze - Warm copper
       return {
-        bg: 'bg-gradient-to-br from-orange-100 via-amber-50 to-orange-200 dark:from-orange-900/40 dark:via-amber-800/30 dark:to-orange-800/40',
-        border: 'border-orange-400 dark:border-orange-600',
-        ring: 'ring-2 ring-orange-300/50 dark:ring-orange-500/30',
-        shadow: 'shadow-lg shadow-orange-200/50 dark:shadow-orange-900/30',
+        bg: 'bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950/30 dark:via-amber-950/40 dark:to-orange-900/30',
+        rankBg: 'bg-gradient-to-br from-orange-500 to-amber-600 text-white',
+        border: 'border-l-4 border-orange-500 dark:border-orange-400',
+        glow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)] dark:shadow-[0_0_20px_rgba(249,115,22,0.2)]',
       }
     default:
       return {
-        bg: 'bg-card',
-        border: 'border-border',
-        ring: '',
-        shadow: '',
+        bg: 'bg-white/50 dark:bg-slate-900/30',
+        rankBg: 'bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 text-gray-700 dark:text-gray-200',
+        border: 'border-l-2 border-gray-200 dark:border-gray-700',
+        glow: '',
       }
   }
 }
@@ -87,7 +87,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {topMembers.map((member, index) => {
         const efficiencyBadge = getEfficiencyBadge(member.efficiencyScore)
         const redemptionStatus = getUserRedemptionStatus(member.id)
@@ -95,179 +95,155 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
         const hasActiveStreak = (member.currentStreak ?? 0) >= 3
 
         // Calculate different point metrics
-        // Use lifetimePoints if available, otherwise calculate it (for backward compatibility)
         const earnedPoints = member.earnedPoints ?? 0
         const lifetimePoints = member.lifetimePoints ?? (earnedPoints + (redemptionStatus.totalRedeemed * conversionRate))
         const availablePoints = Math.max(0, earnedPoints - (redemptionStatus.pendingPoints || 0))
         const availableValue = availablePoints > 0 ? (availablePoints / conversionRate) : 0
-        const lifetimeValue = lifetimePoints > 0 ? (lifetimePoints / conversionRate) : 0
+        // lifetimeValue available if needed: lifetimePoints / conversionRate
 
-        // Build row classes based on rank and user status
         const isTop3 = index < 3
-        const rowClasses = member.isCurrentUser
-          ? `${isTop3 ? medalStyle.bg : 'bg-primary/10 dark:bg-primary/20'} ${isTop3 ? medalStyle.border : 'border-primary/30 dark:border-primary/60'} ${isTop3 ? medalStyle.ring : 'ring-2 ring-primary/30'} ${isTop3 ? medalStyle.shadow : 'shadow-lg'}`
-          : isTop3
-          ? `${medalStyle.bg} ${medalStyle.border} ${medalStyle.ring} ${medalStyle.shadow}`
-          : 'bg-card border-border hover:bg-muted/50'
 
         return (
           <div
             key={member.id}
-            className={`p-3 sm:p-4 rounded-lg border transition-all duration-300 ${rowClasses} hover:scale-[1.02] cursor-default group`}
+            className={`
+              relative overflow-hidden rounded-xl backdrop-blur-sm border transition-all duration-300
+              ${medalStyle.bg} ${medalStyle.border} ${medalStyle.glow}
+              ${member.isCurrentUser ? 'ring-2 ring-indigo-400/50 dark:ring-indigo-500/50' : ''}
+              hover:scale-[1.01] cursor-default group
+            `}
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
-              {/* Rank and User Info */}
-              <div className="flex items-center space-x-3 min-w-0 flex-1">
-                <div className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-card dark:bg-card/80 text-base sm:text-sm font-bold shadow-sm border border-border flex-shrink-0">
+            <div className="p-4">
+              {/* Header Row: Rank, Avatar, Name */}
+              <div className="flex items-start gap-3 mb-3">
+                {/* Rank Badge - More prominent */}
+                <div className={`
+                  flex items-center justify-center w-12 h-12 rounded-xl font-black text-lg
+                  ${medalStyle.rankBg} shadow-lg flex-shrink-0
+                  ${isTop3 ? 'animate-pulse' : ''}
+                `}>
                   {getRankIcon(index)}
                 </div>
-                <Avatar 
+
+                {/* Avatar */}
+                <Avatar
                   avatarUrl={member.avatar}
                   userName={member.name}
                   userId={member.id}
-                  size="sm"
+                  size="md"
                 />
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-sm sm:text-base text-foreground flex items-center flex-wrap gap-2">
-                    <span className="truncate">{getDisplayName(member.name, member.email)}</span>
-                    {/* Streak Fire Icon */}
+
+                {/* Name & Status */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h4 className="font-bold text-base text-foreground truncate">
+                      {getDisplayName(member.name, member.email)}
+                    </h4>
                     {hasActiveStreak && (
-                      <span className="flex items-center gap-0.5 text-orange-500 dark:text-orange-400 animate-pulse" title={`${member.currentStreak} day streak!`}>
-                        <Flame className="w-4 h-4" />
-                        <span className="text-xs font-bold">{member.currentStreak}</span>
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/20 dark:bg-orange-500/30 rounded-full animate-pulse" title={`${member.currentStreak} day streak!`}>
+                        <Flame className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                        <span className="text-xs font-bold text-orange-700 dark:text-orange-300">{member.currentStreak}</span>
                       </span>
                     )}
+                  </div>
+
+                  {/* Badges Row */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     {member.isCurrentUser && (
-                      <span className="text-xs bg-indigo-100/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-700 flex-shrink-0">
-                        Your Household
+                      <span className="text-xs bg-indigo-500/90 text-white px-2 py-0.5 rounded-full font-medium">
+                        You
                       </span>
                     )}
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      {member.currentLevelData?.icon || '🌱'} Lv {member.currentLevel}
+                    </span>
                     {member.memberCount !== undefined && (
-                      <span className="text-xs bg-blue-100/60 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-700 flex-shrink-0">
+                      <span className="text-xs bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
                         {member.memberCount} {member.memberCount === 1 ? 'member' : 'members'}
                       </span>
                     )}
-                  </h4>
-                  {member.members && member.members.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      Top members: {member.members.slice(0, 3).map(m => m.name).join(', ')}
-                      {member.members.length > 3 && ` +${member.members.length - 3} more`}
-                    </p>
-                  )}
-                  <div className="flex items-center flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
-                    <span className="flex items-center flex-shrink-0">
-                      <span className="mr-1">{member.currentLevelData?.icon || '🌱'}</span>
-                      Avg Lv {member.currentLevel}
-                    </span>
                     {rankingMode === RANKING_MODES.EFFICIENCY && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${efficiencyBadge.color} animate-fade-in flex-shrink-0`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${efficiencyBadge.color}`}>
                         {efficiencyBadge.text}
                       </span>
                     )}
-                    {/* Redemption Status Indicator */}
-                    {redemptionStatus.hasPendingRequests && (
-                      <span className="flex items-center space-x-1 text-orange-600 dark:text-orange-400 bg-orange-100/50 dark:bg-orange-900/30 px-2 py-1 rounded-full border border-orange-200 dark:border-orange-700 flex-shrink-0">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-xs hidden sm:inline">Redeeming ${(redemptionStatus.pendingPoints / conversionRate).toFixed(2)}</span>
-                        <span className="text-xs sm:hidden">${(redemptionStatus.pendingPoints / conversionRate).toFixed(2)}</span>
-                      </span>
-                    )}
                   </div>
+
+                  {/* Household Members Preview */}
+                  {member.members && member.members.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
+                      {member.members.slice(0, 3).map(m => m.name).join(', ')}
+                      {member.members.length > 3 && ` +${member.members.length - 3}`}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="flex items-center justify-between md:justify-end flex-wrap gap-3 md:gap-4 lg:gap-6 md:flex-nowrap overflow-x-auto md:overflow-visible pb-2 md:pb-0">
-                {/* Primary Metric */}
-                <div className="text-center flex-shrink-0">
-                  <div className="flex items-center justify-center space-x-1">
-                    {rankingMode === RANKING_MODES.EFFICIENCY ? (
-                      <>
-                        <div className="p-1 bg-success/20 dark:bg-success/30 rounded-full">
-                          <Target className="w-4 h-4 text-success" />
-                        </div>
-                        <span className="text-base sm:text-lg font-bold text-foreground">{member.efficiencyScore.toFixed(0)}</span>
-                      </>
-                    ) : rankingMode === RANKING_MODES.LIFETIME ? (
-                      <>
-                        <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                          <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="p-1 bg-warning/20 dark:bg-warning/30 rounded-full">
-                          <Star className="w-4 h-4 text-warning" />
-                        </div>
-                        <span className="text-base sm:text-lg font-bold text-foreground">{earnedPoints.toLocaleString()}</span>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
-                    {rankingMode === RANKING_MODES.EFFICIENCY ? 'Efficiency' : 
-                     rankingMode === RANKING_MODES.LIFETIME ? 'Lifetime' : 'Points'}
-                  </p>
-                  {rankingMode === RANKING_MODES.LIFETIME && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium hidden sm:block">${lifetimeValue.toFixed(2)}</p>
+              {/* Stats Grid - Cleaner layout */}
+              <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+                {/* Primary Stat */}
+                <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
+                  {rankingMode === RANKING_MODES.EFFICIENCY ? (
+                    <>
+                      <Target className="w-5 h-5 mx-auto mb-1 text-success" />
+                      <div className="text-lg font-black text-foreground">{member.efficiencyScore.toFixed(0)}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Efficiency</div>
+                    </>
+                  ) : rankingMode === RANKING_MODES.LIFETIME ? (
+                    <>
+                      <Award className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                      <div className="text-lg font-black text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifetime</div>
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-5 h-5 mx-auto mb-1 text-warning" />
+                      <div className="text-lg font-black text-foreground">{earnedPoints.toLocaleString()}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</div>
+                    </>
                   )}
                 </div>
 
-                {/* Lifetime Points - Show when ranking by points */}
-                {rankingMode === RANKING_MODES.POINTS && (
-                  <div className="text-center flex-shrink-0 hidden md:block">
-                    <div className="flex items-center justify-center space-x-1">
-                      <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                        <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Lifetime</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">${lifetimeValue.toFixed(2)}</p>
-                  </div>
-                )}
-
-                {/* Available Points - Show when ranking by points or lifetime */}
-                {(rankingMode === RANKING_MODES.POINTS || rankingMode === RANKING_MODES.LIFETIME) && (
-                  <div className="text-center flex-shrink-0 hidden lg:block">
-                    <div className="flex items-center justify-center space-x-1">
-                      <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-full">
-                        <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <span className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{availablePoints.toLocaleString()}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Available</p>
-                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">${availableValue.toFixed(2)}</p>
-                    {/* Show pending redemption if any */}
-                    {redemptionStatus.pendingPoints > 0 && (
-                      <div className="mt-1 p-1 bg-orange-100 dark:bg-orange-900/30 rounded text-xs text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-700">
-                        -${(redemptionStatus.pendingPoints / conversionRate).toFixed(2)} pending
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Completed Chores */}
-                <div className="text-center flex-shrink-0">
-                  <div className="flex items-center justify-center space-x-1">
-                    <div className="p-1 bg-success/20 dark:bg-success/30 rounded-full">
-                      <CheckCircle className="w-4 h-4 text-success" />
-                    </div>
-                    <span className="text-base sm:text-lg font-bold text-foreground">{member.completedChores}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground hidden sm:block">Done</p>
+                <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
+                  <CheckCircle className="w-5 h-5 mx-auto mb-1 text-success" />
+                  <div className="text-lg font-black text-foreground">{member.completedChores}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Completed</div>
                 </div>
 
-                {/* Total Redeemed Value */}
+                {/* Available Value */}
+                {(rankingMode === RANKING_MODES.POINTS || rankingMode === RANKING_MODES.LIFETIME) && (
+                  <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
+                    <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-600 dark:text-green-400" />
+                    <div className="text-lg font-black text-green-600 dark:text-green-400">${availableValue.toFixed(0)}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Available</div>
+                  </div>
+                )}
+
+                {/* Lifetime (when ranking by points) */}
+                {rankingMode === RANKING_MODES.POINTS && (
+                  <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm hidden lg:block">
+                    <Award className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                    <div className="text-lg font-black text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifetime</div>
+                  </div>
+                )}
+
+                {/* Redeemed Value */}
                 {redemptionStatus.totalRedeemed > 0 && (
-                  <div className="text-center flex-shrink-0 hidden lg:block">
-                    <div className="flex items-center justify-center space-x-1">
-                      <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                        <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <span className="text-base sm:text-lg font-bold text-purple-600 dark:text-purple-400">${redemptionStatus.totalRedeemed.toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Redeemed</p>
+                  <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm hidden lg:block">
+                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
+                    <div className="text-lg font-black text-purple-600 dark:text-purple-400">${redemptionStatus.totalRedeemed.toFixed(0)}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Redeemed</div>
+                  </div>
+                )}
+
+                {/* Pending Redemptions */}
+                {redemptionStatus.hasPendingRequests && (
+                  <div className="bg-orange-100/70 dark:bg-orange-900/40 rounded-lg p-2.5 text-center backdrop-blur-sm">
+                    <Clock className="w-5 h-5 mx-auto mb-1 text-orange-600 dark:text-orange-400" />
+                    <div className="text-lg font-black text-orange-600 dark:text-orange-400">${(redemptionStatus.pendingPoints / conversionRate).toFixed(0)}</div>
+                    <div className="text-[10px] text-orange-700 dark:text-orange-300 uppercase tracking-wide">Pending</div>
                   </div>
                 )}
               </div>

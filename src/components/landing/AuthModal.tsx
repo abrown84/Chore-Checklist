@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { animate } from 'animejs'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -38,6 +38,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const passwordRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  // Animate in on mount
+  useEffect(() => {
+    if (isOpen) {
+      // Animate backdrop
+      if (backdropRef.current) {
+        animate(backdropRef.current, {
+          opacity: [0, 1],
+          duration: 200,
+          ease: 'outQuart',
+        })
+      }
+      // Animate modal - slide down from top
+      if (modalRef.current) {
+        animate(modalRef.current, {
+          opacity: [0, 1],
+          scale: [0.97, 1],
+          translateY: [-20, 0],
+          duration: 350,
+          ease: 'outBack',
+        })
+      }
+    }
+  }, [isOpen])
 
   // Help browsers with autofill
   useEffect(() => {
@@ -154,20 +180,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      <div
+        ref={backdropRef}
         onClick={onClose}
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        style={{ opacity: 0 }}
       />
-      {/* Modal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      {/* Modal - positioned near top where sign-in button is */}
+      <div
+        ref={modalRef}
+        className="fixed inset-x-0 top-0 z-50 flex justify-center pt-16 sm:pt-20 px-4"
         onClick={(e) => e.stopPropagation()}
+        style={{ opacity: 0 }}
       >
         <Card className="w-full max-w-md border-border bg-card/95 backdrop-blur-md shadow-xl max-h-[90vh] overflow-y-auto">
           <CardHeader className="pb-4">
@@ -432,7 +456,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </>
   )
 }
