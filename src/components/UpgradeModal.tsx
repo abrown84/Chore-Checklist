@@ -16,6 +16,7 @@ import {
 import { useSubscription } from '../hooks/useSubscription'
 import { BillingInterval, PLANS } from '../types/subscription'
 import { cn } from '../utils/cn'
+import { EmbeddedCheckoutModal } from './EmbeddedCheckoutModal'
 
 interface UpgradeModalProps {
   isOpen: boolean
@@ -53,9 +54,9 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   feature,
   featureDescription,
 }) => {
-  const { startTrial, subscribe, isLoading } = useSubscription()
+  const { isLoading } = useSubscription()
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('yearly')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
 
   const premiumPlan = PLANS.premium
   const monthlyPrice = premiumPlan.monthlyPrice
@@ -65,27 +66,19 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
     ((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12)) * 100
   )
 
-  const handleStartTrial = async () => {
-    setIsProcessing(true)
-    try {
-      await startTrial()
-      onClose()
-    } finally {
-      setIsProcessing(false)
-    }
+  const handleStartTrial = () => {
+    // Open the embedded checkout modal
+    setShowCheckout(true)
   }
 
-  // Subscribe directly (skipping trial) - can be used for "Subscribe Now" button
-  const _handleSubscribe = async () => {
-    setIsProcessing(true)
-    try {
-      await subscribe('premium', billingInterval)
-      onClose()
-    } finally {
-      setIsProcessing(false)
-    }
+  const handleCheckoutComplete = () => {
+    setShowCheckout(false)
+    onClose()
   }
-  void _handleSubscribe // Prevent unused warning - available for future use
+
+  const handleCheckoutClose = () => {
+    setShowCheckout(false)
+  }
 
   const modalContent = (
     <AnimatePresence>
@@ -234,20 +227,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <div className="space-y-3">
                   <Button
                     onClick={handleStartTrial}
-                    disabled={isLoading || isProcessing}
+                    disabled={isLoading}
                     className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 hover:from-amber-300 hover:to-orange-300 font-semibold transition-all duration-200 min-h-[48px]"
                   >
-                    {isProcessing ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 mr-2" />
-                        Processing...
-                      </div>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Start 14-day Free Trial
-                      </span>
-                    )}
+                    <span className="flex items-center justify-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Start 14-day Free Trial
+                    </span>
                   </Button>
 
                   <p className="text-xs text-center text-muted-foreground">
@@ -289,5 +275,16 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   )
 
   // Use portal to render at document body level, avoiding parent transform/filter issues
-  return createPortal(modalContent, document.body)
+  return (
+    <>
+      {createPortal(modalContent, document.body)}
+      <EmbeddedCheckoutModal
+        isOpen={showCheckout}
+        onClose={handleCheckoutClose}
+        billingInterval={billingInterval}
+        includeTrial={true}
+        onComplete={handleCheckoutComplete}
+      />
+    </>
+  )
 }

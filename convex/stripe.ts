@@ -85,6 +85,84 @@ export const createCheckoutSession = action({
 });
 
 /**
+ * Create an embedded Stripe Checkout session for in-app payment modal
+ * Returns a client_secret for the frontend to render the checkout
+ */
+export const createEmbeddedCheckoutSession = action({
+  args: {
+    billingInterval: v.union(v.literal("monthly"), v.literal("yearly")),
+    includeTrial: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get price ID from environment based on billing interval
+    const priceId = args.billingInterval === "monthly"
+      ? process.env.STRIPE_PRICE_MONTHLY
+      : process.env.STRIPE_PRICE_YEARLY;
+
+    if (!priceId) {
+      throw new Error(`Stripe price not configured for ${args.billingInterval} billing`);
+    }
+
+    const userId = identity.subject;
+
+    // Get or create a Stripe customer
+    const customer = await stripeClient.getOrCreateCustomer(ctx, {
+      userId: userId,
+      email: identity.email ?? undefined,
+      name: identity.name ?? undefined,
+    });
+
+    // Check if user already had a trial (prevent trial abuse)
+    const existingSubscriptions = await ctx.runQuery(
+      components.stripe.public.listSubscriptionsByUserId,
+      { userId: userId }
+    );
+    const hadPreviousTrial = existingSubscriptions.some(
+      (sub: { status: string }) => sub.status === "trialing" || sub.status === "active" || sub.status === "canceled"
+    );
+
+    const includeTrial = args.includeTrial !== false && !hadPreviousTrial;
+
+    // Use Stripe SDK directly for embedded checkout (requires ui_mode: 'embedded')
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+    const returnUrl = `${process.env.SITE_URL ?? "http://localhost:5173"}?payment={CHECKOUT_SESSION_ID}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      ui_mode: "embedded",
+      customer: customer.customerId,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      return_url: returnUrl,
+      subscription_data: {
+        metadata: {
+          userId: userId,
+          convexUserId: userId,
+        },
+        ...(includeTrial && {
+          trial_period_days: TRIAL_PERIOD_DAYS,
+        }),
+      },
+    });
+
+    return {
+      clientSecret: session.client_secret,
+    };
+  },
+});
+
+/**
  * Create a Stripe Customer Portal session for managing existing subscription
  */
 export const createCustomerPortalSession = action({

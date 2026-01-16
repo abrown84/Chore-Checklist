@@ -44,3 +44,9 @@ coverage/
 # Convex
 .convex/
 dev-dist/
+
+# Claude local files (private configs, keys)
+.claude/settings.local.json
+.claude/*.local.md
+CLAUDE.local.md.playwright-mcp/
+.claude/

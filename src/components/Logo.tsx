@@ -1,5 +1,5 @@
 import React from 'react'
-import newLogo from '../brand_assets/dailybag-logo.png'
+import newLogo from '../assets/daily-bag-icon-transparent.png'
 
 interface LogoProps {
   className?: string

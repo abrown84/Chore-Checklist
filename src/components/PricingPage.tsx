@@ -16,6 +16,7 @@ import {
 import { useSubscription } from '../hooks/useSubscription'
 import { PLANS, BillingInterval, SubscriptionPlan } from '../types/subscription'
 import { cn } from '../utils/cn'
+import { EmbeddedCheckoutModal } from './EmbeddedCheckoutModal'
 
 const faqs = [
   {
@@ -65,21 +66,19 @@ const comparisonFeatures = [
 ]
 
 export const PricingPage: React.FC = () => {
-  const { currentPlan, subscribe } = useSubscription()
+  const { currentPlan } = useSubscription()
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('yearly')
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
 
-  const handleSelectPlan = async (planId: SubscriptionPlan) => {
+  const handleSelectPlan = (planId: SubscriptionPlan) => {
     if (planId === 'free' || planId === currentPlan) return
+    // Open embedded checkout modal
+    setShowCheckout(true)
+  }
 
-    setIsProcessing(true)
-    try {
-      // Subscribe with selected billing interval (redirects to Stripe)
-      await subscribe(planId, billingInterval)
-    } finally {
-      setIsProcessing(false)
-    }
+  const handleCheckoutComplete = () => {
+    setShowCheckout(false)
   }
 
   const yearlyPrice = PLANS.premium.yearlyPrice
@@ -161,7 +160,6 @@ export const PricingPage: React.FC = () => {
             billingInterval={billingInterval}
             isCurrentPlan={currentPlan === 'free'}
             onSelect={handleSelectPlan}
-            isLoading={isProcessing}
             index={0}
           />
           <PricingCard
@@ -169,7 +167,6 @@ export const PricingPage: React.FC = () => {
             billingInterval={billingInterval}
             isCurrentPlan={currentPlan === 'premium'}
             onSelect={handleSelectPlan}
-            isLoading={isProcessing}
             index={1}
           />
         </div>
@@ -366,6 +363,15 @@ export const PricingPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Embedded Checkout Modal */}
+      <EmbeddedCheckoutModal
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        billingInterval={billingInterval}
+        includeTrial={true}
+        onComplete={handleCheckoutComplete}
+      />
     </PageWrapper>
   )
 }
