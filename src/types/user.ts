@@ -8,6 +8,7 @@ export interface User {
   isActive: boolean
   parentId?: string // For kids/teens to link to their parent
   canApproveRedemptions?: boolean // Whether this user can approve redemptions
+  hasCompletedOnboarding?: boolean // Whether user has seen the onboarding modal
 }
 
 export interface UserStats {

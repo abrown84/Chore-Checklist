@@ -59,6 +59,8 @@ export const getCurrentUser = query({
       role: user.role,
       createdAt: user.createdAt,
       lastActive: user.lastActive,
+      hasCompletedOnboarding: user.hasCompletedOnboarding ?? true, // existing users default to true (don't show)
+      onboardingDismissedPermanently: user.onboardingDismissedPermanently ?? false,
     };
   },
 });

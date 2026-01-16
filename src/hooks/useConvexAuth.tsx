@@ -37,6 +37,7 @@ export function useConvexAuth() {
       role: (convexUser.role || 'member') as User['role'],
       joinedAt: convexUser.createdAt ? new Date(convexUser.createdAt) : new Date(),
       isActive: true,
+      hasCompletedOnboarding: convexUser.hasCompletedOnboarding,
     }
   }, [convexUser])
 

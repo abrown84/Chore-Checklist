@@ -5,6 +5,7 @@ import { LogOut, Menu, X } from 'lucide-react'
 import { getDisplayName } from '../utils/convexHelpers'
 import { Logo } from './Logo'
 import { Badge } from './ui/badge'
+import { SubscriptionBadge } from './SubscriptionBadge'
 
 interface AppHeaderProps {
   user: any
@@ -70,6 +71,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               )}
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              {!isDemoMode && <SubscriptionBadge size="sm" />}
               <ThemeToggle />
               {isDemoMode && (
                 <>
@@ -107,6 +109,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 <span className="font-medium text-foreground">{getDisplayName(user?.name, user?.email)}</span>
               )}
             </div>
+            {!isDemoMode && <SubscriptionBadge size="sm" showManageLink={false} />}
             <ThemeToggle />
             {isDemoMode ? (
               <>
@@ -135,6 +138,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Mobile User Info */}
           <div className="md:hidden flex items-center gap-2 sm:gap-3">
+            {!isDemoMode && <SubscriptionBadge size="sm" showManageLink={false} />}
             <ThemeToggle />
             {isDemoMode ? (
               <>

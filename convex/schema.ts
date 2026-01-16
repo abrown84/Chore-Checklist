@@ -32,6 +32,9 @@ export default defineSchema({
     lastActive: v.optional(v.number()), // timestamp
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    // Onboarding fields
+    hasCompletedOnboarding: v.optional(v.boolean()),
+    onboardingDismissedPermanently: v.optional(v.boolean()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
@@ -217,4 +220,34 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_household", ["householdId"])
     .index("by_redemption_request", ["redemptionRequestId"]),
+
+  // Subscriptions table - tracks Stripe subscription status
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripeSubscriptionId: v.string(),
+    stripePriceId: v.string(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("trialing"),
+      v.literal("incomplete"),
+      v.literal("incomplete_expired"),
+      v.literal("unpaid"),
+      v.literal("paused")
+    ),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    trialEnd: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"])
+    .index("by_status", ["status"])
+    .index("by_plan", ["plan"]),
 });

@@ -39,6 +39,7 @@ export const { auth, signIn, signOut, store } = convexAuth({
           lastActive: now,
           createdAt: user?.createdAt ?? now,
           updatedAt: now,
+          hasCompletedOnboarding: false,
         });
       }
     },
