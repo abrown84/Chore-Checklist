@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
+import { useMutation } from 'convex/react'
+import { api } from '../convex/_generated/api'
 import { useAuth } from './hooks/useAuth'
 import { useUsers } from './contexts/UserContext'
 import { useDemo } from './contexts/DemoContext'
+import { usePaymentResult } from './hooks/usePaymentResult'
 import { AppHeader } from './components/AppHeader'
 import { AppLayout } from './components/AppLayout'
 import { AppContent } from './components/AppContent'
 import { AppProviders } from './components/AppProviders'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { MigrationBanner } from './components/MigrationBanner'
+import { OnboardingModal } from './components/OnboardingModal'
 
 function AppContentWrapper() {
   const { user, signOut } = useAuth()
@@ -16,6 +20,12 @@ function AppContentWrapper() {
   const { isDemoMode, exitDemoMode } = useDemo()
   const [activeTab, setActiveTab] = useState('chores')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Handle payment result URL params (shows toast for success/cancel)
+  usePaymentResult()
+
+  const completeOnboarding = useMutation(api.onboarding.completeOnboarding)
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -31,6 +41,22 @@ function AppContentWrapper() {
       syncWithAuth(user)
     }
   }, [user, syncWithAuth])
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (user && user.hasCompletedOnboarding === false && !isDemoMode) {
+      setShowOnboarding(true)
+    }
+  }, [user, isDemoMode])
+
+  const handleOnboardingClose = async (dontShowAgain: boolean) => {
+    try {
+      await completeOnboarding({ dontShowAgain })
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error)
+    }
+    setShowOnboarding(false)
+  }
 
   const handleSignOut = () => {
     try {
@@ -60,7 +86,13 @@ function AppContentWrapper() {
       
       {/* Migration Banner */}
       <MigrationBanner />
-      
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleOnboardingClose}
+      />
+
       {/* Header */}
       <AppHeader
         user={user}
