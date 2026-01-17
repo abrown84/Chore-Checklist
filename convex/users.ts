@@ -54,6 +54,7 @@ export const getCurrentUser = query({
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      image: user.image, // OAuth profile image (Google/GitHub)
       points: user.points || 0, // Legacy field - not updated, use userStats.earnedPoints instead
       level: user.level || 1,
       role: user.role,
