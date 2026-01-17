@@ -69,6 +69,11 @@ export function useConvexAuth() {
     await signOutAction()
   }, [signOutAction])
 
+  // OAuth sign in (GitHub, Google)
+  const signInWithOAuth = useCallback(async (provider: 'github' | 'google') => {
+    await signInAction(provider)
+  }, [signInAction])
+
   return {
     user,
     isAuthenticated,
@@ -76,5 +81,6 @@ export function useConvexAuth() {
     signIn,
     signUp,
     signOut,
+    signInWithOAuth,
   }
 }

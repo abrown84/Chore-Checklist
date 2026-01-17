@@ -33,12 +33,13 @@ export function useAuth() {
   const INACTIVITY_WARNING = 25 * 60 * 1000 // Warning at 25 minutes
 
   // Extract stable references from convexAuth
-  const { 
-    isAuthenticated, 
-    signOut: convexSignOut, 
-    signIn: convexSignIn, 
-    signUp: convexSignUp, 
-    user 
+  const {
+    isAuthenticated,
+    signOut: convexSignOut,
+    signIn: convexSignIn,
+    signUp: convexSignUp,
+    signInWithOAuth: convexSignInWithOAuth,
+    user
   } = convexAuth
 
   // Track user activity for session timeout
@@ -153,6 +154,17 @@ export function useAuth() {
     }
   }, [convexSignOut])
 
+  // OAuth sign in (GitHub, Google)
+  const signInWithOAuth = useCallback(async (provider: 'github' | 'google') => {
+    try {
+      await convexSignInWithOAuth(provider)
+      setSessionExpired(false)
+      setLastActivity(Date.now())
+    } catch (error) {
+      throw error
+    }
+  }, [convexSignInWithOAuth])
+
   // Update user profile (delegate to Convex)
   const updateUser = useCallback((_updates: Partial<User>) => {
     // User updates are handled through Convex mutations
@@ -201,6 +213,7 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
+    signInWithOAuth,
     updateUser,
     promoteToAdmin,
     checkAndFixAdminStatus,
@@ -217,6 +230,7 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
+    signInWithOAuth,
     updateUser,
     promoteToAdmin,
     checkAndFixAdminStatus,
