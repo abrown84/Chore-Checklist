@@ -9,10 +9,17 @@ import { Lock, KeyRound, Check, AlertCircle, Trash2, Mail } from 'lucide-react'
 import { useConvexAuth } from '../../hooks/useConvexAuth'
 
 const RESET_STATE_KEY = 'password-reset-state'
+const SET_PASSWORD_KEY = 'set-password-state'
 
 interface ResetState {
   email: string
   step: 'verify'
+  timestamp: number
+}
+
+interface SetPasswordState {
+  email: string
+  step: 'form'
   timestamp: number
 }
 
@@ -49,6 +56,24 @@ export const PasswordSettings: React.FC = React.memo(() => {
       }
     } catch {
       localStorage.removeItem(RESET_STATE_KEY)
+    }
+
+    // Check for persisted set password state
+    try {
+      const savedSetPwd = localStorage.getItem(SET_PASSWORD_KEY)
+      if (savedSetPwd) {
+        const state: SetPasswordState = JSON.parse(savedSetPwd)
+        // Only restore if less than 5 minutes old
+        const isValid = Date.now() - state.timestamp < 5 * 60 * 1000
+        if (isValid && state.step === 'form') {
+          setSetPasswordStep('form')
+          setSetPasswordSuccess('Enter your password again to complete setup.')
+        } else {
+          localStorage.removeItem(SET_PASSWORD_KEY)
+        }
+      }
+    } catch {
+      localStorage.removeItem(SET_PASSWORD_KEY)
     }
   }, [])
 
@@ -173,6 +198,14 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setIsSettingPassword(true)
     setSetPasswordError('')
 
+    // Save state to localStorage BEFORE calling signIn (in case of redirect)
+    const setPwdState: SetPasswordState = {
+      email: user.email,
+      step: 'form',
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(SET_PASSWORD_KEY, JSON.stringify(setPwdState))
+
     try {
       const formData = new FormData()
       formData.append('email', user.email)
@@ -185,6 +218,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setSetPasswordStep('idle')
       setNewPasswordForSet('')
       setConfirmPassword('')
+      localStorage.removeItem(SET_PASSWORD_KEY)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to set password'
       // Handle "already exists" gracefully - this means they already have a password
@@ -193,6 +227,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       } else {
         setSetPasswordError(message)
       }
+      // Keep localStorage so form reappears after redirect
     } finally {
       setIsSettingPassword(false)
     }
@@ -204,6 +239,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setConfirmPassword('')
     setSetPasswordError('')
     setSetPasswordSuccess('')
+    localStorage.removeItem(SET_PASSWORD_KEY)
   }
 
   // Loading state
