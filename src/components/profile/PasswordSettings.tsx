@@ -52,6 +52,14 @@ export const PasswordSettings: React.FC = React.memo(() => {
     }
   }, [])
 
+  // Set password state (for OAuth users)
+  const [setPasswordStep, setSetPasswordStep] = useState<'idle' | 'form'>('idle')
+  const [newPasswordForSet, setNewPasswordForSet] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isSettingPassword, setIsSettingPassword] = useState(false)
+  const [setPasswordError, setSetPasswordError] = useState('')
+  const [setPasswordSuccess, setSetPasswordSuccess] = useState('')
+
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteEmail, setDeleteEmail] = useState('')
@@ -147,6 +155,57 @@ export const PasswordSettings: React.FC = React.memo(() => {
     localStorage.removeItem(RESET_STATE_KEY)
   }
 
+  // Handle setting a new password for OAuth users
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user?.email) return
+
+    if (newPasswordForSet !== confirmPassword) {
+      setSetPasswordError('Passwords do not match')
+      return
+    }
+
+    if (newPasswordForSet.length < 6) {
+      setSetPasswordError('Password must be at least 6 characters')
+      return
+    }
+
+    setIsSettingPassword(true)
+    setSetPasswordError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('email', user.email)
+      formData.append('password', newPasswordForSet)
+      formData.append('name', user.name || '')
+      formData.append('flow', 'signUp')
+
+      await signIn('password', formData)
+      setSetPasswordSuccess('Password set successfully! You can now sign in with email/password.')
+      setSetPasswordStep('idle')
+      setNewPasswordForSet('')
+      setConfirmPassword('')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to set password'
+      // Handle "already exists" gracefully - this means they already have a password
+      if (message.toLowerCase().includes('already') || message.toLowerCase().includes('exists')) {
+        setSetPasswordError('A password is already set for this account. Use password reset instead.')
+      } else {
+        setSetPasswordError(message)
+      }
+    } finally {
+      setIsSettingPassword(false)
+    }
+  }
+
+  const cancelSetPassword = () => {
+    setSetPasswordStep('idle')
+    setNewPasswordForSet('')
+    setConfirmPassword('')
+    setSetPasswordError('')
+    setSetPasswordSuccess('')
+  }
+
   // Loading state
   if (hasPassword === undefined) {
     return null
@@ -164,9 +223,114 @@ export const PasswordSettings: React.FC = React.memo(() => {
         </CardHeader>
         <CardContent>
           {!hasPassword ? (
-            <p className="text-sm text-muted-foreground">
-              You signed up with a social account (Google or GitHub). To set a password, use the "Forgot Password" option on the sign-in page with your email.
-            </p>
+            setPasswordStep === 'idle' ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  You signed in with Google or GitHub. Add a password to also sign in with email/password.
+                </p>
+                {setPasswordSuccess && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                      <Check className="w-4 h-4 mr-2" />
+                      {setPasswordSuccess}
+                    </p>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setSetPasswordStep('form')}
+                  className="mt-2"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Set Password
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSetPassword} className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Create a password for <strong>{user?.email}</strong>
+                </p>
+
+                <div className="space-y-2">
+                  <label htmlFor="new-password-set" className="block text-sm font-medium">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      id="new-password-set"
+                      type="password"
+                      value={newPasswordForSet}
+                      onChange={(e) => setNewPasswordForSet(e.target.value)}
+                      className="pl-10"
+                      placeholder="Enter new password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="confirm-password-set" className="block text-sm font-medium">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      id="confirm-password-set"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10"
+                      placeholder="Confirm new password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                </div>
+
+                {setPasswordError && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      {setPasswordError}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={cancelSetPassword}
+                    disabled={isSettingPassword}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSettingPassword || !newPasswordForSet || !confirmPassword}
+                    className="bg-amber-400 text-slate-900 hover:bg-amber-300"
+                  >
+                    {isSettingPassword ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 mr-2" />
+                        Setting...
+                      </div>
+                    ) : (
+                      'Set Password'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )
           ) : resetStep === 'idle' ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
