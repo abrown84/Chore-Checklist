@@ -33,7 +33,7 @@ export function useConvexAuth() {
       id: convexUser._id as string,
       email: convexUser.email || '',
       name: convexUser.name || '',
-      avatar: convexUser.avatarUrl || '👤',
+      avatar: convexUser.avatarUrl || convexUser.image || '👤',
       role: (convexUser.role || 'member') as User['role'],
       joinedAt: convexUser.createdAt ? new Date(convexUser.createdAt) : new Date(),
       isActive: true,

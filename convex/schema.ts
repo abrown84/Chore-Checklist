@@ -18,6 +18,7 @@ export default defineSchema({
     // Custom fields for our app
     name: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    image: v.optional(v.string()), // OAuth profile image (Google/GitHub)
     points: v.optional(v.number()),
     level: v.optional(v.number()),
     role: v.optional(
