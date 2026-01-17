@@ -17,23 +17,35 @@ const stripeClient = new StripeSubscriptions(components.stripe, {
 // - STRIPE_PRICE_YEARLY: price_xxx for $39.99/yr
 // Trial periods should be configured in Stripe Dashboard on the prices themselves
 
-// SECURITY FIX: Admin user IDs for free premium access
-// Using user IDs instead of emails to prevent spoofing
-// Set ADMIN_USER_IDS environment variable as comma-separated list of user IDs
-// e.g., "jx75eb7vczgptnkbpd4j498a4s7zd4b9,another_user_id"
+// Admin access configuration
+// ADMIN_USER_IDS: comma-separated list of user IDs (more secure, but changes on account recreation)
+// ADMIN_EMAILS: comma-separated list of email addresses (convenient for testing)
 const getAdminUserIds = (): string[] => {
   const adminIds = process.env.ADMIN_USER_IDS;
   if (!adminIds) return [];
   return adminIds.split(',').map(id => id.trim()).filter(Boolean);
 };
 
+const getAdminEmails = (): string[] => {
+  const adminEmails = process.env.ADMIN_EMAILS;
+  if (!adminEmails) return [];
+  return adminEmails.split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
+};
+
 /**
  * Check if a user is an admin/creator (gets free premium access)
- * Uses immutable user IDs instead of emails for security
+ * Checks both user ID and email for flexibility during testing
  */
-function isAdmin(userId: string): boolean {
+function isAdmin(userId: string, email?: string | null): boolean {
   const adminUserIds = getAdminUserIds();
-  return adminUserIds.includes(userId);
+  if (adminUserIds.includes(userId)) return true;
+
+  if (email) {
+    const adminEmails = getAdminEmails();
+    if (adminEmails.includes(email.toLowerCase())) return true;
+  }
+
+  return false;
 }
 
 /**
@@ -191,8 +203,12 @@ export const getUserSubscription = query({
       return null;
     }
 
+    // Get user's email for admin check
+    const user = await ctx.db.get(userId);
+    const userEmail = user?.email;
+
     // Check if user is admin/creator - they get free premium access
-    const userIsAdmin = isAdmin(userId);
+    const userIsAdmin = isAdmin(userId, userEmail);
     if (userIsAdmin) {
       return {
         plan: "premium" as PlanType,
@@ -259,8 +275,12 @@ export const isFeatureEnabled = query({
       return false;
     }
 
+    // Get user's email for admin check
+    const user = await ctx.db.get(userId);
+    const userEmail = user?.email;
+
     // Check if user is admin/creator - they get all features
-    const userIsAdmin = isAdmin(userId);
+    const userIsAdmin = isAdmin(userId, userEmail);
     if (userIsAdmin) {
       return true;
     }
@@ -297,8 +317,12 @@ export const getUserPlanLimits = query({
       return PLAN_LIMITS.free;
     }
 
+    // Get user's email for admin check
+    const user = await ctx.db.get(userId);
+    const userEmail = user?.email;
+
     // Check if user is admin/creator - they get premium limits
-    const userIsAdmin = isAdmin(userId);
+    const userIsAdmin = isAdmin(userId, userEmail);
     if (userIsAdmin) {
       return PLAN_LIMITS.premium;
     }
@@ -328,8 +352,12 @@ export const canCreateHousehold = query({
       return { canCreate: false, reason: "Not authenticated" };
     }
 
+    // Get user's email for admin check
+    const user = await ctx.db.get(userId);
+    const userEmail = user?.email;
+
     // Check if user is admin/creator - they can create unlimited households
-    const userIsAdmin = isAdmin(userId);
+    const userIsAdmin = isAdmin(userId, userEmail);
     if (userIsAdmin) {
       return {
         canCreate: true,
@@ -406,8 +434,12 @@ export const canAddHouseholdMember = query({
       .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
       .collect();
 
+    // Get creator's email for admin check
+    const creator = await ctx.db.get(household.createdBy);
+    const creatorEmail = creator?.email;
+
     // Check if household creator is admin - they get unlimited members
-    const creatorIsAdmin = isAdmin(household.createdBy);
+    const creatorIsAdmin = isAdmin(household.createdBy, creatorEmail);
     if (creatorIsAdmin) {
       return {
         canAdd: true,

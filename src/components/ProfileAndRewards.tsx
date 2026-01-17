@@ -9,6 +9,7 @@ import { AvatarCustomization } from './profile/AvatarCustomization'
 import { RewardsProgress } from './profile/RewardsProgress'
 import { NotificationSettings } from './NotificationSettings'
 import { SubscriptionManagement } from './profile/SubscriptionManagement'
+import { PasswordSettings } from './profile/PasswordSettings'
 
 export const ProfileAndRewards: React.FC = () => {
   // Context hooks
@@ -203,6 +204,9 @@ export const ProfileAndRewards: React.FC = () => {
 
       {/* Notification Settings */}
       <NotificationSettings />
+
+      {/* Password Settings */}
+      <PasswordSettings />
 
       {/* Avatar Customization */}
       <AvatarCustomization
