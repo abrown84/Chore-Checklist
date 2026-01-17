@@ -17,44 +17,49 @@ export const { auth, signIn, signOut, store } = convexAuth({
     }),
   ],
   callbacks: {
-    async afterUserCreatedOrUpdated(ctx, { userId, existingUserId, profile }) {
-      // Get the user record from the users table
-      const existingUser = await ctx.db.get(userId);
-
-      if (!existingUser) {
-        // This shouldn't happen as Convex Auth creates the user record,
-        // but handle it gracefully
-        return;
+    // Account linking: allows users to sign in with multiple methods (OAuth + password)
+    async createOrUpdateUser(ctx, args) {
+      // If user already exists for this auth account, return their ID
+      if (args.existingUserId) {
+        return args.existingUserId;
       }
 
-      // Check if we have a full user profile (with our custom fields)
-      const hasUserProfile = existingUser.role !== undefined;
+      // Try to find existing user by email to link accounts
+      const email = args.profile.email;
+      if (email) {
+        const existingUser = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), email))
+          .first();
 
-      if (!hasUserProfile) {
-        // Create full user profile for new OAuth users
-        const email = profile?.email ?? existingUser.email;
-        const name = profile?.name ?? (email ? email.split("@")[0] : "User");
-        const image = profile?.image ?? profile?.picture ?? undefined;
-
-        await ctx.db.patch(userId, {
-          email,
-          name,
-          image,
-          role: "admin", // First user should be admin
-          level: 1,
-          points: 0,
-          hasCompletedOnboarding: false,
-          createdAt: Date.now(),
-        });
-      } else if (existingUserId) {
-        // User exists and is being updated (e.g., re-authenticating via OAuth)
-        // Update the image if it comes from OAuth and is different
-        const oauthImage = profile?.image ?? profile?.picture;
-        if (oauthImage && oauthImage !== existingUser.image) {
-          await ctx.db.patch(userId, {
-            image: oauthImage,
-          });
+        if (existingUser) {
+          // Link this new auth method to the existing user
+          return existingUser._id;
         }
+      }
+
+      // No existing user found - create a new one
+      const name = args.profile.name ?? (email ? email.split("@")[0] : "User");
+      return ctx.db.insert("users", {
+        email,
+        name,
+        role: "member",
+        level: 1,
+        points: 0,
+        hasCompletedOnboarding: false,
+        createdAt: Date.now(),
+      });
+    },
+
+    async afterUserCreatedOrUpdated(ctx, { userId, profile }) {
+      // Get the user record
+      const user = await ctx.db.get(userId);
+      if (!user) return;
+
+      // Update OAuth profile image if available and different
+      const oauthImage = profile?.image ?? profile?.picture;
+      if (oauthImage && oauthImage !== user.image) {
+        await ctx.db.patch(userId, { image: oauthImage });
       }
     },
   },
