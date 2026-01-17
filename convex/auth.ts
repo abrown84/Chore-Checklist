@@ -160,6 +160,34 @@ export const hasPasswordAuth = query({
 });
 
 /**
+ * Debug: List all auth accounts for the current user
+ */
+export const debugAuthAccounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { userId: null, accounts: [] };
+    }
+
+    const user = await ctx.db.get(userId);
+    const accounts = await ctx.db
+      .query("authAccounts")
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .collect();
+
+    return {
+      userId,
+      userEmail: user?.email,
+      accounts: accounts.map(a => ({
+        provider: a.provider,
+        providerAccountId: a.providerAccountId,
+      })),
+    };
+  },
+});
+
+/**
  * Delete the current user's account and all associated data
  */
 export const deleteAccount = mutation({

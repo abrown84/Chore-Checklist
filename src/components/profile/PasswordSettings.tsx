@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { api } from '../../../convex/_generated/api'
@@ -7,6 +7,14 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Lock, KeyRound, Check, AlertCircle, Trash2, Mail } from 'lucide-react'
 import { useConvexAuth } from '../../hooks/useConvexAuth'
+
+const RESET_STATE_KEY = 'password-reset-state'
+
+interface ResetState {
+  email: string
+  step: 'verify'
+  timestamp: number
+}
 
 export const PasswordSettings: React.FC = React.memo(() => {
   const hasPassword = useQuery(api.auth.hasPasswordAuth)
@@ -21,6 +29,28 @@ export const PasswordSettings: React.FC = React.memo(() => {
   const [isResetting, setIsResetting] = useState(false)
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
+  const [resetEmail, setResetEmail] = useState<string | null>(null)
+
+  // Check for persisted reset state on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(RESET_STATE_KEY)
+      if (saved) {
+        const state: ResetState = JSON.parse(saved)
+        // Only restore if less than 15 minutes old (matches code expiry)
+        const isValid = Date.now() - state.timestamp < 15 * 60 * 1000
+        if (isValid && state.step === 'verify') {
+          setResetStep('verify')
+          setResetEmail(state.email)
+          setResetSuccess('Reset code was sent to your email. Enter it below.')
+        } else {
+          localStorage.removeItem(RESET_STATE_KEY)
+        }
+      }
+    } catch {
+      localStorage.removeItem(RESET_STATE_KEY)
+    }
+  }, [])
 
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -38,12 +68,23 @@ export const PasswordSettings: React.FC = React.memo(() => {
       formData.append('email', user.email)
       formData.append('flow', 'reset')
 
+      // Save state to localStorage BEFORE calling signIn (in case of redirect)
+      const resetState: ResetState = {
+        email: user.email,
+        step: 'verify',
+        timestamp: Date.now(),
+      }
+      localStorage.setItem(RESET_STATE_KEY, JSON.stringify(resetState))
+      setResetEmail(user.email)
+
       await signIn('password', formData)
       setResetStep('verify')
       setResetSuccess('Reset code sent to your email!')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset code'
       setResetError(message)
+      // Clear localStorage on error
+      localStorage.removeItem(RESET_STATE_KEY)
     } finally {
       setIsResetting(false)
     }
@@ -51,13 +92,14 @@ export const PasswordSettings: React.FC = React.memo(() => {
 
   const handleVerifyReset = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user?.email) return
+    const emailToUse = resetEmail || user?.email
+    if (!emailToUse) return
     setIsResetting(true)
     setResetError('')
 
     try {
       const formData = new FormData()
-      formData.append('email', user.email)
+      formData.append('email', emailToUse)
       formData.append('code', resetCode)
       formData.append('newPassword', newPassword)
       formData.append('flow', 'reset-verification')
@@ -67,6 +109,8 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setResetStep('idle')
       setResetCode('')
       setNewPassword('')
+      setResetEmail(null)
+      localStorage.removeItem(RESET_STATE_KEY)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid code or failed to change password'
       setResetError(message)
@@ -99,6 +143,8 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setNewPassword('')
     setResetError('')
     setResetSuccess('')
+    setResetEmail(null)
+    localStorage.removeItem(RESET_STATE_KEY)
   }
 
   // Loading state
@@ -164,7 +210,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
           ) : (
             <form onSubmit={handleVerifyReset} className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Enter the code sent to <strong>{user?.email}</strong> and your new password.
+                Enter the code sent to <strong>{resetEmail || user?.email}</strong> and your new password.
               </p>
 
               <div className="space-y-2">
