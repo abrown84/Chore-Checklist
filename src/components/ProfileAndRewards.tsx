@@ -205,9 +205,6 @@ export const ProfileAndRewards: React.FC = () => {
       {/* Notification Settings */}
       <NotificationSettings />
 
-      {/* Password Settings */}
-      <PasswordSettings />
-
       {/* Avatar Customization */}
       <AvatarCustomization
         selectedAvatar={selectedAvatar}
@@ -232,6 +229,9 @@ export const ProfileAndRewards: React.FC = () => {
 
       {/* Subscription Management */}
       <SubscriptionManagement />
+
+      {/* Password & Account Settings */}
+      <PasswordSettings />
     </div>
   )
 }
