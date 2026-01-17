@@ -308,7 +308,39 @@ export const MediaUtils = {
   playSound: async (category: string, type: string) => {
     try {
       const audio = new Audio(SOUND_SOURCES.freesound.getSoundUrl(category, type));
-      await audio.play();
+      // Wait for audio to be ready before playing
+      if (audio.readyState >= 2) {
+        await audio.play();
+      } else {
+        // Wait for canplay event before playing
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('Audio load timeout'));
+          }, 5000);
+
+          const onCanPlay = async () => {
+            clearTimeout(timeout);
+            audio.removeEventListener('error', onError);
+            try {
+              await audio.play();
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          };
+
+          const onError = () => {
+            clearTimeout(timeout);
+            audio.removeEventListener('canplay', onCanPlay);
+            reject(new Error('Audio load error'));
+          };
+
+          audio.addEventListener('canplay', onCanPlay, { once: true });
+          audio.addEventListener('error', onError, { once: true });
+        });
+      }
     } catch (error) {
       import.meta.env.DEV && console.log('Sound playback failed:', error);
     }

@@ -48,5 +48,24 @@ dev-dist/
 # Claude local files (private configs, keys)
 .claude/settings.local.json
 .claude/*.local.md
-CLAUDE.local.md.playwright-mcp/
+CLAUDE.local.md
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Claude config
 .claude/
+
+# Generated/temp files
+nul
+*.tmp
+a2ui-test.html
+
+# Brand assets - generated thumbnails (keep source files)
+src/brand_assets/youtube-thumbnail*.png
+src/brand_assets/*.py
+src/brand_assets/thumbnail-philosophy.md
+
+# Marketing docs (local only)
+BRAND_PHILOSOPHY.md
+PRODUCT_HUNT_LAUNCH.md

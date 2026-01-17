@@ -1,0 +1,1 @@
+Add the Apple Pay domain association file content from Stripe here

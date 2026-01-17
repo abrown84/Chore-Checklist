@@ -116,6 +116,8 @@ export default function LandingPage() {
 	useEffect(() => {
 		if (showVideoModal) {
 			if (videoBackdropRef.current) {
+				// Set opacity immediately as fallback, then animate
+				videoBackdropRef.current.style.opacity = '1'
 				animate(videoBackdropRef.current, {
 					opacity: [0, 1],
 					duration: 200,
@@ -123,10 +125,11 @@ export default function LandingPage() {
 				})
 			}
 			if (videoModalRef.current) {
+				// Set opacity immediately as fallback, then animate
+				videoModalRef.current.style.opacity = '1'
+				videoModalRef.current.style.transform = 'none'
 				animate(videoModalRef.current, {
 					opacity: [0, 1],
-					scale: [0.95, 1],
-					translateY: [20, 0],
 					duration: 300,
 					ease: 'outQuart',
 				})
@@ -197,99 +200,117 @@ export default function LandingPage() {
 			backgroundImage={backgroundGifUrl}
 			backgroundOpacity={0.2}
 			backgroundAudio={backgroundAudioUrl}
-			audioVolume={0.2}
+			audioVolume={0.04}
 		>
-			<header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-background/40">
-				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
-					<div className="flex items-center gap-2 sm:gap-3">
-						<div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-secondary text-foreground shadow-inner">
+			{/* Header - Radiant Momentum */}
+			<header className="sticky top-0 z-40 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-b border-amber-500/10">
+				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4 sm:py-5">
+					<div className="flex items-center gap-3 sm:gap-4">
+						<div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl radiant-icon text-white shadow-lg">
 							<Logo className="h-8 w-8 sm:h-10 sm:w-10" />
 						</div>
-						<div className="text-sm sm:text-lg font-brand font-bold tracking-tight">DAILY BAG</div>
-						<Badge className="ml-1 sm:ml-2 bg-amber-400 text-slate-900 text-xs">Beta</Badge>
+						<div className="text-base sm:text-xl font-brand font-bold tracking-tight radiant-text">DAILY BAG</div>
+						<Badge className="ml-1 sm:ml-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 text-xs font-medium">Beta</Badge>
 					</div>
-					<nav className="hidden items-center gap-4 lg:gap-6 md:flex">
-						<a href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</a>
+					<nav className="hidden items-center gap-6 lg:gap-8 md:flex">
+						<a href="#features" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">Features</a>
 						<button
 							onClick={enterDemoMode}
-							className="text-sm text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer"
+							className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300 bg-transparent border-none cursor-pointer"
 						>
 							Demo
 						</button>
-						<a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
-						<a href="#faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
+						<a href="#pricing" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">Pricing</a>
+						<a href="#faq" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">FAQ</a>
 					</nav>
-					<div className="flex items-center gap-2 sm:gap-3">
+					<div className="flex items-center gap-3 sm:gap-4">
 						<ThemeToggle />
-						<Button className="bg-amber-500 text-slate-900 hover:bg-amber-400 inline-flex" size="sm" onClick={openAuthModal}>
+						<Button className="radiant-button rounded-xl h-10 px-5" size="sm" onClick={openAuthModal}>
 							Sign in
 						</Button>
 					</div>
 				</div>
 			</header>
 
-			<section className="mx-auto max-w-7xl px-4 sm:px-6 pb-12 sm:pb-16 pt-16 sm:pt-20 md:pb-24 md:pt-28 lg:pt-32">
+			{/* Hero Section - Radiant Momentum */}
+			<section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16 sm:pb-24 pt-20 sm:pt-28 md:pb-32 md:pt-36 lg:pt-40 radiant-hero-glow">
 				<div
 					ref={heroRef}
-					className="mx-auto max-w-3xl text-center"
+					className="mx-auto max-w-4xl text-center"
 					style={{ opacity: 0 }}
 				>
-					<div className="inline-flex items-center gap-2 rounded-full bg-secondary/70 px-3 py-1 text-xs text-muted-foreground ring-1 ring-border">
-						<Star className="h-3.5 w-3.5" />
+					<div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-1.5 text-xs text-amber-400 ring-1 ring-amber-500/30 backdrop-blur-sm">
+						<Star className="h-3.5 w-3.5 text-amber-400" />
 						Turn chores into XP and real rewards
 					</div>
-					<h1 className="mt-4 sm:mt-6 text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight">
+					<h1 className="mt-8 sm:mt-10 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold tracking-tight leading-tight">
 						Get to the bag
 						<br className="hidden sm:block" />
-						<span className="text-amber-500 dark:text-amber-400">one chore at a time</span>
+						<span className="radiant-text-animated">one chore at a time</span>
 					</h1>
-					<p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground font-body">
+					<p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-muted-foreground font-body leading-relaxed">
 						Turn your to-do list into a leaderboard. Earn points, unlock achievements, and make household chores feel like winning.
 					</p>
-					<div className="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+					<div className="mt-10 sm:mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
 						<Button
 							onClick={enterDemoMode}
-							className="bg-amber-400 text-slate-900 hover:bg-amber-300 w-full sm:w-auto"
+							className="radiant-button h-12 px-8 text-base rounded-xl w-full sm:w-auto"
 						>
-							Try the demo <ChevronRight className="ml-1 h-4 w-4" />
+							Try the demo <ChevronRight className="ml-2 h-5 w-5" />
 						</Button>
 						<Button
 							variant="outline"
-							className="border-border bg-card/40 w-full sm:w-auto"
+							className="border-amber-500/30 bg-card/40 hover:bg-amber-500/10 hover:border-amber-500/50 h-12 px-8 text-base rounded-xl w-full sm:w-auto transition-all duration-300"
 							onClick={openVideoModal}
 						>
 							Watch overview
 						</Button>
 					</div>
-					<div className="mt-4 sm:mt-6 text-xs text-muted-foreground">
-						Trusted by busy parents and motivated kids in 1,000+ homes
+					<div className="mt-8 sm:mt-10 text-sm text-muted-foreground">
+						Trusted by busy parents and motivated kids in <span className="text-amber-400 font-medium">1,000+</span> homes
 					</div>
 				</div>
 			</section>
 
-			<section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 pb-16 sm:pb-20">
-				<div ref={featuresRef} className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{/* Radiant Divider */}
+			<div className="radiant-divider mx-auto max-w-3xl" />
+
+			{/* Features Section - Radiant Momentum */}
+			<section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28">
+				<div className="text-center mb-12 sm:mb-16">
+					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+						Everything you need to <span className="radiant-text">win at home</span>
+					</h2>
+					<p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+						Built for families who want to turn daily routines into rewarding experiences.
+					</p>
+				</div>
+				<div ref={featuresRef} className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
 					{features.map((f) => (
-						<Card key={f.title} className="feature-card h-full border-border bg-card/40 backdrop-blur-sm" style={{ opacity: 0 }}>
-							<CardHeader className="flex flex-row items-center gap-3 pb-2">
-								<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-									<f.icon className="h-5 w-5" />
+						<Card key={f.title} className="feature-card h-full radiant-card rounded-2xl backdrop-blur-sm" style={{ opacity: 0 }}>
+							<CardHeader className="flex flex-row items-center gap-4 pb-3">
+								<div className="flex h-12 w-12 items-center justify-center rounded-xl radiant-icon text-white">
+									<f.icon className="h-6 w-6" />
 								</div>
 								<h3 className="text-lg font-heading font-semibold">{f.title}</h3>
 							</CardHeader>
-							<CardContent className="pt-0 text-muted-foreground font-body">{f.text}</CardContent>
+							<CardContent className="pt-0 text-muted-foreground font-body leading-relaxed">{f.text}</CardContent>
 						</Card>
 					))}
 				</div>
 			</section>
 
-			<section id="demo" className="mx-auto max-w-7xl px-6 pb-20">
-				<div className="grid items-start gap-6 lg:grid-cols-2">
-					<Card className="border-border bg-card/40 backdrop-blur-sm">
+			{/* Radiant Divider */}
+			<div className="radiant-divider mx-auto max-w-3xl" />
+
+			{/* Live Demo Section - Radiant Momentum */}
+			<section id="demo" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
+				<div className="grid items-start gap-8 lg:grid-cols-2">
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow">
 						<CardHeader>
 							<div className="flex items-center justify-between">
-								<h3 className="text-xl font-semibold">Global Leaderboard</h3>
-								<Badge className="bg-amber-500 text-slate-900">Live</Badge>
+								<h3 className="text-xl font-heading font-semibold">Global Leaderboard</h3>
+								<Badge className="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 animate-pulse">Live</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-3">
@@ -302,37 +323,37 @@ export default function LandingPage() {
 										? Math.round(household.members.reduce((sum: number, m: { level?: number }) => sum + (m.level || 1), 0) / household.members.length)
 										: 1
 									return (
-										<div key={household.householdId} className="flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3">
+										<div key={household.householdId} className="flex items-center justify-between rounded-xl bg-amber-500/5 border border-amber-500/10 px-4 py-3 transition-all duration-300 hover:bg-amber-500/10 hover:border-amber-500/20">
 											<div className="flex items-center gap-3">
-												<div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold">
+												<div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${idx === 0 ? 'radiant-icon text-white' : 'bg-amber-500/20 text-amber-400'}`}>
 													{rankIcon}
 												</div>
 												<div>
 													<div className="font-medium">{household.householdName}</div>
 													<div className="text-xs text-muted-foreground">
-														{household.memberCount} {household.memberCount === 1 ? 'member' : 'members'} - Avg Lv {avgLevel}
+														{household.memberCount} {household.memberCount === 1 ? 'member' : 'members'} · Avg Lv {avgLevel}
 													</div>
 												</div>
 											</div>
 											<div className="flex items-center gap-2">
-												<Coins className="h-4 w-4 text-amber-500" />
-												<span className="font-semibold">{household.totalPoints.toLocaleString()}</span>
+												<Coins className="h-4 w-4 text-amber-400" />
+												<span className="font-semibold radiant-text">{household.totalPoints.toLocaleString()}</span>
 											</div>
 										</div>
 									)
 								})
 							) : (
 								<div className="text-center py-8 text-muted-foreground">
-									<Trophy className="h-8 w-8 mx-auto mb-2 opacity-50" />
+									<Trophy className="h-8 w-8 mx-auto mb-2 opacity-50 text-amber-500" />
 									<p>No households yet. Be the first to join!</p>
 								</div>
 							)}
 						</CardContent>
-						<CardFooter className="justify-between">
+						<CardFooter className="justify-between border-t border-amber-500/10 pt-4">
 							<div className="text-xs text-muted-foreground">Top households by total points earned.</div>
 							<Button
 								variant="outline"
-								className="border-border"
+								className="border-amber-500/30 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-300"
 								onClick={openAuthModal}
 							>
 								Join the competition
@@ -340,142 +361,167 @@ export default function LandingPage() {
 						</CardFooter>
 					</Card>
 
-					<Card className="border-border bg-card/40 backdrop-blur-sm">
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm">
 						<CardHeader>
-							<h3 className="text-xl font-semibold">Get early access</h3>
+							<h3 className="text-xl font-heading font-semibold">Get early access</h3>
 							<p className="text-sm text-muted-foreground">Join the beta and receive setup templates for families and shared houses.</p>
 						</CardHeader>
 						<CardContent>
 							<form className="flex flex-col gap-3 sm:flex-row" onSubmit={(e) => e.preventDefault()}>
-								<Input type="email" placeholder="you@example.com" className="bg-background/60" />
-								<Button className="bg-amber-400 text-slate-900 hover:bg-amber-300">Request invite</Button>
+								<Input type="email" placeholder="you@example.com" className="bg-background/60 border-amber-500/20 focus:border-amber-500/50 rounded-xl" />
+								<Button className="radiant-button rounded-xl">Request invite</Button>
 							</form>
 							<div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-								<CheckCircle className="h-4 w-4" /> No spam. Unsubscribe anytime.
+								<CheckCircle className="h-4 w-4 text-amber-500" /> No spam. Unsubscribe anytime.
 							</div>
 						</CardContent>
 					</Card>
 				</div>
 			</section>
 
-			<section className="mx-auto max-w-7xl px-6 pb-20">
-				<div className="grid gap-6 md:grid-cols-3">
+			{/* How It Works - Radiant Momentum */}
+			<section className="mx-auto max-w-7xl px-6 py-20 sm:py-28 radiant-bg-accent">
+				<div className="text-center mb-12 sm:mb-16">
+					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+						Three steps to <span className="radiant-text">transform your home</span>
+					</h2>
+				</div>
+				<div className="grid gap-8 md:grid-cols-3">
 					{[
 						{ step: '1', title: 'Create your home', text: 'Invite family members and set roles. Import or pick starter chores.' },
 						{ step: '2', title: 'Assign XP & rewards', text: 'Choose values, add streaks, and set cash-out rules.' },
 						{ step: '3', title: 'Play to progress', text: 'Complete tasks, climb the board, unlock perks, repeat.' },
 					].map((s) => (
-						<Card key={s.step} className="border-border bg-card/40 backdrop-blur-sm">
-							<CardHeader className="pb-2">
-								<div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-slate-900 font-bold">{s.step}</div>
-								<h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
+						<Card key={s.step} className="radiant-card rounded-2xl backdrop-blur-sm text-center">
+							<CardHeader className="pb-3">
+								<div className="flex h-14 w-14 items-center justify-center rounded-2xl radiant-icon text-white font-bold text-xl mx-auto">{s.step}</div>
+								<h3 className="mt-4 text-xl font-heading font-semibold">{s.title}</h3>
 							</CardHeader>
-							<CardContent className="pt-0 text-muted-foreground">{s.text}</CardContent>
+							<CardContent className="pt-0 text-muted-foreground leading-relaxed">{s.text}</CardContent>
 						</Card>
 					))}
 				</div>
 			</section>
 
-			<section id="pricing" className="mx-auto max-w-7xl px-6 pb-24">
-				<div className="mb-8 text-center">
-					<h2 className="text-3xl font-bold">Simple pricing</h2>
-					<p className="mt-1 text-muted-foreground">Start free. Upgrade for advanced automation and more users.</p>
+			{/* Radiant Divider */}
+			<div className="radiant-divider mx-auto max-w-3xl" />
+
+			{/* Pricing Section - Radiant Momentum */}
+			<section id="pricing" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
+				<div className="mb-12 sm:mb-16 text-center">
+					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+						Simple <span className="radiant-text">pricing</span>
+					</h2>
+					<p className="mt-4 text-muted-foreground max-w-xl mx-auto">Start free. Upgrade for advanced automation and more users.</p>
 				</div>
-				<div className="grid gap-6 md:grid-cols-2">
-					<Card className="border-border bg-card/40 backdrop-blur-sm">
-						<CardHeader>
+				<div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm">
+						<CardHeader className="pb-4">
 							<div className="flex items-center justify-between">
-								<h3 className="text-xl font-semibold">Free</h3>
-								<Badge className="bg-muted">Get started</Badge>
+								<h3 className="text-xl font-heading font-semibold">Free</h3>
+								<Badge className="bg-secondary text-secondary-foreground">Get started</Badge>
 							</div>
 						</CardHeader>
-						<CardContent className="space-y-2 text-muted-foreground">
-							<div className="text-3xl font-extrabold">$0</div>
-							<ul className="mt-2 list-inside list-disc space-y-1 text-sm">
-								<li>Up to 10 chores</li>
-								<li>Up to 4 household members</li>
-								<li>Basic rewards & leaderboard</li>
-								<li>Level progression</li>
+						<CardContent className="space-y-4">
+							<div className="text-4xl font-extrabold">$0</div>
+							<ul className="space-y-3 text-sm text-muted-foreground">
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Up to 10 chores</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Up to 4 household members</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Basic rewards & leaderboard</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Level progression</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button onClick={openAuthModal} className="w-full bg-amber-500 text-slate-900 hover:bg-amber-400">Get started</Button>
+							<Button onClick={openAuthModal} className="w-full radiant-button h-12 rounded-xl text-base">Get started</Button>
 						</CardFooter>
 					</Card>
 
-					<Card className="border-amber-500/40 bg-card/40 backdrop-blur-sm ring-2 ring-amber-500/20">
-						<CardHeader>
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow-intense radiant-border overflow-hidden">
+						<CardHeader className="pb-4">
 							<div className="flex items-center justify-between">
-								<h3 className="text-xl font-semibold">Premium</h3>
-								<Badge className="bg-amber-400 text-slate-900">Most Popular</Badge>
+								<h3 className="text-xl font-heading font-semibold">Premium</h3>
+								<Badge className="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900">Most Popular</Badge>
 							</div>
 						</CardHeader>
-						<CardContent className="space-y-2 text-muted-foreground">
-							<div className="text-3xl font-extrabold">$4.99 <span className="text-base font-normal text-muted-foreground">/ month</span></div>
-							<p className="text-xs text-amber-600">or $39.99/year (save 33%)</p>
-							<ul className="mt-2 list-inside list-disc space-y-1 text-sm">
-								<li>Unlimited chores & members</li>
-								<li>Custom rewards</li>
-								<li>Photo verification</li>
-								<li>Advanced analytics & exports</li>
+						<CardContent className="space-y-4">
+							<div>
+								<span className="text-4xl font-extrabold radiant-text">$4.99</span>
+								<span className="text-base font-normal text-muted-foreground"> / month</span>
+							</div>
+							<p className="text-sm text-amber-400">or $39.99/year (save 33%)</p>
+							<ul className="space-y-3 text-sm text-muted-foreground">
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Unlimited chores & members</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Custom rewards</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Photo verification</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Advanced analytics & exports</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button onClick={openAuthModal} className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300">Start free trial</Button>
+							<Button onClick={openAuthModal} className="w-full radiant-button h-12 rounded-xl text-base">Start free trial</Button>
 						</CardFooter>
 					</Card>
 				</div>
 			</section>
 
-			<section id="faq" className="mx-auto max-w-5xl px-6 pb-24">
-				<h2 className="mb-6 text-center text-3xl font-bold">FAQ</h2>
-				<div className="divide-y divide-border">
+			{/* Radiant Divider */}
+			<div className="radiant-divider mx-auto max-w-3xl" />
+
+			{/* FAQ Section - Radiant Momentum */}
+			<section id="faq" className="mx-auto max-w-4xl px-6 py-20 sm:py-28">
+				<div className="text-center mb-12 sm:mb-16">
+					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+						Frequently asked <span className="radiant-text">questions</span>
+					</h2>
+				</div>
+				<div className="space-y-4">
 					{[
 						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve kids\' cash-outs.' },
 						{ q: 'Can I use it with roommates?', a: 'Yes. Roles and rewards are fully customizable for families or shared houses.' },
 						{ q: 'Is there parental control?', a: 'Parents approve redemptions, edit XP values, and review audit logs. Teens and kids require approval.' },
 						{ q: 'Will there be iOS and Android apps?', a: 'Yes. Web first, native apps follow shortly after beta.' },
 					].map((item) => (
-						<details key={item.q} className="group py-4">
-							<summary className="cursor-pointer list-none py-2 text-lg font-medium outline-none">
-								<span className="text-foreground group-open:text-amber-300">{item.q}</span>
+						<details key={item.q} className="group radiant-card rounded-2xl px-6 py-4 transition-all duration-300">
+							<summary className="cursor-pointer list-none py-2 text-lg font-medium outline-none flex items-center justify-between">
+								<span className="text-foreground group-open:radiant-text transition-all duration-300">{item.q}</span>
+								<ChevronRight className="h-5 w-5 text-amber-500 transition-transform duration-300 group-open:rotate-90" />
 							</summary>
-							<p className="mt-1 text-muted-foreground">{item.a}</p>
+							<p className="mt-2 text-muted-foreground leading-relaxed">{item.a}</p>
 						</details>
 					))}
 				</div>
 			</section>
 
-			<footer className="border-t border-border bg-background/60">
-				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 md:flex-row">
-					<div className="flex items-center gap-3 text-muted-foreground">
-						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
+			{/* Footer - Radiant Momentum */}
+			<footer className="border-t border-amber-500/10 bg-background/80 backdrop-blur-sm">
+				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 py-12 md:flex-row">
+					<div className="flex items-center gap-4 text-muted-foreground">
+						<div className="flex h-12 w-12 items-center justify-center rounded-xl radiant-icon text-white">
 							<Logo className="h-8 w-8" />
 						</div>
 						<div className="flex flex-col">
-							<span className="text-sm">&copy; {new Date().getFullYear()} Daily Bag</span>
+							<span className="text-sm font-medium">&copy; {new Date().getFullYear()} Daily Bag</span>
 							<span className="text-xs">
 								Built by{' '}
 								<a
 									href="https://github.com/abrown84"
 									target="_blank"
 									rel="noopener noreferrer"
-									className="text-amber-500 hover:text-amber-400 hover:underline"
+									className="radiant-text hover:underline"
 								>
 									Alex Brown
 								</a>
 							</span>
 						</div>
 					</div>
-					<div className="flex items-center gap-6 text-sm text-muted-foreground">
-						<a href="#" className="hover:text-foreground">Privacy</a>
-						<a href="#" className="hover:text-foreground">Terms</a>
-						<a href="#" className="hover:text-foreground">Contact</a>
+					<div className="flex items-center gap-8 text-sm text-muted-foreground">
+						<a href="#" className="hover:text-amber-400 transition-colors duration-300">Privacy</a>
+						<a href="#" className="hover:text-amber-400 transition-colors duration-300">Terms</a>
+						<a href="#" className="hover:text-amber-400 transition-colors duration-300">Contact</a>
 						<a
 							href="https://github.com/abrown84/Chore-Checklist"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="hover:text-foreground flex items-center gap-1"
+							className="hover:text-amber-400 transition-colors duration-300 flex items-center gap-1"
 						>
 							GitHub
 						</a>
@@ -565,7 +611,7 @@ export default function LandingPage() {
 					{/* Modal */}
 					<div
 						ref={videoModalRef}
-						className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
+						className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 md:pt-24 p-2 sm:p-4 md:p-6"
 						onClick={(e) => e.stopPropagation()}
 						onTouchStart={(e) => e.stopPropagation()}
 						style={{ opacity: 0 }}

@@ -66,7 +66,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
             import.meta.env.DEV && console.log('Audio play failed after unmute:', err)
           })
         } else {
-          console.warn('Audio not ready yet, readyState:', audio.readyState)
+          import.meta.env.DEV && console.log('Audio not ready yet, readyState:', audio.readyState)
         }
       }
     }
@@ -99,9 +99,9 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
         if (error) {
           // Only log actual errors, not expected autoplay prevention
           // Error codes: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
-          // Don't log aborted errors (user navigation) or network errors (expected in some cases)
-          if (error.code !== 1 && error.code !== 2) {
-            console.error('Background audio error:', {
+          // Only log decode/format errors in DEV mode
+          if (import.meta.env.DEV && error.code !== 1 && error.code !== 2) {
+            console.log('Background audio error:', {
               code: error.code,
               message: error.message
             })
@@ -141,7 +141,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
                 }
               })
             } else {
-              console.warn('⚠️ Audio not ready yet, readyState:', audio?.readyState)
+              import.meta.env.DEV && console.log('Audio not ready yet, readyState:', audio?.readyState)
             }
           } catch (error) {
             console.error('Error in handleUserInteraction:', error)
