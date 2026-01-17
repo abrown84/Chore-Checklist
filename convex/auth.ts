@@ -2,14 +2,13 @@ import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
 import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
-import { Resend } from "resend";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 // Email provider for password reset via Resend
 const ResendPasswordReset = {
-  id: "resend-password-reset",
-  name: "Resend Password Reset",
+  id: "resend-otp-reset",
+  name: "Resend",
   type: "email" as const,
   maxAge: 60 * 15, // 15 minutes
   async sendVerificationRequest({
@@ -19,24 +18,49 @@ const ResendPasswordReset = {
     identifier: string;
     token: string;
   }) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM || "Daily Bag <noreply@resend.dev>",
-      to: email,
-      subject: "Reset your Daily Bag password",
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Reset Your Password</h2>
-          <p>You requested to reset your password for Daily Bag.</p>
-          <p>Your verification code is:</p>
-          <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; margin: 20px 0;">
-            ${token}
-          </div>
-          <p>This code expires in 15 minutes.</p>
-          <p>If you didn't request this, you can safely ignore this email.</p>
-        </div>
-      `,
-    });
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("RESEND_API_KEY is not configured");
+      throw new Error("Email service not configured. Please contact support.");
+    }
+
+    const fromEmail = process.env.EMAIL_FROM || "Daily Bag <onboarding@resend.dev>";
+
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: email,
+          subject: "Reset your Daily Bag password",
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>Reset Your Password</h2>
+              <p>You requested to reset your password for Daily Bag.</p>
+              <p>Your verification code is:</p>
+              <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; margin: 20px 0;">
+                ${token}
+              </div>
+              <p>This code expires in 15 minutes.</p>
+              <p>If you didn't request this, you can safely ignore this email.</p>
+            </div>
+          `,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Resend API error:", response.status, errorData);
+        throw new Error("Failed to send reset email. Please try again.");
+      }
+    } catch (error) {
+      console.error("Password reset email error:", error);
+      throw error;
+    }
   },
 };
 
