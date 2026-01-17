@@ -8,6 +8,7 @@ import { ThemeProvider } from '../contexts/ThemeContext'
 import { DemoProvider, useDemo } from '../contexts/DemoContext'
 import { RedemptionProvider } from '../contexts/RedemptionContext'
 import { PWAInstallProvider } from '../contexts/PWAInstallContext'
+import { PasswordFlowProvider } from '../contexts/PasswordFlowContext'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import ProtectedRoute from './ProtectedRoute'
@@ -80,13 +81,15 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     <ConvexAuthProvider client={convex}>
       <ThemeProvider>
         <PWAInstallProvider>
-          <DemoProvider>
-            <ProtectedRoute>
-              <DemoModeWrapperWithDemo>
-                {children}
-              </DemoModeWrapperWithDemo>
-            </ProtectedRoute>
-          </DemoProvider>
+          <PasswordFlowProvider>
+            <DemoProvider>
+              <ProtectedRoute>
+                <DemoModeWrapperWithDemo>
+                  {children}
+                </DemoModeWrapperWithDemo>
+              </ProtectedRoute>
+            </DemoProvider>
+          </PasswordFlowProvider>
         </PWAInstallProvider>
       </ThemeProvider>
     </ConvexAuthProvider>

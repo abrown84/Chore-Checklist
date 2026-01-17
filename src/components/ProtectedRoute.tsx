@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import { Authenticated, Unauthenticated, AuthLoading } from 'convex/react'
 import { useDemo } from '../contexts/DemoContext'
+import { usePasswordFlow } from '../contexts/PasswordFlowContext'
 import { AppLoadingScreen } from './AppLoadingScreen'
 
 // Lazy load LandingPage (953 lines) - only needed for unauthenticated users
@@ -18,13 +19,20 @@ function AuthenticatedContent({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Unauthenticated content that handles demo mode
+ * Unauthenticated content that handles demo mode and password flows
  */
 function UnauthenticatedContent({ children }: { children: React.ReactNode }) {
   const { isDemoMode } = useDemo()
+  const { isInPasswordFlow } = usePasswordFlow()
 
   // If in demo mode, show the app content
   if (isDemoMode) {
+    return <>{children}</>
+  }
+
+  // If user is in the middle of a password reset/set flow, keep showing
+  // app content so they can complete the flow (prevents redirect to landing)
+  if (isInPasswordFlow) {
     return <>{children}</>
   }
 

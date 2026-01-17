@@ -7,6 +7,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Lock, KeyRound, Check, AlertCircle, Trash2, Mail } from 'lucide-react'
 import { useConvexAuth } from '../../hooks/useConvexAuth'
+import { usePasswordFlow } from '../../contexts/PasswordFlowContext'
 
 export const PasswordSettings: React.FC = React.memo(() => {
   const hasPassword = useQuery(api.auth.hasPasswordAuth)
@@ -16,6 +17,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
   const deleteAccountMutation = useMutation(api.auth.deleteAccount)
   const { signIn } = useAuthActions()
   const { user, signOut } = useConvexAuth()
+  const { setPasswordFlow } = usePasswordFlow()
 
   // Password reset state
   const [resetStep, setResetStep] = useState<'idle' | 'sent' | 'verify'>('idle')
@@ -58,6 +60,9 @@ export const PasswordSettings: React.FC = React.memo(() => {
     if (!user?.email) return
     setIsResetting(true)
     setResetError('')
+
+    // Set password flow flag to prevent redirect during auth state changes
+    setPasswordFlow(true)
 
     // Save state to Convex and show form IMMEDIATELY (before async call)
     try {
@@ -106,6 +111,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setNewPassword('')
       setResetEmail(null)
       await clearPendingAction()
+      setPasswordFlow(false)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid code or failed to change password'
       setResetError(message)
@@ -140,6 +146,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setResetSuccess('')
     setResetEmail(null)
     await clearPendingAction()
+    setPasswordFlow(false)
   }
 
   // Handle setting a new password for OAuth users
@@ -159,6 +166,9 @@ export const PasswordSettings: React.FC = React.memo(() => {
 
     setIsSettingPassword(true)
     setSetPasswordError('')
+
+    // Set password flow flag to prevent redirect during auth state changes
+    setPasswordFlow(true)
 
     // Save state to Convex BEFORE calling signIn (in case of redirect)
     try {
@@ -180,6 +190,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setNewPasswordForSet('')
       setConfirmPassword('')
       await clearPendingAction()
+      setPasswordFlow(false)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to set password'
       // Handle "already exists" gracefully - this means they already have a password
@@ -188,7 +199,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       } else {
         setSetPasswordError(message)
       }
-      // Keep Convex state so form reappears after redirect
+      // Keep flag and Convex state so form reappears after redirect
     } finally {
       setIsSettingPassword(false)
     }
@@ -201,6 +212,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setSetPasswordError('')
     setSetPasswordSuccess('')
     await clearPendingAction()
+    setPasswordFlow(false)
   }
 
   // Loading state
