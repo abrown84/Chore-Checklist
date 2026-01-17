@@ -63,28 +63,28 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setIsResetting(true)
     setResetError('')
 
+    // Save state and show form IMMEDIATELY (before async call)
+    const resetState: ResetState = {
+      email: user.email,
+      step: 'verify',
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(RESET_STATE_KEY, JSON.stringify(resetState))
+    setResetEmail(user.email)
+    setResetStep('verify')
+    setResetSuccess('Sending reset code to your email...')
+
     try {
       const formData = new FormData()
       formData.append('email', user.email)
       formData.append('flow', 'reset')
 
-      // Save state to localStorage BEFORE calling signIn (in case of redirect)
-      const resetState: ResetState = {
-        email: user.email,
-        step: 'verify',
-        timestamp: Date.now(),
-      }
-      localStorage.setItem(RESET_STATE_KEY, JSON.stringify(resetState))
-      setResetEmail(user.email)
-
       await signIn('password', formData)
-      setResetStep('verify')
-      setResetSuccess('Reset code sent to your email!')
+      setResetSuccess('Reset code sent! Check your email.')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset code'
       setResetError(message)
-      // Clear localStorage on error
-      localStorage.removeItem(RESET_STATE_KEY)
+      // Keep the form open so user can retry or cancel
     } finally {
       setIsResetting(false)
     }
