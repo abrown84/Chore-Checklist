@@ -48,8 +48,20 @@ export function useConvexAuth() {
     formData.append('email', email.trim())
     formData.append('password', password.trim())
     formData.append('flow', 'signIn')
-    
-    await signInAction('password', formData)
+
+    try {
+      await signInAction('password', formData)
+    } catch (error) {
+      // Convert generic Convex errors to user-friendly messages
+      const message = error instanceof Error ? error.message.toLowerCase() : ''
+      if (message.includes('invalid') || message.includes('credential') || message.includes('password') || message.includes('not found')) {
+        throw new Error('Invalid email or password. Please try again.')
+      }
+      if (message.includes('server error')) {
+        throw new Error('Invalid email or password. Please try again.')
+      }
+      throw error
+    }
   }, [signInAction])
 
   // Sign up
@@ -60,8 +72,20 @@ export function useConvexAuth() {
     formData.append('password', password.trim())
     formData.append('name', name.trim())
     formData.append('flow', 'signUp')
-    
-    await signInAction('password', formData)
+
+    try {
+      await signInAction('password', formData)
+    } catch (error) {
+      // Convert generic Convex errors to user-friendly messages
+      const message = error instanceof Error ? error.message.toLowerCase() : ''
+      if (message.includes('already') || message.includes('exists') || message.includes('duplicate')) {
+        throw new Error('An account with this email already exists. Try signing in instead.')
+      }
+      if (message.includes('server error')) {
+        throw new Error('Unable to create account. Please try again.')
+      }
+      throw error
+    }
   }, [signInAction])
 
   // Sign out
