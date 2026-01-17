@@ -222,6 +222,15 @@ export default defineSchema({
     .index("by_household", ["householdId"])
     .index("by_redemption_request", ["redemptionRequestId"]),
 
+  // Pending password actions - tracks password reset/set state across redirects
+  pendingPasswordActions: defineTable({
+    userId: v.id("users"),
+    action: v.union(v.literal("reset"), v.literal("set")),
+    email: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"]),
+
   // Subscriptions table - tracks Stripe subscription status
   subscriptions: defineTable({
     userId: v.id("users"),

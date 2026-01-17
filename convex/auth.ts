@@ -267,3 +267,101 @@ export const deleteAccount = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Get pending password action for the current user
+ */
+export const getPendingPasswordAction = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const pending = await ctx.db
+      .query("pendingPasswordActions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!pending) {
+      return null;
+    }
+
+    // Check if expired (15 minutes for reset, 5 minutes for set)
+    const maxAge = pending.action === "reset" ? 15 * 60 * 1000 : 5 * 60 * 1000;
+    if (Date.now() - pending.createdAt > maxAge) {
+      // Expired - return null (will be cleaned up on next set/clear)
+      return null;
+    }
+
+    return {
+      action: pending.action,
+      email: pending.email,
+    };
+  },
+});
+
+/**
+ * Set a pending password action (reset or set)
+ */
+export const setPendingPasswordAction = mutation({
+  args: {
+    action: v.union(v.literal("reset"), v.literal("set")),
+  },
+  handler: async (ctx, { action }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.email) {
+      throw new Error("User email not found");
+    }
+
+    // Delete any existing pending action
+    const existing = await ctx.db
+      .query("pendingPasswordActions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    for (const item of existing) {
+      await ctx.db.delete(item._id);
+    }
+
+    // Create new pending action
+    await ctx.db.insert("pendingPasswordActions", {
+      userId,
+      action,
+      email: user.email,
+      createdAt: Date.now(),
+    });
+
+    return { success: true, email: user.email };
+  },
+});
+
+/**
+ * Clear pending password action
+ */
+export const clearPendingPasswordAction = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { success: true };
+    }
+
+    const existing = await ctx.db
+      .query("pendingPasswordActions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    for (const item of existing) {
+      await ctx.db.delete(item._id);
+    }
+
+    return { success: true };
+  },
+});

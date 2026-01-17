@@ -8,23 +8,11 @@ import { Input } from '../ui/input'
 import { Lock, KeyRound, Check, AlertCircle, Trash2, Mail } from 'lucide-react'
 import { useConvexAuth } from '../../hooks/useConvexAuth'
 
-const RESET_STATE_KEY = 'password-reset-state'
-const SET_PASSWORD_KEY = 'set-password-state'
-
-interface ResetState {
-  email: string
-  step: 'verify'
-  timestamp: number
-}
-
-interface SetPasswordState {
-  email: string
-  step: 'form'
-  timestamp: number
-}
-
 export const PasswordSettings: React.FC = React.memo(() => {
   const hasPassword = useQuery(api.auth.hasPasswordAuth)
+  const pendingAction = useQuery(api.auth.getPendingPasswordAction)
+  const setPendingAction = useMutation(api.auth.setPendingPasswordAction)
+  const clearPendingAction = useMutation(api.auth.clearPendingPasswordAction)
   const deleteAccountMutation = useMutation(api.auth.deleteAccount)
   const { signIn } = useAuthActions()
   const { user, signOut } = useConvexAuth()
@@ -38,44 +26,19 @@ export const PasswordSettings: React.FC = React.memo(() => {
   const [resetSuccess, setResetSuccess] = useState('')
   const [resetEmail, setResetEmail] = useState<string | null>(null)
 
-  // Check for persisted reset state on mount
+  // Restore state from Convex on mount/when pendingAction changes
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(RESET_STATE_KEY)
-      if (saved) {
-        const state: ResetState = JSON.parse(saved)
-        // Only restore if less than 15 minutes old (matches code expiry)
-        const isValid = Date.now() - state.timestamp < 15 * 60 * 1000
-        if (isValid && state.step === 'verify') {
-          setResetStep('verify')
-          setResetEmail(state.email)
-          setResetSuccess('Reset code was sent to your email. Enter it below.')
-        } else {
-          localStorage.removeItem(RESET_STATE_KEY)
-        }
+    if (pendingAction) {
+      if (pendingAction.action === 'reset') {
+        setResetStep('verify')
+        setResetEmail(pendingAction.email)
+        setResetSuccess('Reset code was sent to your email. Enter it below.')
+      } else if (pendingAction.action === 'set') {
+        setSetPasswordStep('form')
+        setSetPasswordSuccess('Enter your password to complete setup.')
       }
-    } catch {
-      localStorage.removeItem(RESET_STATE_KEY)
     }
-
-    // Check for persisted set password state
-    try {
-      const savedSetPwd = localStorage.getItem(SET_PASSWORD_KEY)
-      if (savedSetPwd) {
-        const state: SetPasswordState = JSON.parse(savedSetPwd)
-        // Only restore if less than 5 minutes old
-        const isValid = Date.now() - state.timestamp < 5 * 60 * 1000
-        if (isValid && state.step === 'form') {
-          setSetPasswordStep('form')
-          setSetPasswordSuccess('Enter your password again to complete setup.')
-        } else {
-          localStorage.removeItem(SET_PASSWORD_KEY)
-        }
-      }
-    } catch {
-      localStorage.removeItem(SET_PASSWORD_KEY)
-    }
-  }, [])
+  }, [pendingAction])
 
   // Set password state (for OAuth users)
   const [setPasswordStep, setSetPasswordStep] = useState<'idle' | 'form'>('idle')
@@ -96,13 +59,12 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setIsResetting(true)
     setResetError('')
 
-    // Save state and show form IMMEDIATELY (before async call)
-    const resetState: ResetState = {
-      email: user.email,
-      step: 'verify',
-      timestamp: Date.now(),
+    // Save state to Convex and show form IMMEDIATELY (before async call)
+    try {
+      await setPendingAction({ action: 'reset' })
+    } catch {
+      // Continue even if this fails - state is also tracked locally
     }
-    localStorage.setItem(RESET_STATE_KEY, JSON.stringify(resetState))
     setResetEmail(user.email)
     setResetStep('verify')
     setResetSuccess('Sending reset code to your email...')
@@ -143,7 +105,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setResetCode('')
       setNewPassword('')
       setResetEmail(null)
-      localStorage.removeItem(RESET_STATE_KEY)
+      await clearPendingAction()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid code or failed to change password'
       setResetError(message)
@@ -170,14 +132,14 @@ export const PasswordSettings: React.FC = React.memo(() => {
     }
   }
 
-  const cancelReset = () => {
+  const cancelReset = async () => {
     setResetStep('idle')
     setResetCode('')
     setNewPassword('')
     setResetError('')
     setResetSuccess('')
     setResetEmail(null)
-    localStorage.removeItem(RESET_STATE_KEY)
+    await clearPendingAction()
   }
 
   // Handle setting a new password for OAuth users
@@ -198,13 +160,12 @@ export const PasswordSettings: React.FC = React.memo(() => {
     setIsSettingPassword(true)
     setSetPasswordError('')
 
-    // Save state to localStorage BEFORE calling signIn (in case of redirect)
-    const setPwdState: SetPasswordState = {
-      email: user.email,
-      step: 'form',
-      timestamp: Date.now(),
+    // Save state to Convex BEFORE calling signIn (in case of redirect)
+    try {
+      await setPendingAction({ action: 'set' })
+    } catch {
+      // Continue even if this fails - state is also tracked locally
     }
-    localStorage.setItem(SET_PASSWORD_KEY, JSON.stringify(setPwdState))
 
     try {
       const formData = new FormData()
@@ -218,7 +179,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       setSetPasswordStep('idle')
       setNewPasswordForSet('')
       setConfirmPassword('')
-      localStorage.removeItem(SET_PASSWORD_KEY)
+      await clearPendingAction()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to set password'
       // Handle "already exists" gracefully - this means they already have a password
@@ -227,19 +188,19 @@ export const PasswordSettings: React.FC = React.memo(() => {
       } else {
         setSetPasswordError(message)
       }
-      // Keep localStorage so form reappears after redirect
+      // Keep Convex state so form reappears after redirect
     } finally {
       setIsSettingPassword(false)
     }
   }
 
-  const cancelSetPassword = () => {
+  const cancelSetPassword = async () => {
     setSetPasswordStep('idle')
     setNewPasswordForSet('')
     setConfirmPassword('')
     setSetPasswordError('')
     setSetPasswordSuccess('')
-    localStorage.removeItem(SET_PASSWORD_KEY)
+    await clearPendingAction()
   }
 
   // Loading state
