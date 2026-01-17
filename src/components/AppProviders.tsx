@@ -11,10 +11,6 @@ import { PWAInstallProvider } from '../contexts/PWAInstallContext'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import ProtectedRoute from './ProtectedRoute'
-import {
-  StyleProvider as A2UIStyleProvider,
-  ThemeProvider as A2UIThemeProvider
-} from '@zhama/a2ui'
 
 // Initialize Convex client
 const convexUrl = import.meta.env.VITE_CONVEX_URL
@@ -81,22 +77,18 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
-    <A2UIStyleProvider>
-      <A2UIThemeProvider>
-        <ConvexAuthProvider client={convex}>
-          <ThemeProvider>
-            <PWAInstallProvider>
-              <DemoProvider>
-                <ProtectedRoute>
-                  <DemoModeWrapperWithDemo>
-                    {children}
-                  </DemoModeWrapperWithDemo>
-                </ProtectedRoute>
-              </DemoProvider>
-            </PWAInstallProvider>
-          </ThemeProvider>
-        </ConvexAuthProvider>
-      </A2UIThemeProvider>
-    </A2UIStyleProvider>
+    <ConvexAuthProvider client={convex}>
+      <ThemeProvider>
+        <PWAInstallProvider>
+          <DemoProvider>
+            <ProtectedRoute>
+              <DemoModeWrapperWithDemo>
+                {children}
+              </DemoModeWrapperWithDemo>
+            </ProtectedRoute>
+          </DemoProvider>
+        </PWAInstallProvider>
+      </ThemeProvider>
+    </ConvexAuthProvider>
   )
 }

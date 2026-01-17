@@ -28,7 +28,6 @@
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.1",
     "@supabase/supabase-js": "^2.39.0",
-    "@zhama/a2ui": "^0.13.0",
     "animejs": "^4.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
