@@ -43,23 +43,25 @@ export function useConvexAuth() {
 
   // Sign in
   const signIn = useCallback(async (email: string, password: string) => {
-    // Pass as object - more reliable than FormData
-    await signInAction('password', {
-      email: email.trim(),
-      password: password.trim(),
-      flow: 'signIn',
-    })
+    // Convex Auth expects FormData for password provider
+    const formData = new FormData()
+    formData.append('email', email.trim())
+    formData.append('password', password.trim())
+    formData.append('flow', 'signIn')
+    
+    await signInAction('password', formData)
   }, [signInAction])
 
   // Sign up
   const signUp = useCallback(async (email: string, password: string, name: string) => {
-    // Pass as object - more reliable than FormData
-    await signInAction('password', {
-      email: email.trim(),
-      password: password.trim(),
-      name: name.trim(),
-      flow: 'signUp',
-    })
+    // Convex Auth expects FormData for password provider
+    const formData = new FormData()
+    formData.append('email', email.trim())
+    formData.append('password', password.trim())
+    formData.append('name', name.trim())
+    formData.append('flow', 'signUp')
+    
+    await signInAction('password', formData)
   }, [signInAction])
 
   // Sign out

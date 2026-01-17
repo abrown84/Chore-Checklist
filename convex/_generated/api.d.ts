@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
 import type * as chores from "../chores.js";
+import type * as cleanupAuth from "../cleanupAuth.js";
 import type * as cron from "../cron.js";
 import type * as cronFunctions from "../cronFunctions.js";
 import type * as households from "../households.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authHelpers: typeof authHelpers;
   chores: typeof chores;
+  cleanupAuth: typeof cleanupAuth;
   cron: typeof cron;
   cronFunctions: typeof cronFunctions;
   households: typeof households;

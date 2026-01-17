@@ -399,7 +399,7 @@ export default function LandingPage() {
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button className="w-full bg-amber-500 text-slate-900 hover:bg-amber-400">Get started</Button>
+							<Button onClick={openAuthModal} className="w-full bg-amber-500 text-slate-900 hover:bg-amber-400">Get started</Button>
 						</CardFooter>
 					</Card>
 
@@ -421,7 +421,7 @@ export default function LandingPage() {
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300">Start free trial</Button>
+							<Button onClick={openAuthModal} className="w-full bg-amber-400 text-slate-900 hover:bg-amber-300">Start free trial</Button>
 						</CardFooter>
 					</Card>
 				</div>

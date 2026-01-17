@@ -7,10 +7,10 @@
 // Required for embedded checkout - add VITE_STRIPE_PUBLISHABLE_KEY to .env.local
 export const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string
 
-// Stripe Payment Links - kept for fallback/redirect scenarios
+// Stripe Payment Links (LIVE) - kept for fallback/redirect scenarios
 const STRIPE_PAYMENT_LINKS = {
-  monthly: 'https://buy.stripe.com/9B6bJ04cXdjh6Y3gfc7EQ01',
-  yearly: 'https://buy.stripe.com/bJe8wOaBl931dmr5Ay7EQ02',
+  monthly: 'https://buy.stripe.com/14A8wOdNx7YX4PV6EC7EQ03',
+  yearly: 'https://buy.stripe.com/fZu28qdNxdjh1DJ6EC7EQ04',
 } as const
 
 /**
