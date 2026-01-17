@@ -157,6 +157,16 @@ STRIPE_SECRET_KEY=<stripe_key>
 STRIPE_WEBHOOK_SECRET=<webhook_secret>
 ```
 
+### Convex Auth JWT Keys
+
+**IMPORTANT:** JWT keys require special formatting. See `.claude/convex-auth-setup.md` for details.
+
+Key points:
+- Use `jose` library to generate keys
+- Private key must have newlines replaced with **SPACES** (not `\n` or actual line breaks)
+- Keys are deployment-specific (dev vs prod)
+- Error `invalid RSA PrivateKeyInfo` = malformed key format
+
 ## Design Philosophy
 
 1. **Mobile-first** - Most users will be on phones
