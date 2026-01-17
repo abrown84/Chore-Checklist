@@ -17,20 +17,23 @@ const stripeClient = new StripeSubscriptions(components.stripe, {
 // - STRIPE_PRICE_YEARLY: price_xxx for $39.99/yr
 // Trial periods should be configured in Stripe Dashboard on the prices themselves
 
-// Admin/Creator emails who get free premium access
-// Add your email here to bypass subscription requirements
-const ADMIN_EMAILS = [
-  "konfliktquake@gmail.com", // Creator email
-];
+// SECURITY FIX: Admin user IDs for free premium access
+// Using user IDs instead of emails to prevent spoofing
+// Set ADMIN_USER_IDS environment variable as comma-separated list of user IDs
+// e.g., "jx75eb7vczgptnkbpd4j498a4s7zd4b9,another_user_id"
+const getAdminUserIds = (): string[] => {
+  const adminIds = process.env.ADMIN_USER_IDS;
+  if (!adminIds) return [];
+  return adminIds.split(',').map(id => id.trim()).filter(Boolean);
+};
 
 /**
  * Check if a user is an admin/creator (gets free premium access)
+ * Uses immutable user IDs instead of emails for security
  */
-async function isAdmin(ctx: any, userId: string): Promise<boolean> {
-  const user = await ctx.db.get(userId);
-  if (!user?.email) return false;
-
-  return ADMIN_EMAILS.includes(user.email.toLowerCase());
+function isAdmin(userId: string): boolean {
+  const adminUserIds = getAdminUserIds();
+  return adminUserIds.includes(userId);
 }
 
 /**
@@ -130,6 +133,7 @@ export const createEmbeddedCheckoutSession = action({
       ],
       return_url: returnUrl,
       subscription_data: {
+        trial_period_days: 14,
         metadata: {
           userId: userId,
           convexUserId: userId,
@@ -188,7 +192,7 @@ export const getUserSubscription = query({
     }
 
     // Check if user is admin/creator - they get free premium access
-    const userIsAdmin = await isAdmin(ctx, userId);
+    const userIsAdmin = isAdmin(userId);
     if (userIsAdmin) {
       return {
         plan: "premium" as PlanType,
@@ -256,7 +260,7 @@ export const isFeatureEnabled = query({
     }
 
     // Check if user is admin/creator - they get all features
-    const userIsAdmin = await isAdmin(ctx, userId);
+    const userIsAdmin = isAdmin(userId);
     if (userIsAdmin) {
       return true;
     }
@@ -294,7 +298,7 @@ export const getUserPlanLimits = query({
     }
 
     // Check if user is admin/creator - they get premium limits
-    const userIsAdmin = await isAdmin(ctx, userId);
+    const userIsAdmin = isAdmin(userId);
     if (userIsAdmin) {
       return PLAN_LIMITS.premium;
     }
@@ -325,7 +329,7 @@ export const canCreateHousehold = query({
     }
 
     // Check if user is admin/creator - they can create unlimited households
-    const userIsAdmin = await isAdmin(ctx, userId);
+    const userIsAdmin = isAdmin(userId);
     if (userIsAdmin) {
       return {
         canCreate: true,
@@ -403,7 +407,7 @@ export const canAddHouseholdMember = query({
       .collect();
 
     // Check if household creator is admin - they get unlimited members
-    const creatorIsAdmin = await isAdmin(ctx, household.createdBy);
+    const creatorIsAdmin = isAdmin(household.createdBy);
     if (creatorIsAdmin) {
       return {
         canAdd: true,

@@ -1213,8 +1213,7 @@ export const seedDefaultChoresInternal = internalMutation({
   },
 });
 
-// Admin setup mutation - seeds chores without auth (for initial setup)
-// WARNING: Remove or protect this in production!
+// Admin setup mutation - seeds chores (requires admin authentication)
 export const adminSeedChores = mutation({
   args: {
     householdId: v.id("households"),
@@ -1222,10 +1221,26 @@ export const adminSeedChores = mutation({
     clearExisting: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // SECURITY: Require authentication
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
     // Verify household exists
     const household = await ctx.db.get(args.householdId);
     if (!household) {
       throw new Error("Household not found");
+    }
+
+    // SECURITY: Verify user is admin of this household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership || membership.role !== "admin") {
+      throw new Error("Not authorized: Only household admins can seed chores");
     }
 
     // Optionally clear existing chores

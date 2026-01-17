@@ -69,18 +69,17 @@ export const getHouseholdRedemptionRequests = query({
       throw new Error("Not a member of this household");
     }
 
-    let query = ctx.db
+    // SECURITY: Always query by household first to maintain household boundary
+    const allHouseholdRedemptions = await ctx.db
       .query("redemptionRequests")
-      .withIndex("by_household", (q) => q.eq("householdId", args.householdId));
+      .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
+      .collect();
 
-    if (args.status) {
-      query = ctx.db
-        .query("redemptionRequests")
-        .withIndex("by_status", (q) => q.eq("status", args.status!));
-    }
+    // Filter by status if specified (after household boundary is enforced)
+    const results = args.status
+      ? allHouseholdRedemptions.filter((r) => r.status === args.status)
+      : allHouseholdRedemptions;
 
-    const results = await query.collect();
-    
     // Sort by requestedAt date, newest first
     return results.sort((a, b) => b.requestedAt - a.requestedAt);
   },
@@ -99,7 +98,21 @@ export const createRedemptionRequest = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    
+
+    // SECURITY: Validate points and amount are positive
+    if (args.pointsRequested <= 0) {
+      throw new Error("Points requested must be positive");
+    }
+    if (args.cashAmount <= 0) {
+      throw new Error("Cash amount must be positive");
+    }
+
+    // SECURITY: Verify conversion rate matches expected 100:1 ratio
+    const expectedAmount = args.pointsRequested / 100;
+    if (Math.abs(expectedAmount - args.cashAmount) > 0.01) {
+      throw new Error("Invalid conversion rate");
+    }
+
     const membership = await ctx.db
       .query("householdMembers")
       .withIndex("by_household_user", (q) =>

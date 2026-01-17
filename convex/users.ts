@@ -423,11 +423,11 @@ export const adminAdjustUserPoints = mutation({
       updatedAt: now,
     });
 
-    // Create point deduction record for tracking (use negative for additions)
-    // Note: This should ideally update userStats instead, but kept for backward compatibility
+    // Create point adjustment record for tracking
     const reasonText = args.reason || `Admin adjustment: ${args.pointsChange > 0 ? '+' : ''}${args.pointsChange} points`;
+
     if (args.pointsChange < 0) {
-      // Only create deduction record for subtractions
+      // Create deduction record for subtractions
       await ctx.db.insert("pointDeductions", {
         userId: args.userId,
         householdId: args.householdId,
@@ -436,10 +436,11 @@ export const adminAdjustUserPoints = mutation({
         deductedAt: now,
         deductedBy: currentUserId as any,
       });
-      
-      // Recalculate user stats to update household-specific points
-      await calculateUserStats(ctx, args.userId, args.householdId);
     }
+
+    // SECURITY FIX: Always recalculate user stats for both positive and negative changes
+    // This ensures points are properly reflected in userStats
+    await calculateUserStats(ctx, args.userId, args.householdId);
 
     return {
       userId: args.userId,

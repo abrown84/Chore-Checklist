@@ -66,8 +66,11 @@ export const ChoreItem = memo<ChoreItemProps>(({
   }
   
   // Handle completion animation with anime.js
+  // SECURITY FIX: Add cancellation flag to prevent callback after unmount
   useEffect(() => {
     if (isCompleting && containerRef.current) {
+      let cancelled = false
+
       const animation = animateElement(containerRef.current, {
         opacity: [1, 0],
         scale: [1, 0.95],
@@ -75,11 +78,14 @@ export const ChoreItem = memo<ChoreItemProps>(({
         duration: 500,
         ease: 'outQuart',
         complete: () => {
-          onAnimationComplete(chore.id)
+          if (!cancelled) {
+            onAnimationComplete(chore.id)
+          }
         }
       })
 
       return () => {
+        cancelled = true
         animation?.pause()
       }
     }

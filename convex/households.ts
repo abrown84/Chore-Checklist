@@ -136,14 +136,27 @@ export const createHousehold = mutation({
       return code;
     };
     
+    // SECURITY FIX: Retry loop for join code generation to prevent collisions
     let joinCode = generateJoinCode();
-    // Ensure code is unique (very unlikely collision, but check anyway)
-    const existing = await ctx.db
-      .query("households")
-      .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
-      .first();
-    if (existing) {
-      joinCode = generateJoinCode(); // Regenerate if collision
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+      const existing = await ctx.db
+        .query("households")
+        .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
+        .first();
+
+      if (!existing) {
+        break; // Code is unique
+      }
+
+      joinCode = generateJoinCode();
+      attempts++;
+    }
+
+    if (attempts >= maxAttempts) {
+      throw new Error("Unable to generate unique join code. Please try again.");
     }
     
     // Create household
@@ -326,15 +339,16 @@ export const removeHouseholdMember = mutation({
       throw new Error("User is not a member of this household");
     }
 
-    // Don't allow removing the last admin
+    // SECURITY FIX: Don't allow removing the last admin
     if (memberToRemove.role === "admin") {
-      const adminCount = await ctx.db
+      const adminMembers = await ctx.db
         .query("householdMembers")
         .withIndex("by_household", (q) => q.eq("householdId", args.householdId))
         .filter((q) => q.eq(q.field("role"), "admin"))
         .collect();
 
-      if (adminCount.length <= 1) {
+      // Must have at least 2 admins to remove one (need 1 remaining after removal)
+      if (adminMembers.length < 2) {
         throw new Error("Cannot remove the last admin from household");
       }
     }

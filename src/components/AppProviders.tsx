@@ -1,5 +1,5 @@
 import React from 'react'
-import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { ConvexReactClient } from 'convex/react'
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { ChoreProvider, useChores } from '../contexts/ChoreContext'
 import { UserProvider, useUsers } from '../contexts/UserContext'
@@ -83,21 +83,19 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <A2UIStyleProvider>
       <A2UIThemeProvider>
-        <ConvexProvider client={convex}>
-          <ConvexAuthProvider client={convex}>
-            <ThemeProvider>
-              <PWAInstallProvider>
-                <DemoProvider>
-                  <ProtectedRoute>
-                    <DemoModeWrapperWithDemo>
-                      {children}
-                    </DemoModeWrapperWithDemo>
-                  </ProtectedRoute>
-                </DemoProvider>
-              </PWAInstallProvider>
-            </ThemeProvider>
-          </ConvexAuthProvider>
-        </ConvexProvider>
+        <ConvexAuthProvider client={convex}>
+          <ThemeProvider>
+            <PWAInstallProvider>
+              <DemoProvider>
+                <ProtectedRoute>
+                  <DemoModeWrapperWithDemo>
+                    {children}
+                  </DemoModeWrapperWithDemo>
+                </ProtectedRoute>
+              </DemoProvider>
+            </PWAInstallProvider>
+          </ThemeProvider>
+        </ConvexAuthProvider>
       </A2UIThemeProvider>
     </A2UIStyleProvider>
   )
