@@ -177,20 +177,22 @@ export const createCustomerPortalSession = action({
       throw new Error("Not authenticated");
     }
 
-    const userId = identity.subject;
+    // identity.subject may have format "userId|sessionId" - extract just the userId
+    const rawSubject = identity.subject;
+    const userId = rawSubject.includes("|") ? rawSubject.split("|")[0] : rawSubject;
     let stripeCustomerId: string | null = null;
 
     // First, try to find subscription in Stripe component's tables
     const componentSubscriptions = await ctx.runQuery(
       components.stripe.public.listSubscriptionsByUserId,
-      { userId }
+      { userId: rawSubject } // Component might expect full subject
     );
 
     if (componentSubscriptions.length > 0) {
       stripeCustomerId = componentSubscriptions[0].stripeCustomerId;
     }
 
-    // Fallback: Check our local subscriptions table
+    // Fallback: Check our local subscriptions table using extracted userId
     if (!stripeCustomerId) {
       const localSubscription: { stripeCustomerId: string } | null = await ctx.runQuery(
         internal.subscriptionHelpers.getSubscriptionByUserId,
