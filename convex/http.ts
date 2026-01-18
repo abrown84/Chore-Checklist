@@ -57,8 +57,8 @@ registerRoutes(http, components.stripe, {
   webhookPath: "/stripe/webhook",
   // Handle specific Stripe events
   events: {
-    // Handle checkout session completion (from Payment Links)
-    // This is where we get the client_reference_id (userId)
+    // Handle checkout session completion (from Payment Links and embedded checkout)
+    // This is where we get the userId from client_reference_id or metadata
     "checkout.session.completed": async (ctx, event) => {
       const session = event.data.object as unknown as StripeCheckoutSessionEvent;
 
@@ -68,14 +68,21 @@ registerRoutes(http, components.stripe, {
         return;
       }
 
-      // Get userId from client_reference_id (set when user clicks Payment Link)
-      const userId = session.client_reference_id;
+      // Get userId from multiple sources (in priority order):
+      // 1. client_reference_id (Payment Links and fixed embedded checkout)
+      // 2. session.metadata.userId (embedded checkout with metadata)
+      // 3. session.metadata.convexUserId (alternative metadata key)
+      const userId = session.client_reference_id
+        || session.metadata?.userId
+        || session.metadata?.convexUserId;
+
       if (!userId) {
-        console.warn("No client_reference_id in checkout session - cannot associate with user");
+        console.warn("No userId found in checkout session (checked client_reference_id and metadata) - cannot associate with user");
+        console.warn("Session ID:", session.id, "Customer:", session.customer);
         return;
       }
 
-      console.log(`Payment Link checkout completed for user ${userId}`);
+      console.log(`Checkout completed for user ${userId} (subscription: ${session.subscription})`);
 
       // Store the userId mapping for this subscription
       // The subscription.created event will fire separately with full subscription data
