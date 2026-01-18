@@ -177,19 +177,37 @@ export const createCustomerPortalSession = action({
       throw new Error("Not authenticated");
     }
 
-    // Find user's subscription to get customer ID
-    const subscriptions = await ctx.runQuery(
+    const userId = identity.subject;
+    let stripeCustomerId: string | null = null;
+
+    // First, try to find subscription in Stripe component's tables
+    const componentSubscriptions = await ctx.runQuery(
       components.stripe.public.listSubscriptionsByUserId,
-      { userId: identity.subject }
+      { userId }
     );
 
-    if (subscriptions.length === 0) {
-      return null;
+    if (componentSubscriptions.length > 0) {
+      stripeCustomerId = componentSubscriptions[0].stripeCustomerId;
+    }
+
+    // Fallback: Check our local subscriptions table
+    if (!stripeCustomerId) {
+      const localSubscription = await ctx.runQuery(
+        internal.subscriptionHelpers.getSubscriptionByUserId,
+        { userId: userId as Id<"users"> }
+      );
+      if (localSubscription) {
+        stripeCustomerId = localSubscription.stripeCustomerId;
+      }
+    }
+
+    if (!stripeCustomerId) {
+      throw new Error("No subscription found. Please contact support if you believe this is an error.");
     }
 
     // Create portal session
     const portal = await stripeClient.createCustomerPortalSession(ctx, {
-      customerId: subscriptions[0].stripeCustomerId,
+      customerId: stripeCustomerId,
       returnUrl: args.returnUrl ?? process.env.SITE_URL ?? "http://localhost:5173",
     });
 
