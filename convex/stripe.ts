@@ -171,7 +171,7 @@ export const createCustomerPortalSession = action({
   args: {
     returnUrl: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ url: string } | null> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
@@ -192,7 +192,7 @@ export const createCustomerPortalSession = action({
 
     // Fallback: Check our local subscriptions table
     if (!stripeCustomerId) {
-      const localSubscription = await ctx.runQuery(
+      const localSubscription: { stripeCustomerId: string } | null = await ctx.runQuery(
         internal.subscriptionHelpers.getSubscriptionByUserId,
         { userId: userId as Id<"users"> }
       );
@@ -205,13 +205,20 @@ export const createCustomerPortalSession = action({
       throw new Error("No subscription found. Please contact support if you believe this is an error.");
     }
 
-    // Create portal session
-    const portal = await stripeClient.createCustomerPortalSession(ctx, {
-      customerId: stripeCustomerId,
-      returnUrl: args.returnUrl ?? process.env.SITE_URL ?? "http://localhost:5173",
+    // Use Stripe SDK directly for portal session (more reliable than component method)
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+    const returnUrl = args.returnUrl ?? process.env.SITE_URL ?? "http://localhost:5173";
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: returnUrl,
     });
 
-    return portal;
+    return {
+      url: portalSession.url,
+    };
   },
 });
 
