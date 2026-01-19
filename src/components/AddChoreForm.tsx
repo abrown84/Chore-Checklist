@@ -255,7 +255,7 @@ export const AddChoreForm: React.FC = () => {
           )}
 
           {/* Form Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
               type="submit"
               disabled={isSubmitting || hasErrors}

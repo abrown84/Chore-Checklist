@@ -302,7 +302,7 @@ export const ChoreItem = memo<ChoreItemProps>(({
                           <img
                             src={chore.proofPhotoUrl}
                             alt={`Proof of completion for ${chore.title}`}
-                            className="w-32 h-32 object-cover cursor-pointer transition-transform duration-200 group-hover/photo:scale-105"
+                            className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer transition-transform duration-200 group-hover/photo:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
                         </button>

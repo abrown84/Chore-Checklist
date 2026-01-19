@@ -118,7 +118,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
               <div className="flex items-start gap-3 mb-3">
                 {/* Rank Badge - More prominent */}
                 <div className={`
-                  flex items-center justify-center w-12 h-12 rounded-xl font-black text-lg
+                  flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl font-black text-base sm:text-lg
                   ${medalStyle.rankBg} shadow-lg flex-shrink-0
                   ${isTop3 ? 'animate-pulse' : ''}
                 `}>
@@ -180,7 +180,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
               </div>
 
               {/* Stats Grid - Cleaner layout */}
-              <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
                 {/* Primary Stat */}
                 <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
                   {rankingMode === RANKING_MODES.EFFICIENCY ? (

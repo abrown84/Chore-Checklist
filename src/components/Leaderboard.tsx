@@ -155,7 +155,7 @@ export const Leaderboard: React.FC = React.memo(() => {
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto">
       {/* Compact Header with Quick Stats */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-yellow-500" />
@@ -202,7 +202,7 @@ export const Leaderboard: React.FC = React.memo(() => {
 
       {/* Compact Personal Stats + Household Overview */}
       {userState.currentUser && currentUserStats && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Your Stats */}
           <div className="lg:col-span-1 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl p-5 border border-primary/20">
             <div className="flex items-center gap-3 mb-4">

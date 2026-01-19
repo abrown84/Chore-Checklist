@@ -219,7 +219,7 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           <PricingCard
             plan={PLANS.free}
             billingInterval={billingInterval}
@@ -328,7 +328,7 @@ export const PricingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {faqs.map((faq, index) => (
               <div
                 key={index}
