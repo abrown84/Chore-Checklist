@@ -80,7 +80,7 @@ export const HouseholdStats: React.FC<HouseholdStatsProps> = React.memo(({
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
       {statCards.map((card) => (
         <div
           key={card.label}
