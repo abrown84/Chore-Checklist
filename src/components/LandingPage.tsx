@@ -191,8 +191,8 @@ export default function LandingPage() {
 	// Animated background GIF from Giphy
 	const backgroundGifUrl = '/background.gif'
 
-	// Background tranquil/peaceful sound effect
-	const backgroundAudioUrl = '/sounds/tranquil.mp3'
+	// Background beat
+	const backgroundAudioUrl = '/sounds/mrsty.mp3'
 
 	return (
 		<PageWrapper
