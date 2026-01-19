@@ -168,8 +168,8 @@ export const PointsCounter: React.FC = memo(() => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-primary/10 via-chart-4/10 to-accent/10 rounded-2xl p-3 sm:p-4 border border-primary/20 shadow-lg animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div className="responsive-container bg-gradient-to-br from-primary/10 via-chart-4/10 to-accent/10 rounded-2xl border border-primary/20 shadow-lg animate-fade-in">
+      <div className="card-responsive flex flex-col sm:flex-row items-center justify-between gap-fluid-sm">
         {/* Level Display */}
         <div className="text-center">
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2 mb-2">
@@ -193,7 +193,7 @@ export const PointsCounter: React.FC = memo(() => {
           <p className="text-sm sm:text-base text-muted-foreground mb-1">{currentLevelData?.name}</p>
           {/* Level Meme - Hidden on small screens, shown on larger */}
           {currentLevelData && (
-            <div className="hidden sm:block max-w-[200px] mx-auto mt-2" style={{ aspectRatio: '4/3' }}>
+            <div className="hidden sm:block max-w-[200px] mx-auto mt-2 aspect-[4/3]">
               <LevelMeme level={currentLevelData} className="h-full w-full" />
             </div>
           )}
@@ -201,9 +201,9 @@ export const PointsCounter: React.FC = memo(() => {
 
         {/* Points Display */}
         <div className="text-center">
-          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Available Points</div>
+          <div className="text-fluid-xs text-muted-foreground mb-1">Available Points</div>
           <div
-            className={`text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm ${isAnimating ? 'animate-points-pop' : ''}`}
+            className={`text-fluid-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm ${isAnimating ? 'animate-points-pop' : ''}`}
           >
             {stats.earnedPoints || 0}
           </div>

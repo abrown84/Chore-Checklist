@@ -80,19 +80,21 @@ export const HouseholdStats: React.FC<HouseholdStatsProps> = React.memo(({
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+    <div className="stats-grid">
       {statCards.map((card) => (
         <div
           key={card.label}
-          className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-4 border border-border/50 backdrop-blur-sm hover:scale-[1.02] transition-transform"
+          className="card-container bg-white/60 dark:bg-slate-800/60 rounded-lg border border-border/50 backdrop-blur-sm hover:scale-[1.02] transition-transform"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`p-2 ${card.iconBg} rounded-lg`}>
-              <card.icon className="w-4 h-4 text-white" />
+          <div className="card-responsive">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-2 ${card.iconBg} rounded-lg`}>
+                <card.icon className="w-4 h-4 text-white" />
+              </div>
             </div>
+            <div className="text-fluid-xl font-black text-foreground">{card.value}</div>
+            <div className="text-fluid-xs text-muted-foreground uppercase tracking-wide">{card.label}</div>
           </div>
-          <div className="text-2xl font-black text-foreground">{card.value}</div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wide">{card.label}</div>
         </div>
       ))}
     </div>

@@ -65,7 +65,7 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
           <h4 className="text-sm font-medium text-gray-700 mb-3">
             ✅ Unlocked Rewards (Level {currentLevel})
           </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid-auto-fit-xs">
             {getRewardsForLevel(currentLevel).map((reward, index) => (
               <div key={index} className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -96,7 +96,7 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
                 {nextLevelInfo.pointsToNext} more points needed
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="grid-auto-fit-xs">
               {nextLevelInfo.rewards.map((reward: string, index: number) => (
                 <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
                   <Lock className="w-4 h-4 text-gray-400" />
@@ -112,7 +112,7 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
           <h4 className="text-sm font-medium text-gray-700 mb-3">
             📊 All Levels Overview
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid-auto-fit-sm">
             {LEVELS.map((level) => {
               const isUnlocked = currentLevel >= level.level
               const isCurrent = currentLevel === level.level
@@ -154,7 +154,7 @@ export const RewardsProgress: React.FC<RewardsProgressProps> = ({
                     {level.name}
                   </div>
                   {/* Level Meme - Smaller in overview grid */}
-                  <div className="mb-2 w-full" style={{ aspectRatio: '4/3', maxHeight: '100px' }}>
+                  <div className="mb-2 w-full aspect-[4/3] max-h-[100px]">
                     <LevelMeme level={level} className="h-full w-full" />
                   </div>
                   <div className="text-xs text-gray-500">

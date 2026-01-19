@@ -101,10 +101,160 @@
 }
 
 @layer components {
+  /* ============================================
+     MODERN RESPONSIVE UTILITIES
+     ============================================ */
+
+  /* Auto-fit grid utilities for truly responsive grids */
+  .grid-auto-fit-xs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: clamp(0.5rem, 2vw, 1rem);
+  }
+
+  .grid-auto-fit-sm {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: clamp(0.75rem, 2vw, 1.25rem);
+  }
+
+  .grid-auto-fit-md {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  .grid-auto-fit-lg {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .grid-auto-fill-xs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+    gap: clamp(0.5rem, 2vw, 1rem);
+  }
+
+  .grid-auto-fill-sm {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    gap: clamp(0.75rem, 2vw, 1.25rem);
+  }
+
+  /* Container query wrapper */
+  .responsive-container {
+    container-type: inline-size;
+  }
+
+  /* Fluid padding wrapper for main content areas */
+  .fluid-padding {
+    padding-inline: clamp(1rem, 5vw, 2rem);
+    padding-block: clamp(1rem, 4vw, 2rem);
+  }
+
+  .fluid-padding-x {
+    padding-inline: clamp(1rem, 5vw, 2rem);
+  }
+
+  .fluid-padding-y {
+    padding-block: clamp(1rem, 4vw, 2rem);
+  }
+
+  /* Fluid gap utilities */
+  .gap-fluid-sm {
+    gap: clamp(0.5rem, 2vw, 1rem);
+  }
+
+  .gap-fluid-md {
+    gap: clamp(0.75rem, 2.5vw, 1.5rem);
+  }
+
+  .gap-fluid-lg {
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  /* Responsive stack - vertical on mobile, horizontal on larger screens */
+  .responsive-stack {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+  }
+
+  @container (min-width: 32rem) {
+    .responsive-stack {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  /* Card container with responsive sizing */
+  .card-container {
+    container-type: inline-size;
+  }
+
+  /* Responsive card content based on container width */
+  .card-responsive {
+    padding: clamp(0.75rem, 3cqi, 1.5rem);
+  }
+
+  @container (min-width: 20rem) {
+    .card-responsive {
+      padding: clamp(1rem, 4cqi, 2rem);
+    }
+  }
+
+  /* Stats grid - adapts based on container */
+  .stats-grid {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(0.5rem, 2cqi, 1rem);
+  }
+
+  @container (min-width: 40rem) {
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Feature grid - auto-fit with minimum size */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  /* Pricing grid */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+
+  /* Section spacing using fluid values */
+  .section-spacing {
+    padding-block: clamp(3rem, 8vw, 7rem);
+  }
+
+  /* Max-width container with fluid padding */
+  .content-wrapper {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 5vw, 2rem);
+  }
+
+  /* ============================================
+     CHORE ANIMATIONS (existing)
+     ============================================ */
+
   .chore-complete-animation {
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .chore-complete-fade-out {
     opacity: 0;
     transform: scale(0.95) translateY(-8px);
@@ -113,7 +263,7 @@
     margin: 0;
     padding: 0;
   }
-  
+
   .chore-complete-fade-in {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -121,11 +271,11 @@
     margin: inherit;
     padding: inherit;
   }
-  
+
   .chore-grid {
     transition: grid-template-rows 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .chore-completing {
     animation: chore-complete-pulse 0.5s ease-in-out;
   }
@@ -1117,17 +1267,9 @@
     z-index: -1;
   }
 
-  /* Magnetic Spacing Utilities */
+  /* Magnetic Spacing Utilities - using fluid values */
   .magnetic-section {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
-  }
-
-  @media (min-width: 768px) {
-    .magnetic-section {
-      padding-top: 8rem;
-      padding-bottom: 8rem;
-    }
+    padding-block: clamp(4rem, 10vw, 8rem);
   }
 
   /* Inner Light Animation */

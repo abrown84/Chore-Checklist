@@ -124,10 +124,10 @@ export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
             </div>
           )}
           
-          <div className={`grid gap-4 transition-all duration-500 ease-in-out ${
+          <div className={`transition-all duration-500 ease-in-out ${
             viewMode === 'grid'
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-              : 'grid-cols-1'
+              ? 'grid-auto-fit-md'
+              : 'grid grid-cols-1 gap-fluid-sm'
           }`}>
             {chores.map((chore, index) => (
               <ChoreItem

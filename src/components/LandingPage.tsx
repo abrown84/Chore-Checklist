@@ -204,7 +204,7 @@ export default function LandingPage() {
 		>
 			{/* Header - Radiant Momentum */}
 			<header className="sticky top-0 z-40 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-b border-amber-500/10">
-				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4 sm:py-5">
+				<div className="content-wrapper flex items-center justify-between py-fluid-sm">
 					<div className="flex items-center gap-3 sm:gap-4">
 						<div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl radiant-icon text-white shadow-lg">
 							<Logo className="h-8 w-8 sm:h-10 sm:w-10" />
@@ -233,7 +233,7 @@ export default function LandingPage() {
 			</header>
 
 			{/* Hero Section - Radiant Momentum */}
-			<section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16 sm:pb-24 pt-20 sm:pt-28 md:pb-32 md:pt-36 lg:pt-40 radiant-hero-glow">
+			<section className="content-wrapper section-spacing radiant-hero-glow">
 				<div
 					ref={heroRef}
 					className="mx-auto max-w-4xl text-center"
@@ -243,15 +243,15 @@ export default function LandingPage() {
 						<Star className="h-3.5 w-3.5 text-amber-400" />
 						Turn chores into XP and real rewards
 					</div>
-					<h1 className="mt-8 sm:mt-10 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold tracking-tight leading-tight">
+					<h1 className="mt-fluid-md text-fluid-hero font-heading font-extrabold tracking-tight">
 						Get to the bag
 						<br className="hidden sm:block" />
 						<span className="radiant-text-animated">one chore at a time</span>
 					</h1>
-					<p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-muted-foreground font-body leading-relaxed">
+					<p className="mx-auto mt-fluid-sm max-w-2xl text-fluid-base text-muted-foreground font-body leading-relaxed">
 						Turn your to-do list into a leaderboard. Earn points, unlock achievements, and make household chores feel like winning.
 					</p>
-					<div className="mt-10 sm:mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+					<div className="mt-fluid-md flex flex-col items-center justify-center gap-fluid-sm sm:flex-row">
 						<Button
 							onClick={enterDemoMode}
 							className="radiant-button h-12 px-8 text-base rounded-xl w-full sm:w-auto"
@@ -276,16 +276,16 @@ export default function LandingPage() {
 			<div className="radiant-divider mx-auto max-w-3xl" />
 
 			{/* Features Section - Radiant Momentum */}
-			<section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28">
-				<div className="text-center mb-12 sm:mb-16">
-					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+			<section id="features" className="content-wrapper section-spacing">
+				<div className="text-center mb-fluid-lg">
+					<h2 className="text-fluid-3xl font-heading font-bold">
 						Everything you need to <span className="radiant-text">win at home</span>
 					</h2>
-					<p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+					<p className="mt-fluid-sm text-fluid-base text-muted-foreground max-w-2xl mx-auto">
 						Built for families who want to turn daily routines into rewarding experiences.
 					</p>
 				</div>
-				<div ref={featuresRef} className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+				<div ref={featuresRef} className="feature-grid">
 					{features.map((f) => (
 						<Card key={f.title} className="feature-card h-full radiant-card rounded-2xl backdrop-blur-sm" style={{ opacity: 0 }}>
 							<CardHeader className="flex flex-row items-center gap-4 pb-3">
@@ -304,8 +304,8 @@ export default function LandingPage() {
 			<div className="radiant-divider mx-auto max-w-3xl" />
 
 			{/* Live Demo Section - Radiant Momentum */}
-			<section id="demo" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
-				<div className="grid items-start gap-8 lg:grid-cols-2">
+			<section id="demo" className="content-wrapper section-spacing">
+				<div className="grid-auto-fit-lg items-start">
 					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow">
 						<CardHeader>
 							<div className="flex items-center justify-between">
@@ -380,13 +380,13 @@ export default function LandingPage() {
 			</section>
 
 			{/* How It Works - Radiant Momentum */}
-			<section className="mx-auto max-w-7xl px-6 py-20 sm:py-28 radiant-bg-accent">
-				<div className="text-center mb-12 sm:mb-16">
-					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+			<section className="content-wrapper section-spacing radiant-bg-accent">
+				<div className="text-center mb-fluid-lg">
+					<h2 className="text-fluid-3xl font-heading font-bold">
 						Three steps to <span className="radiant-text">transform your home</span>
 					</h2>
 				</div>
-				<div className="grid gap-8 md:grid-cols-3">
+				<div className="feature-grid">
 					{[
 						{ step: '1', title: 'Create your home', text: 'Invite family members and set roles. Import or pick starter chores.' },
 						{ step: '2', title: 'Assign XP & rewards', text: 'Choose values, add streaks, and set cash-out rules.' },
@@ -407,14 +407,14 @@ export default function LandingPage() {
 			<div className="radiant-divider mx-auto max-w-3xl" />
 
 			{/* Pricing Section - Radiant Momentum */}
-			<section id="pricing" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
-				<div className="mb-12 sm:mb-16 text-center">
-					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+			<section id="pricing" className="content-wrapper section-spacing">
+				<div className="mb-fluid-lg text-center">
+					<h2 className="text-fluid-3xl font-heading font-bold">
 						Simple <span className="radiant-text">pricing</span>
 					</h2>
-					<p className="mt-4 text-muted-foreground max-w-xl mx-auto">Start free. Upgrade for advanced automation and more users.</p>
+					<p className="mt-fluid-sm text-fluid-base text-muted-foreground max-w-xl mx-auto">Start free. Upgrade for advanced automation and more users.</p>
 				</div>
-				<div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+				<div className="pricing-grid">
 					<Card className="radiant-card rounded-2xl backdrop-blur-sm">
 						<CardHeader className="pb-4">
 							<div className="flex items-center justify-between">
@@ -467,9 +467,9 @@ export default function LandingPage() {
 			<div className="radiant-divider mx-auto max-w-3xl" />
 
 			{/* FAQ Section - Radiant Momentum */}
-			<section id="faq" className="mx-auto max-w-4xl px-6 py-20 sm:py-28">
-				<div className="text-center mb-12 sm:mb-16">
-					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
+			<section id="faq" className="content-wrapper section-spacing max-w-4xl mx-auto">
+				<div className="text-center mb-fluid-lg">
+					<h2 className="text-fluid-3xl font-heading font-bold">
 						Frequently asked <span className="radiant-text">questions</span>
 					</h2>
 				</div>
@@ -493,7 +493,7 @@ export default function LandingPage() {
 
 			{/* Footer - Radiant Momentum */}
 			<footer className="border-t border-amber-500/10 bg-background/80 backdrop-blur-sm">
-				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 py-12 md:flex-row">
+				<div className="content-wrapper flex flex-col items-center justify-between gap-fluid-md py-fluid-lg md:flex-row">
 					<div className="flex items-center gap-4 text-muted-foreground">
 						<div className="flex h-12 w-12 items-center justify-center rounded-xl radiant-icon text-white">
 							<Logo className="h-8 w-8" />
@@ -627,7 +627,7 @@ export default function LandingPage() {
 							>
 								<X className="h-5 w-5 sm:h-6 sm:w-6" />
 							</Button>
-							<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: '16/9' }}>
+							<div className="relative w-full bg-black rounded-lg overflow-hidden shadow-xl aspect-video">
 								<video
 									ref={videoRef}
 									className="w-full h-full object-contain"

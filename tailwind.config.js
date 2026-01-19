@@ -7,6 +7,40 @@ export default {
   ],
   theme: {
   	extend: {
+  		// Container query sizes
+  		containers: {
+  			'2xs': '16rem',
+  			'xs': '20rem',
+  			'sm': '24rem',
+  			'md': '28rem',
+  			'lg': '32rem',
+  			'xl': '36rem',
+  			'2xl': '42rem',
+  			'3xl': '48rem',
+  			'4xl': '56rem',
+  		},
+  		// Fluid spacing using clamp
+  		spacing: {
+  			'fluid-xs': 'clamp(0.25rem, 1vw, 0.5rem)',
+  			'fluid-sm': 'clamp(0.5rem, 2vw, 1rem)',
+  			'fluid-md': 'clamp(1rem, 3vw, 1.5rem)',
+  			'fluid-lg': 'clamp(1.5rem, 4vw, 2.5rem)',
+  			'fluid-xl': 'clamp(2rem, 5vw, 4rem)',
+  			'fluid-2xl': 'clamp(3rem, 8vw, 6rem)',
+  		},
+  		// Fluid font sizes
+  		fontSize: {
+  			'fluid-xs': ['clamp(0.75rem, 1.5vw, 0.875rem)', { lineHeight: '1.5' }],
+  			'fluid-sm': ['clamp(0.875rem, 2vw, 1rem)', { lineHeight: '1.5' }],
+  			'fluid-base': ['clamp(1rem, 2.5vw, 1.125rem)', { lineHeight: '1.6' }],
+  			'fluid-lg': ['clamp(1.125rem, 3vw, 1.25rem)', { lineHeight: '1.5' }],
+  			'fluid-xl': ['clamp(1.25rem, 3.5vw, 1.5rem)', { lineHeight: '1.4' }],
+  			'fluid-2xl': ['clamp(1.5rem, 4vw, 2rem)', { lineHeight: '1.3' }],
+  			'fluid-3xl': ['clamp(1.875rem, 5vw, 2.5rem)', { lineHeight: '1.2' }],
+  			'fluid-4xl': ['clamp(2.25rem, 6vw, 3rem)', { lineHeight: '1.1' }],
+  			'fluid-5xl': ['clamp(3rem, 8vw, 4rem)', { lineHeight: '1' }],
+  			'fluid-hero': ['clamp(2rem, 6vw + 1rem, 4.5rem)', { lineHeight: '1.1', fontWeight: '800' }],
+  		},
   		keyframes: {
   			'check-bounce': {
   				'0%': { transform: 'scale(0)', opacity: '0' },
@@ -108,5 +142,8 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/container-queries"),
+  ],
 }
