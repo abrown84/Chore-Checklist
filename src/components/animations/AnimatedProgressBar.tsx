@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, memo } from 'react'
-import { animate, createTimeline, Timeline } from 'animejs'
+import { useEffect, useRef, useState, memo } from 'react'
+import { createTimeline, Timeline } from 'animejs'
 
 interface AnimatedProgressBarProps {
   progress: number // 0-100
