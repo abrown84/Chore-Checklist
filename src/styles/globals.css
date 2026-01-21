@@ -94,6 +94,26 @@
   * {
     @apply border-border;
   }
+
+  /* Smooth scrolling for the entire app */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Respect user's reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-body;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -1146,5 +1166,60 @@
 
   .animate-inner-light {
     animation: inner-light 4s ease-in-out infinite;
+  }
+
+  /* Ripple effect for button clicks */
+  @keyframes ripple {
+    0% {
+      width: 0;
+      height: 0;
+      opacity: 0.5;
+    }
+    100% {
+      width: 200px;
+      height: 200px;
+      opacity: 0;
+    }
+  }
+
+  .animate-ripple {
+    animation: ripple 0.6s ease-out forwards;
+  }
+
+  /* Button press feedback */
+  @keyframes button-press {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-button-press {
+    animation: button-press 0.15s ease-out;
+  }
+
+  /* Subtle hover lift */
+  .hover-lift {
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Card press effect */
+  .press-effect {
+    transition: transform 0.15s ease-out;
+  }
+
+  .press-effect:active {
+    transform: scale(0.98);
+  }
+
+  /* Focus ring with brand color */
+  .focus-brand:focus-visible {
+    outline: none;
+    ring: 2px solid hsl(var(--primary));
+    ring-offset: 2px;
   }
 }

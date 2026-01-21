@@ -5,7 +5,7 @@ import { api } from '../../../convex/_generated/api'
 import { Card, CardHeader, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { Lock, KeyRound, Check, AlertCircle, Trash2, Mail } from 'lucide-react'
+import { Lock, Key, Check, WarningCircle, Trash, Envelope } from '@phosphor-icons/react'
 import { useConvexAuth } from '../../hooks/useConvexAuth'
 import { usePasswordFlow } from '../../contexts/PasswordFlowContext'
 
@@ -226,7 +226,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       <Card className="border-border bg-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-muted-foreground" />
+            <Key className="h-5 w-5 text-muted-foreground" />
             <h3 className="text-lg font-semibold">Password</h3>
           </div>
         </CardHeader>
@@ -308,7 +308,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
                 {setPasswordError && (
                   <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                     <p className="text-sm text-destructive flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-2" />
+                      <WarningCircle className="w-4 h-4 mr-2" />
                       {setPasswordError}
                     </p>
                   </div>
@@ -356,7 +356,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
               {resetError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <WarningCircle className="w-4 h-4 mr-2" />
                     {resetError}
                   </p>
                 </div>
@@ -374,7 +374,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
                   </div>
                 ) : (
                   <>
-                    <Mail className="w-4 h-4 mr-2" />
+                    <Envelope className="w-4 h-4 mr-2" />
                     Send Reset Code
                   </>
                 )}
@@ -427,7 +427,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
               {resetError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <WarningCircle className="w-4 h-4 mr-2" />
                     {resetError}
                   </p>
                 </div>
@@ -466,7 +466,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
       <Card className="border-destructive/30 bg-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-destructive" />
+            <Trash className="h-5 w-5 text-destructive" />
             <h3 className="text-lg font-semibold text-destructive">Delete Account</h3>
           </div>
         </CardHeader>
@@ -481,7 +481,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
                 className="border-destructive/50 text-destructive hover:bg-destructive/10"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash className="w-4 h-4 mr-2" />
                 Delete My Account
               </Button>
             </div>
@@ -516,7 +516,7 @@ export const PasswordSettings: React.FC = React.memo(() => {
               {deleteError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <WarningCircle className="w-4 h-4 mr-2" />
                     {deleteError}
                   </p>
                 </div>

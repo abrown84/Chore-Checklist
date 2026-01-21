@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Globe } from 'lucide-react'
+import { House, Globe } from '@phosphor-icons/react'
 
 export type LeaderboardView = 'household' | 'global'
 
@@ -22,7 +22,7 @@ export const LeaderboardViewToggle: React.FC<LeaderboardViewToggleProps> = React
             : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent/50'
         }`}
       >
-        <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
+        <House className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
         <span className="hidden sm:inline">Household</span>
         <span className="sm:hidden">Home</span>
       </button>

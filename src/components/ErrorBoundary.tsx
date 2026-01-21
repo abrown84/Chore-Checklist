@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { Warning, ArrowClockwise, House } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 
 interface Props {
@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white dark:bg-card rounded-lg shadow-lg p-8 text-center">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
+              <Warning className="w-8 h-8 text-destructive" />
             </div>
             
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -88,7 +88,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReset}
                 className="w-full bg-primary hover:bg-primary/90"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <ArrowClockwise className="w-4 h-4 mr-2" />
                 Try Again
               </Button>
               
@@ -97,7 +97,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="outline"
                 className="w-full"
               >
-                <Home className="w-4 h-4 mr-2" />
+                <House className="w-4 h-4 mr-2" />
                 Go Home
               </Button>
             </div>

@@ -3,7 +3,7 @@ import { animate } from 'animejs'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { LEVELS } from '../types/chore'
-import { Star, Crown, Trophy, X, Share2, Sparkles, Zap } from 'lucide-react'
+import { Star, Crown, Trophy, X, ShareNetwork, Sparkle, Lightning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 export const LevelUpCelebration: React.FC = () => {
@@ -227,7 +227,7 @@ export const LevelUpCelebration: React.FC = () => {
     if (level >= 8) return <Crown className={`${iconClass} text-cyan-300`} style={iconStyle} />
     if (level >= 6) return <Trophy className={`${iconClass} text-cyan-400`} style={iconStyle} />
     if (level >= 4) return <Star className={`${iconClass} text-cyan-500`} style={iconStyle} />
-    return <Zap className={`${iconClass} text-cyan-400`} style={iconStyle} />
+    return <Lightning className={`${iconClass} text-cyan-400`} style={iconStyle} />
   }
 
   return (
@@ -367,14 +367,14 @@ export const LevelUpCelebration: React.FC = () => {
           }}
         >
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+            <Sparkle className="w-5 h-5 text-cyan-400" />
             <h3
               className="text-lg font-bold text-cyan-400 uppercase tracking-wide"
               style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}
             >
               Rewards Unlocked
             </h3>
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+            <Sparkle className="w-5 h-5 text-cyan-400" />
           </div>
           <ul className="space-y-2">
             {levelData?.rewards.map((reward, index) => (
@@ -401,7 +401,7 @@ export const LevelUpCelebration: React.FC = () => {
             textShadow: '0 0 5px rgba(0, 255, 255, 0.5)',
           }}
         >
-          <Share2 className="w-5 h-5" />
+          <ShareNetwork className="w-5 h-5" />
           Share Achievement
         </button>
 

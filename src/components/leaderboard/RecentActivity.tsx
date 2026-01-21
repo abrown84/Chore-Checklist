@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock, CheckCircle, DollarSign } from 'lucide-react'
+import { Clock, CheckCircle, CurrencyDollar } from '@phosphor-icons/react'
 import { Chore } from '../../types/chore'
 import { useRedemption } from '../../contexts/RedemptionContext'
 import { APP_CONFIG } from '../../config/constants'
@@ -39,7 +39,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = React.memo(({ chore
       title: `${req.userName} requested redemption`,
       description: `${req.pointsRequested} points = $${req.cashAmount}`,
       timestamp: new Date(req.requestedAt),
-      icon: <DollarSign className="w-4 h-4 text-blue-600" />,
+      icon: <CurrencyDollar className="w-4 h-4 text-blue-600" />,
       color: 'text-blue-600',
       status: req.status
     }))

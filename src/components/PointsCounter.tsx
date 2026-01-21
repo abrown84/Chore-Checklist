@@ -1,11 +1,13 @@
-import React, { useMemo, memo, useEffect, useRef, useState } from 'react'
+import React, { useMemo, memo, useEffect, useRef } from 'react'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
 import { useChores } from '../contexts/ChoreContext'
+import { useSoundEffect } from '../contexts/SoundContext'
 import { LEVELS } from '../types/chore'
 import { LevelMeme } from './profile/LevelMeme'
-import { Star, Crown, Target, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from 'lucide-react'
+import { AnimatedCounter, AnimatedProgressBar } from './animations'
+import { Star, Crown, Crosshair, Trophy, Clock, Flower, Sun, Leaf, Snowflake } from '@phosphor-icons/react'
 
 // Function to get current season based on date
 const getCurrentSeason = () => {
@@ -144,19 +146,17 @@ export const PointsCounter: React.FC = memo(() => {
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
   const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
 
-  // Animation state for points counter
-  const [isAnimating, setIsAnimating] = useState(false)
+  // Sound effects
+  const { playSound } = useSoundEffect()
   const prevPointsRef = useRef(stats.earnedPoints)
 
-  // Trigger animation when points change
+  // Play sound when points change
   useEffect(() => {
-    if (prevPointsRef.current !== stats.earnedPoints) {
-      setIsAnimating(true)
-      const timer = setTimeout(() => setIsAnimating(false), 400)
+    if (prevPointsRef.current !== stats.earnedPoints && stats.earnedPoints > prevPointsRef.current) {
+      playSound('points')
       prevPointsRef.current = stats.earnedPoints
-      return () => clearTimeout(timer)
     }
-  }, [stats.earnedPoints])
+  }, [stats.earnedPoints, playSound])
   
   // Get level icon based on level
   const getLevelIcon = (level: number) => {
@@ -164,7 +164,7 @@ export const PointsCounter: React.FC = memo(() => {
     if (level >= 8) return <Crown className="w-5 h-5 text-pink-600" />
     if (level >= 6) return <Trophy className="w-5 h-5 text-red-600" />
     if (level >= 4) return <Star className="w-5 h-5 text-purple-600" />
-    return <Target className="w-5 h-5 text-blue-600" />
+    return <Crosshair className="w-5 h-5 text-blue-600" />
   }
 
   return (
@@ -202,14 +202,15 @@ export const PointsCounter: React.FC = memo(() => {
         {/* Points Display */}
         <div className="text-center">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Available Points</div>
-          <div
-            className={`text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm ${isAnimating ? 'animate-points-pop' : ''}`}
-          >
-            {stats.earnedPoints || 0}
+          <div className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-chart-4 bg-clip-text text-transparent drop-shadow-sm">
+            <AnimatedCounter
+              value={stats.earnedPoints || 0}
+              duration={800}
+            />
           </div>
           {stats.lifetimePoints !== undefined && stats.lifetimePoints !== stats.earnedPoints && (
             <div className="text-xs text-muted-foreground mt-1">
-              {stats.lifetimePoints} total earned
+              <AnimatedCounter value={stats.lifetimePoints} duration={600} /> total earned
             </div>
           )}
         </div>
@@ -219,14 +220,13 @@ export const PointsCounter: React.FC = memo(() => {
           <div className="text-center w-full sm:min-w-[120px] sm:w-auto">
             <div className="text-xs sm:text-sm text-muted-foreground">Next Level</div>
             <div className="text-base sm:text-lg font-semibold text-chart-4">Lv {nextLevelData.level}</div>
-            <div className="w-full bg-muted rounded-full h-2 mt-1">
-              <div 
-                className="bg-gradient-to-r from-primary to-chart-4 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-              />
-            </div>
+            <AnimatedProgressBar
+              progress={progressPercentage}
+              duration={800}
+              className="mt-1"
+            />
             <div className="text-xs text-muted-foreground mt-1">
-              {stats.pointsToNextLevel} pts needed
+              <AnimatedCounter value={stats.pointsToNextLevel} duration={600} /> pts needed
             </div>
           </div>
         )}

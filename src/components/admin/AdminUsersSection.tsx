@@ -2,21 +2,14 @@ import React, { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { getDisplayName } from '../../utils/convexHelpers'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Input } from '../ui/input'
 import { Avatar } from '../ui/Avatar'
 import { Id } from '../../../convex/_generated/dataModel'
 import { toast } from 'sonner'
-import {
-  Users,
-  ChevronUp,
-  ChevronDown,
-  Coins,
-  Save,
-  X,
-} from 'lucide-react'
+import { Users, Coins, FloppyDisk, X, CaretDown } from '@phosphor-icons/react'
 
 interface HouseholdMember {
   _id: Id<'users'>
@@ -39,234 +32,180 @@ interface AdminUsersSectionProps {
   householdStats: MemberStats[] | undefined
 }
 
+const ROLES = ['admin', 'parent', 'teen', 'kid', 'member'] as const
+type Role = typeof ROLES[number]
+
 export const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({
   householdId,
   householdMembers,
   householdStats,
 }) => {
-  const [editingUserId, setEditingUserId] = useState<Id<'users'> | null>(null)
-  const [adjustingPointsUserId, setAdjustingPointsUserId] = useState<Id<'users'> | null>(null)
-  const [pointsAdjustment, setPointsAdjustment] = useState('')
-  const [adjustmentReason, setAdjustmentReason] = useState('')
+  const [expandedUserId, setExpandedUserId] = useState<Id<'users'> | null>(null)
+  const [pointsInput, setPointsInput] = useState('')
+  const [reasonInput, setReasonInput] = useState('')
 
   const updateMemberRole = useMutation(api.households.updateMemberRole)
   const adjustUserPoints = useMutation(api.users.adminAdjustUserPoints)
 
+  const handleRoleChange = async (userId: Id<'users'>, newRole: Role) => {
+    try {
+      await updateMemberRole({ householdId, userId, role: newRole })
+      toast.success(`Role updated to ${newRole}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update role')
+    }
+  }
+
+  const handleAdjustPoints = async (userId: Id<'users'>) => {
+    const points = parseInt(pointsInput)
+    if (isNaN(points) || points === 0) {
+      toast.error('Enter a valid non-zero amount')
+      return
+    }
+
+    try {
+      const result = await adjustUserPoints({
+        userId,
+        householdId,
+        pointsChange: points,
+        reason: reasonInput || undefined,
+      })
+      toast.success(`${points > 0 ? 'Added' : 'Subtracted'} ${Math.abs(points)} pts. New: ${result.newPoints}`)
+      setExpandedUserId(null)
+      setPointsInput('')
+      setReasonInput('')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to adjust points')
+    }
+  }
+
+  const members = householdMembers?.filter(Boolean) || []
+
+  if (members.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+          <p>No members found</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="w-5 h-5" />
-          Household Members
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {householdMembers && householdMembers.length > 0 ? (
-          <div className="space-y-3">
-            {householdMembers.map((member) => {
-              if (!member) return null
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold text-sm">Household Members</h3>
+          <Badge variant="secondary" className="ml-auto">{members.length}</Badge>
+        </div>
 
-              const memberStats = householdStats?.find(s => s.userId === member._id)
-              const isEditing = editingUserId === member._id
-              const currentRole = (member.role || 'member') as 'admin' | 'parent' | 'teen' | 'kid' | 'member'
+        <div className="space-y-2">
+          {members.map((member) => {
+            if (!member) return null
+            const stats = householdStats?.find(s => s.userId === member._id)
+            const isExpanded = expandedUserId === member._id
+            const currentRole = (member.role || 'member') as Role
 
-              const handleRoleChange = async (newRole: 'admin' | 'parent' | 'teen' | 'kid' | 'member') => {
-                if (!householdId || !member._id) return
-
-                try {
-                  await updateMemberRole({
-                    householdId,
-                    userId: member._id,
-                    role: newRole,
-                  })
-                  toast.success(`Role updated to ${newRole}`)
-                  setEditingUserId(null)
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : 'Failed to update role')
-                }
-              }
-
-              const handleAdjustPoints = async () => {
-                if (!householdId || !member._id || !pointsAdjustment) return
-
-                const pointsChange = parseInt(pointsAdjustment)
-                if (isNaN(pointsChange) || pointsChange === 0) {
-                  toast.error('Please enter a valid non-zero point amount')
-                  return
-                }
-
-                try {
-                  const result = await adjustUserPoints({
-                    userId: member._id,
-                    householdId,
-                    pointsChange,
-                    reason: adjustmentReason || undefined,
-                  })
-                  toast.success(
-                    `Points ${pointsChange > 0 ? 'added' : 'subtracted'}: ${Math.abs(pointsChange)} points. New total: ${result.newPoints}`
-                  )
-                  setAdjustingPointsUserId(null)
-                  setPointsAdjustment('')
-                  setAdjustmentReason('')
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : 'Failed to adjust points')
-                }
-              }
-
-              const isAdjustingPoints = adjustingPointsUserId === member._id
-
-              return (
-                <div
-                  key={member._id}
-                  className="p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <Avatar
-                      avatarUrl={member.avatarUrl}
-                      userName={getDisplayName(member.name, member.email)}
-                      userId={member._id}
-                      size="md"
-                    />
-                      <div className="flex-1">
-                        <div className="font-medium">{getDisplayName(member.name, member.email)}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                          {isEditing ? (
-                            <select
-                              value={currentRole}
-                              onChange={(e) => handleRoleChange(e.target.value as 'admin' | 'parent' | 'teen' | 'kid' | 'member')}
-                              className="text-xs border border-border rounded px-2 py-1 bg-background"
-                              onBlur={() => setEditingUserId(null)}
-                              autoFocus
-                            >
-                              <option value="admin">Admin</option>
-                              <option value="parent">Parent</option>
-                              <option value="teen">Teen</option>
-                              <option value="kid">Kid</option>
-                              <option value="member">Member</option>
-                            </select>
-                          ) : (
-                            <>
-                              <Badge variant="outline" className="text-xs">
-                                {currentRole}
-                              </Badge>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="font-semibold flex items-center gap-1">
-                          <Coins className="w-4 h-4 text-amber-500" />
-                          {memberStats?.earnedPoints || 0} pts
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Level {memberStats?.currentLevel || member.level || 1}
-                        </div>
-                      </div>
-                      {!isEditing && !isAdjustingPoints && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingUserId(member._id)}
-                            className="flex items-center gap-1"
-                          >
-                            {currentRole === 'admin' ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronUp className="w-4 h-4" />
-                            )}
-                            Change Role
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setAdjustingPointsUserId(member._id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Coins className="w-4 h-4" />
-                            Adjust Points
-                          </Button>
-                        </div>
-                      )}
+            return (
+              <div
+                key={member._id}
+                className={`rounded-lg border transition-colors ${isExpanded ? 'border-primary/30 bg-primary/5' : 'border-border/50 hover:bg-muted/30'}`}
+              >
+                {/* Member Row */}
+                <div className="flex items-center gap-3 p-3">
+                  <Avatar
+                    avatarUrl={member.avatarUrl}
+                    userName={getDisplayName(member.name, member.email)}
+                    userId={member._id}
+                    size="sm"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{getDisplayName(member.name, member.email)}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Lvl {stats?.currentLevel || member.level || 1}</span>
+                      <span>•</span>
+                      <span className="text-amber-600 font-medium">{stats?.earnedPoints || 0} pts</span>
                     </div>
                   </div>
 
-                  {/* Point Adjustment Form */}
-                  {isAdjustingPoints && (
-                    <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-amber-500" />
-                        <span className="font-medium text-sm">Adjust Points for {getDisplayName(member.name, member.email)}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Points Change (use - for subtraction)
-                          </label>
-                          <Input
-                            type="number"
-                            value={pointsAdjustment}
-                            onChange={(e) => setPointsAdjustment(e.target.value)}
-                            placeholder="e.g., 50 or -25"
-                            className="w-full"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Reason (optional)
-                          </label>
-                          <Input
-                            type="text"
-                            value={adjustmentReason}
-                            onChange={(e) => setAdjustmentReason(e.target.value)}
-                            placeholder="e.g., Bonus for good behavior"
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleAdjustPoints}
-                          className="flex items-center gap-1"
-                        >
-                          <Save className="w-4 h-4" />
-                          Apply Adjustment
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setAdjustingPointsUserId(null)
-                            setPointsAdjustment('')
-                            setAdjustmentReason('')
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancel
-                        </Button>
-                      </div>
-                      {pointsAdjustment && !isNaN(parseInt(pointsAdjustment)) && (
-                        <div className="text-xs text-muted-foreground">
-                          Current: {memberStats?.earnedPoints || 0} pts → New: {Math.max(0, (memberStats?.earnedPoints || 0) + parseInt(pointsAdjustment))} pts
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Role Dropdown */}
+                  <div className="relative">
+                    <select
+                      value={currentRole}
+                      onChange={(e) => handleRoleChange(member._id, e.target.value as Role)}
+                      className="appearance-none text-xs border border-border rounded-md px-2 py-1 pr-6 bg-background cursor-pointer hover:bg-muted/50"
+                    >
+                      {ROLES.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                    <CaretDown className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                  </div>
+
+                  {/* Points Button */}
+                  <Button
+                    variant={isExpanded ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setExpandedUserId(isExpanded ? null : member._id)}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Coins className="w-3 h-3 mr-1" />
+                    Pts
+                  </Button>
                 </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No members found</p>
-          </div>
-        )}
+
+                {/* Expanded Points Form */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 pt-1 border-t border-border/30">
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-muted-foreground">Amount (- to subtract)</label>
+                        <Input
+                          type="number"
+                          value={pointsInput}
+                          onChange={(e) => setPointsInput(e.target.value)}
+                          placeholder="e.g., 50 or -25"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-muted-foreground">Reason (optional)</label>
+                        <Input
+                          value={reasonInput}
+                          onChange={(e) => setReasonInput(e.target.value)}
+                          placeholder="Bonus, penalty..."
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <Button size="sm" className="h-8" onClick={() => handleAdjustPoints(member._id)}>
+                        <FloppyDisk className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8"
+                        onClick={() => {
+                          setExpandedUserId(null)
+                          setPointsInput('')
+                          setReasonInput('')
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {pointsInput && !isNaN(parseInt(pointsInput)) && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {stats?.earnedPoints || 0} → {Math.max(0, (stats?.earnedPoints || 0) + parseInt(pointsInput))} pts
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </CardContent>
     </Card>
   )

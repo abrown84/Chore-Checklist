@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useMigration } from '../hooks/useMigration'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { AlertCircle, CheckCircle, Loader2, Database, X } from 'lucide-react'
+import { WarningCircle, CheckCircle, CircleNotch, Database, X } from '@phosphor-icons/react'
 
 export const MigrationBanner: React.FC = () => {
   const { 
@@ -107,7 +107,7 @@ export const MigrationBanner: React.FC = () => {
         <CardContent className="space-y-4">
           {migrationError && (
             <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+              <WarningCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
               <span className="text-sm text-red-700 dark:text-red-300">
                 Migration failed: {migrationError}
               </span>
@@ -122,7 +122,7 @@ export const MigrationBanner: React.FC = () => {
             >
               {isMigrating ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <CircleNotch className="h-4 w-4 mr-2 animate-spin" />
                   Migrating...
                 </>
               ) : (

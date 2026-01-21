@@ -3,7 +3,7 @@ import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Chore, DIFFICULTY_POINTS } from '../types/chore'
 import { validateChoreTitle, validateChoreDescription, validateDate } from '../utils/validation'
-import { X } from 'lucide-react'
+import { X } from '@phosphor-icons/react'
 
 interface EditChoreFormProps {
   chore: Chore

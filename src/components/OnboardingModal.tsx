@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { animate, stagger } from 'animejs'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Button } from './ui/button'
-import { Star, TrendingUp, Trophy, Gift } from 'lucide-react'
+import { Star, TrendUp, Trophy, Gift } from '@phosphor-icons/react'
 
 interface OnboardingModalProps {
   isOpen: boolean
@@ -16,7 +16,7 @@ const features = [
     description: 'Complete chores to earn XP based on difficulty',
   },
   {
-    icon: TrendingUp,
+    icon: TrendUp,
     title: 'Level Up',
     description: 'Progress through 10 levels with unique rewards',
   },

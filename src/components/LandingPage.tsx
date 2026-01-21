@@ -13,26 +13,79 @@ import { AuthModal } from './landing'
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import { X } from 'lucide-react'
-import {
-	Users,
-	Trophy,
-	Coins,
-	CalendarCheck,
-	ShieldCheck as ShieldCheckIcon,
-	Sparkles,
-	Star,
-	CheckCircle,
-	ChevronRight,
-} from 'lucide-react'
+import { X, Users, Coins, Trophy, CalendarCheck, ShieldCheck, Sparkle, Star, CaretRight, CheckCircle } from '@phosphor-icons/react'
+import { motion, useInView } from 'framer-motion'
+
+// Scroll animation variants
+const fadeInUp = {
+	hidden: { opacity: 0, y: 40 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+	}
+}
+
+const fadeInScale = {
+	hidden: { opacity: 0, scale: 0.95 },
+	visible: {
+		opacity: 1,
+		scale: 1,
+		transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+	}
+}
+
+const staggerContainer = {
+	hidden: { opacity: 0 },
+	visible: {
+		opacity: 1,
+		transition: {
+			staggerChildren: 0.1,
+			delayChildren: 0.1
+		}
+	}
+}
+
+const staggerItem = {
+	hidden: { opacity: 0, y: 30 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+	}
+}
+
+// Reusable scroll animation wrapper
+const ScrollReveal = ({ children, className = '', variants = fadeInUp, ...props }: {
+	children: React.ReactNode
+	className?: string
+	variants?: typeof fadeInUp
+	[key: string]: unknown
+}) => {
+	const ref = useRef(null)
+	const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+	return (
+		<motion.div
+			ref={ref}
+			initial="hidden"
+			animate={isInView ? 'visible' : 'hidden'}
+			variants={variants}
+			className={className}
+			{...props}
+		>
+			{children}
+		</motion.div>
+	)
+}
 
 const features = [
 	{ icon: Users, title: 'Multi-user households', text: 'Parent, teen, kid roles with fine-grained permissions and parent approval for redemptions.' },
 	{ icon: Coins, title: 'Points -> Rewards', text: 'XP, streaks, and cash-outs that keep momentum. Parents approve kids\' redemptions.' },
 	{ icon: Trophy, title: 'Leaderboards', text: 'Weekly and all-time standings drive friendly competition.' },
 	{ icon: CalendarCheck, title: 'Schedules & Routines', text: 'Recurring tasks, reminders, and auto-rotations.' },
-	{ icon: ShieldCheckIcon, title: 'Progress & Safety', text: 'Audit logs, parent approvals, and role-based controls.' },
-	{ icon: Sparkles, title: 'Customization', text: 'Themes, avatars, and profile perks as you level up.' },
+	{ icon: ShieldCheck, title: 'Progress & Safety', text: 'Audit logs, parent approvals, and role-based controls.' },
+	{ icon: Sparkle, title: 'Customization', text: 'Themes, avatars, and profile perks as you level up.' },
 ]
 
 export default function LandingPage() {
@@ -63,32 +116,7 @@ export default function LandingPage() {
 		}
 	}, [])
 
-	// Animate feature cards with stagger
-	useEffect(() => {
-		const observer = new IntersectionObserver(
-			(entries) => {
-				entries.forEach((entry) => {
-					if (entry.isIntersecting) {
-						animate('.feature-card', {
-							opacity: [0, 1],
-							translateY: [12, 0],
-							duration: 400,
-							delay: (_el, i) => i * 50,
-							ease: 'outQuart',
-						})
-						observer.disconnect()
-					}
-				})
-			},
-			{ threshold: 0.2 }
-		)
-
-		if (featuresRef.current) {
-			observer.observe(featuresRef.current)
-		}
-
-		return () => observer.disconnect()
-	}, [])
+	// Feature cards are now animated by framer-motion stagger
 
 	// Animate install guide modal
 	useEffect(() => {
@@ -204,13 +232,15 @@ export default function LandingPage() {
 		>
 			{/* Header - Radiant Momentum */}
 			<header className="sticky top-0 z-40 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-b border-amber-500/10">
-				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4 sm:py-5">
-					<div className="flex items-center gap-3 sm:gap-4">
-						<div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl radiant-icon text-white shadow-lg">
-							<Logo className="h-8 w-8 sm:h-10 sm:w-10" />
+				<div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-6 py-3 sm:py-5">
+					<div className="flex items-center gap-2 sm:gap-4">
+						<div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl radiant-icon text-white shadow-lg">
+							<Logo className="h-6 w-6 sm:h-10 sm:w-10" />
 						</div>
-						<div className="text-base sm:text-xl font-brand font-bold tracking-tight radiant-text">DAILY BAG</div>
-						<Badge className="ml-1 sm:ml-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 text-xs font-medium">Beta</Badge>
+						<div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+							<span className="text-sm sm:text-xl font-brand font-bold tracking-tight radiant-text">DAILY BAG</span>
+							<Badge className="w-fit mt-0.5 sm:mt-0 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 text-[10px] sm:text-xs font-medium px-1.5 py-0">Beta</Badge>
+						</div>
 					</div>
 					<nav className="hidden items-center gap-6 lg:gap-8 md:flex">
 						<a href="#features" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">Features</a>
@@ -223,9 +253,9 @@ export default function LandingPage() {
 						<a href="#pricing" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">Pricing</a>
 						<a href="#faq" className="text-sm text-muted-foreground hover:text-amber-400 transition-colors duration-300">FAQ</a>
 					</nav>
-					<div className="flex items-center gap-3 sm:gap-4">
+					<div className="flex items-center gap-2 sm:gap-4">
 						<ThemeToggle />
-						<Button className="radiant-button rounded-xl h-10 px-5" size="sm" onClick={openAuthModal}>
+						<Button className="radiant-button rounded-xl h-9 sm:h-10 px-3 sm:px-5 text-sm" size="sm" onClick={openAuthModal}>
 							Sign in
 						</Button>
 					</div>
@@ -243,10 +273,10 @@ export default function LandingPage() {
 						<Star className="h-3.5 w-3.5 text-amber-400" />
 						Turn chores into XP and real rewards
 					</div>
-					<h1 className="mt-8 sm:mt-10 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold tracking-tight leading-tight">
-						Get to the bag
+					<h1 className="mt-8 sm:mt-10 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold tracking-tight leading-[1.1]">
+						<span className="block sm:inline">Get to the bag</span>
 						<br className="hidden sm:block" />
-						<span className="radiant-text-animated">one chore at a time</span>
+						<span className="radiant-text-animated block sm:inline">one chore at a time</span>
 					</h1>
 					<p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-muted-foreground font-body leading-relaxed">
 						Turn your to-do list into a leaderboard. Earn points, unlock achievements, and make household chores feel like winning.
@@ -256,7 +286,7 @@ export default function LandingPage() {
 							onClick={enterDemoMode}
 							className="radiant-button h-12 px-8 text-base rounded-xl w-full sm:w-auto"
 						>
-							Try the demo <ChevronRight className="ml-2 h-5 w-5" />
+							Try the demo <CaretRight className="ml-2 h-5 w-5" />
 						</Button>
 						<Button
 							variant="outline"
@@ -277,27 +307,36 @@ export default function LandingPage() {
 
 			{/* Features Section - Radiant Momentum */}
 			<section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28">
-				<div className="text-center mb-12 sm:mb-16">
+				<ScrollReveal className="text-center mb-12 sm:mb-16">
 					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
 						Everything you need to <span className="radiant-text">win at home</span>
 					</h2>
 					<p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
 						Built for families who want to turn daily routines into rewarding experiences.
 					</p>
-				</div>
-				<div ref={featuresRef} className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+				</ScrollReveal>
+				<motion.div
+					ref={featuresRef}
+					className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, margin: '-50px' }}
+					variants={staggerContainer}
+				>
 					{features.map((f) => (
-						<Card key={f.title} className="feature-card h-full radiant-card rounded-2xl backdrop-blur-sm" style={{ opacity: 0 }}>
-							<CardHeader className="flex flex-row items-center gap-4 pb-3">
-								<div className="flex h-12 w-12 items-center justify-center rounded-xl radiant-icon text-white">
-									<f.icon className="h-6 w-6" />
-								</div>
-								<h3 className="text-lg font-heading font-semibold">{f.title}</h3>
-							</CardHeader>
-							<CardContent className="pt-0 text-muted-foreground font-body leading-relaxed">{f.text}</CardContent>
-						</Card>
+						<motion.div key={f.title} variants={staggerItem}>
+							<Card className="feature-card h-full radiant-card rounded-2xl backdrop-blur-sm">
+								<CardHeader className="flex flex-row items-center gap-4 pb-3">
+									<div className="flex h-12 w-12 items-center justify-center rounded-xl radiant-icon text-white">
+										<f.icon className="h-6 w-6" />
+									</div>
+									<h3 className="text-lg font-heading font-semibold">{f.title}</h3>
+								</CardHeader>
+								<CardContent className="pt-0 text-muted-foreground font-body leading-relaxed">{f.text}</CardContent>
+							</Card>
+						</motion.div>
 					))}
-				</div>
+				</motion.div>
 			</section>
 
 			{/* Radiant Divider */}
@@ -305,7 +344,14 @@ export default function LandingPage() {
 
 			{/* Live Demo Section - Radiant Momentum */}
 			<section id="demo" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
-				<div className="grid items-start gap-8 lg:grid-cols-2">
+				<motion.div
+					className="grid items-start gap-8 lg:grid-cols-2"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, margin: '-50px' }}
+					variants={staggerContainer}
+				>
+					<motion.div variants={staggerItem}>
 					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow">
 						<CardHeader>
 							<div className="flex items-center justify-between">
@@ -315,7 +361,20 @@ export default function LandingPage() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							{globalLeaderboard === undefined ? (
-								<div className="text-center py-8 text-muted-foreground">Loading leaderboard...</div>
+								<div className="space-y-3">
+									{[...Array(5)].map((_, i) => (
+										<div key={i} className="flex items-center justify-between rounded-xl bg-amber-500/5 border border-amber-500/10 px-4 py-3 animate-pulse">
+											<div className="flex items-center gap-3">
+												<div className="h-10 w-10 rounded-full bg-amber-500/20" />
+												<div className="space-y-2">
+													<div className="h-4 w-24 rounded bg-amber-500/20" />
+													<div className="h-3 w-32 rounded bg-amber-500/10" />
+												</div>
+											</div>
+											<div className="h-5 w-16 rounded bg-amber-500/20" />
+										</div>
+									))}
+								</div>
 							) : globalLeaderboard && globalLeaderboard.length > 0 ? (
 								globalLeaderboard.map((household, idx) => {
 									const rankIcon = idx === 0 ? '1' : idx === 1 ? '2' : idx === 2 ? '3' : `${idx + 1}`
@@ -360,7 +419,9 @@ export default function LandingPage() {
 							</Button>
 						</CardFooter>
 					</Card>
+					</motion.div>
 
+					<motion.div variants={staggerItem}>
 					<Card className="radiant-card rounded-2xl backdrop-blur-sm">
 						<CardHeader>
 							<h3 className="text-xl font-heading font-semibold">Get early access</h3>
@@ -376,31 +437,40 @@ export default function LandingPage() {
 							</div>
 						</CardContent>
 					</Card>
-				</div>
+					</motion.div>
+				</motion.div>
 			</section>
 
 			{/* How It Works - Radiant Momentum */}
 			<section className="mx-auto max-w-7xl px-6 py-20 sm:py-28 radiant-bg-accent">
-				<div className="text-center mb-12 sm:mb-16">
+				<ScrollReveal className="text-center mb-12 sm:mb-16">
 					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
 						Three steps to <span className="radiant-text">transform your home</span>
 					</h2>
-				</div>
-				<div className="grid gap-8 md:grid-cols-3">
+				</ScrollReveal>
+				<motion.div
+					className="grid gap-8 md:grid-cols-3"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, margin: '-50px' }}
+					variants={staggerContainer}
+				>
 					{[
 						{ step: '1', title: 'Create your home', text: 'Invite family members and set roles. Import or pick starter chores.' },
 						{ step: '2', title: 'Assign XP & rewards', text: 'Choose values, add streaks, and set cash-out rules.' },
 						{ step: '3', title: 'Play to progress', text: 'Complete tasks, climb the board, unlock perks, repeat.' },
 					].map((s) => (
-						<Card key={s.step} className="radiant-card rounded-2xl backdrop-blur-sm text-center">
-							<CardHeader className="pb-3">
-								<div className="flex h-14 w-14 items-center justify-center rounded-2xl radiant-icon text-white font-bold text-xl mx-auto">{s.step}</div>
-								<h3 className="mt-4 text-xl font-heading font-semibold">{s.title}</h3>
-							</CardHeader>
-							<CardContent className="pt-0 text-muted-foreground leading-relaxed">{s.text}</CardContent>
-						</Card>
+						<motion.div key={s.step} variants={staggerItem}>
+							<Card className="radiant-card rounded-2xl backdrop-blur-sm text-center h-full">
+								<CardHeader className="pb-3">
+									<div className="flex h-14 w-14 items-center justify-center rounded-2xl radiant-icon text-white font-bold text-xl mx-auto">{s.step}</div>
+									<h3 className="mt-4 text-xl font-heading font-semibold">{s.title}</h3>
+								</CardHeader>
+								<CardContent className="pt-0 text-muted-foreground leading-relaxed">{s.text}</CardContent>
+							</Card>
+						</motion.div>
 					))}
-				</div>
+				</motion.div>
 			</section>
 
 			{/* Radiant Divider */}
@@ -408,14 +478,21 @@ export default function LandingPage() {
 
 			{/* Pricing Section - Radiant Momentum */}
 			<section id="pricing" className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
-				<div className="mb-12 sm:mb-16 text-center">
+				<ScrollReveal className="mb-12 sm:mb-16 text-center">
 					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
 						Simple <span className="radiant-text">pricing</span>
 					</h2>
 					<p className="mt-4 text-muted-foreground max-w-xl mx-auto">Start free. Upgrade for advanced automation and more users.</p>
-				</div>
-				<div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-					<Card className="radiant-card rounded-2xl backdrop-blur-sm">
+				</ScrollReveal>
+				<motion.div
+					className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, margin: '-50px' }}
+					variants={staggerContainer}
+				>
+					<motion.div variants={staggerItem}>
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm h-full group hover:scale-[1.02] transition-transform duration-300">
 						<CardHeader className="pb-4">
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-heading font-semibold">Free</h3>
@@ -423,44 +500,52 @@ export default function LandingPage() {
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<div className="text-4xl font-extrabold">$0</div>
+							<div>
+								<span className="text-4xl font-extrabold">$0</span>
+								<p className="text-sm text-muted-foreground mt-1">Forever free</p>
+							</div>
 							<ul className="space-y-3 text-sm text-muted-foreground">
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Up to 10 chores</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Up to 4 household members</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Basic rewards & leaderboard</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Level progression</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" /> Up to 10 chores</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" /> Up to 4 household members</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" /> Basic rewards & leaderboard</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" /> Level progression</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
-							<Button onClick={openAuthModal} className="w-full radiant-button h-12 rounded-xl text-base">Get started</Button>
+							<Button onClick={openAuthModal} className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground h-12 rounded-xl text-base transition-all duration-300">Get started</Button>
 						</CardFooter>
 					</Card>
+					</motion.div>
 
-					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow-intense radiant-border overflow-hidden">
+					<motion.div variants={staggerItem}>
+					<Card className="radiant-card rounded-2xl backdrop-blur-sm radiant-glow-intense radiant-border overflow-hidden h-full relative group hover:scale-[1.02] transition-transform duration-300">
+						<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500" />
 						<CardHeader className="pb-4">
 							<div className="flex items-center justify-between">
 								<h3 className="text-xl font-heading font-semibold">Premium</h3>
-								<Badge className="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900">Most Popular</Badge>
+								<Badge className="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 shadow-lg shadow-amber-500/20">Most Popular</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div>
 								<span className="text-4xl font-extrabold radiant-text">$4.99</span>
 								<span className="text-base font-normal text-muted-foreground"> / month</span>
+								<p className="text-sm text-muted-foreground mt-1">per household</p>
 							</div>
-							<p className="text-sm text-amber-400">or $39.99/year (save 33%)</p>
+							<p className="text-sm text-amber-400 font-medium">or $39.99/year (save 33%)</p>
 							<ul className="space-y-3 text-sm text-muted-foreground">
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Unlimited chores & members</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Custom rewards</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Photo verification</li>
-								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> Advanced analytics & exports</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" weight="fill" /> Unlimited chores & members</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" weight="fill" /> Custom rewards</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" weight="fill" /> Photo verification</li>
+								<li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500 shrink-0" weight="fill" /> Advanced analytics & exports</li>
 							</ul>
 						</CardContent>
 						<CardFooter>
 							<Button onClick={openAuthModal} className="w-full radiant-button h-12 rounded-xl text-base">Start free trial</Button>
 						</CardFooter>
 					</Card>
-				</div>
+					</motion.div>
+				</motion.div>
 			</section>
 
 			{/* Radiant Divider */}
@@ -468,27 +553,34 @@ export default function LandingPage() {
 
 			{/* FAQ Section - Radiant Momentum */}
 			<section id="faq" className="mx-auto max-w-4xl px-6 py-20 sm:py-28">
-				<div className="text-center mb-12 sm:mb-16">
+				<ScrollReveal className="text-center mb-12 sm:mb-16">
 					<h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">
 						Frequently asked <span className="radiant-text">questions</span>
 					</h2>
-				</div>
-				<div className="space-y-4">
+				</ScrollReveal>
+				<motion.div
+					className="space-y-4"
+					initial="hidden"
+					whileInView="visible"
+					viewport={{ once: true, margin: '-50px' }}
+					variants={staggerContainer}
+				>
 					{[
 						{ q: 'How do points convert to money?', a: 'You set a conversion rate per home. Example: 10 points = $1. Parents approve kids\' cash-outs.' },
 						{ q: 'Can I use it with roommates?', a: 'Yes. Roles and rewards are fully customizable for families or shared houses.' },
 						{ q: 'Is there parental control?', a: 'Parents approve redemptions, edit XP values, and review audit logs. Teens and kids require approval.' },
 						{ q: 'Will there be iOS and Android apps?', a: 'Yes. Web first, native apps follow shortly after beta.' },
+						{ q: 'Is my data secure?', a: 'Absolutely. We use industry-standard encryption and never share your data with third parties. All data is stored securely in the cloud.' },
 					].map((item) => (
-						<details key={item.q} className="group radiant-card rounded-2xl px-6 py-4 transition-all duration-300">
-							<summary className="cursor-pointer list-none py-2 text-lg font-medium outline-none flex items-center justify-between">
-								<span className="text-foreground group-open:radiant-text transition-all duration-300">{item.q}</span>
-								<ChevronRight className="h-5 w-5 text-amber-500 transition-transform duration-300 group-open:rotate-90" />
+						<motion.details key={item.q} variants={staggerItem} className="group radiant-card rounded-2xl px-6 py-4 transition-all duration-300 hover:border-amber-500/30 open:border-amber-500/40 open:shadow-lg open:shadow-amber-500/5">
+							<summary className="cursor-pointer list-none py-2 text-lg font-medium outline-none flex items-center justify-between gap-4">
+								<span className="text-foreground group-open:radiant-text transition-all duration-300 text-left">{item.q}</span>
+								<CaretRight className="h-5 w-5 text-amber-500 transition-transform duration-300 group-open:rotate-90 shrink-0" />
 							</summary>
-							<p className="mt-2 text-muted-foreground leading-relaxed">{item.a}</p>
-						</details>
+							<p className="mt-3 pb-2 text-muted-foreground leading-relaxed border-t border-amber-500/10 pt-4">{item.a}</p>
+						</motion.details>
 					))}
-				</div>
+				</motion.div>
 			</section>
 
 			{/* Footer - Radiant Momentum */}

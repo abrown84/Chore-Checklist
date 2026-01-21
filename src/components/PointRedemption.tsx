@@ -4,7 +4,7 @@ import { Button } from './ui/button'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../hooks/useStats'
 import { useRedemption, RedemptionRequest } from '../contexts/RedemptionContext'
-import { DollarSign, Coins, Calculator, Settings, AlertCircle, CheckCircle, XCircle, Clock, UserCheck, Users, Baby, GraduationCap, TrendingUp, Shield } from 'lucide-react'
+import { CurrencyDollar, Coins, Calculator, Gear, WarningCircle, CheckCircle, XCircle, Clock, UserCheck, Users, Baby, GraduationCap, TrendUp, Shield } from '@phosphor-icons/react'
 import { LEVELS } from '../types/chore'
 import { getDisplayName } from '../utils/convexHelpers'
 
@@ -314,7 +314,7 @@ export const PointRedemption: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <div className="p-2 bg-primary/20 dark:bg-primary/30 rounded-full">
-                <Settings className="w-5 h-5 text-primary" />
+                <Gear className="w-5 h-5 text-primary" />
               </div>
               <span>Admin Controls</span>
             </CardTitle>
@@ -587,7 +587,7 @@ export const PointRedemption: React.FC = () => {
             disabled={!pointsToRedeem || parseInt(pointsToRedeem) <= 0 || parseInt(pointsToRedeem) > (currentUserStats?.earnedPoints || 0)}
             className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
           >
-            <DollarSign className="w-4 h-4 mr-2" />
+            <CurrencyDollar className="w-4 h-4 mr-2" />
             Submit Redemption Request
           </Button>
           
@@ -612,7 +612,7 @@ export const PointRedemption: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <div className="p-2 bg-accent/20 dark:bg-accent/30 rounded-full">
-                <TrendingUp className="w-5 h-5 text-accent" />
+                <TrendUp className="w-5 h-5 text-accent" />
               </div>
               <span>Your Redemption History</span>
             </CardTitle>
@@ -669,7 +669,7 @@ export const PointRedemption: React.FC = () => {
                     </div>
                     {request.status === 'approved' && (
                       <div className="text-green-600 dark:text-green-400">
-                        <DollarSign className="w-8 h-8" />
+                        <CurrencyDollar className="w-8 h-8" />
                       </div>
                     )}
                     {request.status === 'rejected' && (
@@ -690,7 +690,7 @@ export const PointRedemption: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex items-start space-x-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <WarningCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="text-blue-800 dark:text-blue-200">
               <h3 className="font-medium mb-2">How Point Redemption Works</h3>

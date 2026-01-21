@@ -1,5 +1,5 @@
 import React from 'react'
-import { Github, Mail, Heart, ExternalLink, Coffee, Star, Sparkles } from 'lucide-react'
+import { GithubLogo, Envelope, Heart, ArrowSquareOut, Coffee, Star, Sparkle } from '@phosphor-icons/react'
 import { Logo } from './Logo'
 
 export const AboutPage: React.FC = () => {
@@ -54,18 +54,18 @@ export const AboutPage: React.FC = () => {
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/40 transition-colors group"
           >
-            <Github className="w-5 h-5 text-foreground" />
+            <GithubLogo className="w-5 h-5 text-foreground" />
             <span className="text-foreground font-medium">@abrown84</span>
-            <ExternalLink className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ArrowSquareOut className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
           </a>
 
           <a
             href="mailto:konfliktquake@gmail.com"
             className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/40 transition-colors group"
           >
-            <Mail className="w-5 h-5 text-primary" />
+            <Envelope className="w-5 h-5 text-primary" />
             <span className="text-foreground font-medium">konfliktquake@gmail.com</span>
-            <ExternalLink className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ArrowSquareOut className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
           </a>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const AboutPage: React.FC = () => {
       {/* Features Card */}
       <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border shadow-lg p-6">
         <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-yellow-500" />
+          <Sparkle className="w-5 h-5 text-yellow-500" />
           Features
         </h2>
 
@@ -134,9 +134,9 @@ export const AboutPage: React.FC = () => {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-colors"
         >
-          <Github className="w-5 h-5" />
+          <GithubLogo className="w-5 h-5" />
           View on GitHub
-          <ExternalLink className="w-4 h-4" />
+          <ArrowSquareOut className="w-4 h-4" />
         </a>
       </div>
 

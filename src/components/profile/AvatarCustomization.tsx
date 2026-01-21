@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { Upload, X, User } from 'lucide-react'
+import { Upload, X, User } from '@phosphor-icons/react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Avatar } from '../ui/Avatar'

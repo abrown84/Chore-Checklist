@@ -10,7 +10,7 @@ import { useChoreList } from '../hooks/useChoreList'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useDemo } from '../contexts/DemoContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
-import { Home, UserPlus } from 'lucide-react'
+import { House, UserPlus } from '@phosphor-icons/react'
 import { Chore } from '../types/chore'
 
 export const ChoreList: React.FC = memo(() => {
@@ -306,7 +306,7 @@ export const ChoreList: React.FC = memo(() => {
       <Card className="border-2 border-dashed border-primary/30">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Home className="w-8 h-8 text-primary" />
+            <House className="w-8 h-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Join a Household to See Chores</CardTitle>
           <CardDescription className="text-base mt-2">

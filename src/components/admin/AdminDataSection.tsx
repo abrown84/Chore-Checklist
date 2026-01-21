@@ -1,229 +1,332 @@
 import React, { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Id } from '../../../convex/_generated/dataModel'
 import { toast } from 'sonner'
-import {
-  Shield,
-  RotateCcw,
-  Loader2,
-  AlertTriangle,
-} from 'lucide-react'
+import { CircleNotch, Warning, XCircle, Shield, Trash, CheckCircle, ArrowCounterClockwise } from '@phosphor-icons/react'
 
 interface AdminDataSectionProps {
   householdId: Id<'households'>
 }
 
-export const AdminDataSection: React.FC<AdminDataSectionProps> = ({
-  householdId,
-}) => {
-  const [showResetChoresConfirm, setShowResetChoresConfirm] = useState(false)
-  const [showResetAllDataConfirm, setShowResetAllDataConfirm] = useState(false)
-  const [isResettingChores, setIsResettingChores] = useState(false)
-  const [isResettingAllData, setIsResettingAllData] = useState(false)
+type ResetType = 'chores' | 'all' | null
+
+export const AdminDataSection: React.FC<AdminDataSectionProps> = ({ householdId }) => {
+  const [activeReset, setActiveReset] = useState<ResetType>(null)
+  const [confirmText, setConfirmText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<{ type: ResetType; success: boolean; message: string } | null>(null)
 
   const resetAllChores = useMutation(api.chores.resetAllChores)
   const resetAllData = useMutation(api.chores.resetAllData)
 
   const handleResetChores = async () => {
-    if (!householdId) return
-    setIsResettingChores(true)
+    setLoading(true)
+    setResult(null)
     try {
-      const result = await resetAllChores({ householdId })
-      setShowResetChoresConfirm(false)
-      toast.success(
-        result.message ||
-        `Successfully reset ${result.resetCount} chore(s) and added ${result.addedCount || 0} default chore(s).`
-      )
+      const res = await resetAllChores({ householdId })
+      setResult({
+        type: 'chores',
+        success: true,
+        message: `Reset ${res.resetCount} chores to pending. Added ${res.addedCount || 0} default chores.`
+      })
+      toast.success('Chores reset successfully')
     } catch (error) {
-      console.error('Error resetting chores:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to reset chores. Please try again.')
+      setResult({
+        type: 'chores',
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to reset chores'
+      })
+      toast.error('Reset failed')
     } finally {
-      setIsResettingChores(false)
+      setLoading(false)
+      setActiveReset(null)
+      setConfirmText('')
     }
   }
 
-  const handleResetAllData = async () => {
-    if (!householdId) return
-    setIsResettingAllData(true)
+  const handleResetAll = async () => {
+    setLoading(true)
+    setResult(null)
     try {
-      const result = await resetAllData({ householdId })
-      setShowResetAllDataConfirm(false)
-      toast.success(result.message || 'All data has been reset successfully.')
+      const res = await resetAllData({ householdId })
+      setResult({
+        type: 'all',
+        success: true,
+        message: res.message || `All data reset. Added ${res.addedChoresCount || 0} default chores.`
+      })
+      toast.success('All data reset successfully')
     } catch (error) {
-      console.error('Error resetting all data:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to reset all data. Please try again.')
+      setResult({
+        type: 'all',
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to reset data'
+      })
+      toast.error('Reset failed')
     } finally {
-      setIsResettingAllData(false)
+      setLoading(false)
+      setActiveReset(null)
+      setConfirmText('')
+    }
+  }
+
+  const closeModal = () => {
+    if (!loading) {
+      setActiveReset(null)
+      setConfirmText('')
     }
   }
 
   return (
-    <div className="space-y-4">
-      <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-orange-600" />
-            Data Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Reset Chores */}
-          <div>
-            <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-2 flex items-center gap-2">
-              <RotateCcw className="w-4 h-4" />
-              Reset Chores
-            </h3>
-            <p className="text-sm text-orange-700 dark:text-orange-300 mb-3 break-words">
-              Reset all completed chores back to pending status and add any missing default chores. This will clear completion data, update due dates based on each chore's category, and ensure all default chores are available.
-            </p>
-            <Button
-              onClick={() => setShowResetChoresConfirm(true)}
-              variant="outline"
-              size="sm"
-              className="border-orange-500 text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/50 font-semibold"
-              disabled={isResettingChores}
-            >
-              {isResettingChores ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Resetting...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset All Chores
-                </>
-              )}
-            </Button>
-            {showResetChoresConfirm && (
-              <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-400 rounded-lg">
-                <p className="text-xs font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                  ⚠️ Confirm Reset
-                </p>
-                <p className="text-xs text-orange-800 dark:text-orange-200 mb-3 break-words">
-                  This will reset all completed chores to pending status and add default chores:
-                </p>
-                <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs text-orange-800 dark:text-orange-200 mb-3">
-                  <li>All completed chores will be set to pending</li>
-                  <li>Completion data will be cleared</li>
-                  <li>Due dates will be recalculated based on category</li>
-                  <li>Default chores that don't exist will be added</li>
-                  <li>Chore completion history will be preserved</li>
-                </ul>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleResetChores}
-                    size="sm"
-                    className="bg-orange-700 hover:bg-orange-800 flex-1 text-xs"
-                    disabled={isResettingChores}
-                  >
-                    {isResettingChores ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Resetting...
-                      </>
-                    ) : (
-                      'Yes, Reset Chores'
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => setShowResetChoresConfirm(false)}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs"
-                    disabled={isResettingChores}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
+    <>
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm">Data Management</h3>
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-orange-300 dark:border-orange-700"></div>
-
-          {/* Reset All Data */}
-          <div>
-            <h3 className="font-medium text-red-900 dark:text-red-100 mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
-              Reset All Data
-            </h3>
-            <p className="text-sm text-red-700 dark:text-red-300 mb-3 break-words">
-              This will permanently delete all chores, completion history, user stats, points, levels, redemption requests, and point deductions for this household. This action cannot be undone.
-            </p>
-            <Button
-              onClick={() => setShowResetAllDataConfirm(true)}
-              variant="outline"
-              size="sm"
-              className="border-red-500 text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold"
-              disabled={isResettingAllData}
-            >
-              {isResettingAllData ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Resetting...
-                </>
+          {/* Result Banner */}
+          {result && (
+            <div className={`p-3 rounded-lg flex items-start gap-3 ${
+              result.success
+                ? 'bg-green-500/10 border border-green-500/30'
+                : 'bg-red-500/10 border border-red-500/30'
+            }`}>
+              {result.success ? (
+                <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
               ) : (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset All Data
-                </>
+                <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               )}
-            </Button>
-            {showResetAllDataConfirm && (
-              <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 border-2 border-red-400 rounded-lg">
-                <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-2">
-                  ⚠️ WARNING: This action cannot be undone!
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${result.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                  {result.success ? 'Operation Complete' : 'Operation Failed'}
                 </p>
-                <p className="text-xs text-red-800 dark:text-red-200 mb-3 break-words">
-                  Resetting all data will permanently delete:
-                </p>
-                <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs text-red-800 dark:text-red-200 mb-3">
-                  <li>All chores (completed and pending)</li>
-                  <li>All chore completion history</li>
-                  <li>All user stats and statistics</li>
-                  <li>All user points and levels (reset to 0 and 1)</li>
-                  <li>All redemption requests</li>
-                  <li>All point deduction records</li>
-                </ul>
-                <p className="text-xs font-semibold text-red-800 dark:text-red-200 mb-3">
-                  Household members and settings will be preserved.
-                </p>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleResetAllData}
-                    size="sm"
-                    className="bg-red-700 hover:bg-red-800 flex-1 text-xs"
-                    disabled={isResettingAllData}
-                  >
-                    {isResettingAllData ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Resetting...
-                      </>
-                    ) : (
-                      'Yes, Reset All Data'
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => setShowResetAllDataConfirm(false)}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs"
-                    disabled={isResettingAllData}
-                  >
-                    Cancel
-                  </Button>
+                <p className="text-xs text-muted-foreground mt-0.5">{result.message}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 shrink-0"
+                onClick={() => setResult(null)}
+              >
+                <XCircle className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Reset Options */}
+          <div className="grid gap-3">
+            {/* Reset Chores Card */}
+            <button
+              onClick={() => setActiveReset('chores')}
+              className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <ArrowCounterClockwise className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400">Reset Chores</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Reset completed chores to pending and restore defaults
+                  </p>
+                </div>
+                <div className="text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  →
                 </div>
               </div>
-            )}
+            </button>
+
+            {/* Reset All Data Card */}
+            <button
+              onClick={() => setActiveReset('all')}
+              className="p-4 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-500/20">
+                  <Trash className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Reset All Data</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Permanently delete all chores, stats, points, and history
+                  </p>
+                </div>
+                <div className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  →
+                </div>
+              </div>
+            </button>
           </div>
+
+          <p className="text-[10px] text-muted-foreground text-center pt-2">
+            Household members and account settings are always preserved
+          </p>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Modal Backdrop */}
+      {activeReset && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={closeModal}
+        >
+          {/* Modal Content */}
+          <div
+            className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {activeReset === 'chores' ? (
+              <>
+                {/* Reset Chores Modal */}
+                <div className="p-6 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-amber-500/20">
+                      <ArrowCounterClockwise className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">Reset Chores</h2>
+                      <p className="text-sm text-muted-foreground">Restore chores to their initial state</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="text-sm text-muted-foreground">
+                    This action will:
+                  </div>
+                  <ul className="space-y-2">
+                    {[
+                      'Reset all completed chores back to pending',
+                      'Recalculate due dates based on chore category',
+                      'Add any missing default chores',
+                      'Preserve chore completion history',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-2 flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={closeModal}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1 bg-amber-600 hover:bg-amber-700"
+                      onClick={handleResetChores}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <CircleNotch className="w-4 h-4 mr-2 animate-spin" />
+                          Resetting...
+                        </>
+                      ) : (
+                        'Reset Chores'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Reset All Data Modal */}
+                <div className="p-6 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-red-500/20">
+                      <Warning className="w-6 h-6 text-red-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-red-600">Destructive Action</h2>
+                      <p className="text-sm text-muted-foreground">This cannot be undone</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-700 dark:text-red-400 font-medium">
+                      All household data will be permanently deleted:
+                    </p>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {[
+                      'All chores (completed and pending)',
+                      'Complete chore history and statistics',
+                      'All user points and levels (reset to 0)',
+                      'All redemption requests',
+                      'All point adjustment records',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <p className="text-sm text-green-700 dark:text-green-400 font-medium flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Default chores will be added after reset
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <label className="text-sm font-medium block mb-2">
+                      Type <span className="font-mono text-red-600">DELETE</span> to confirm:
+                    </label>
+                    <Input
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      placeholder="DELETE"
+                      className="font-mono"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={closeModal}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={handleResetAll}
+                      disabled={loading || confirmText !== 'DELETE'}
+                    >
+                      {loading ? (
+                        <>
+                          <CircleNotch className="w-4 h-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        'Delete All Data'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

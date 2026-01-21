@@ -1,5 +1,5 @@
 import React from 'react'
-import { Star, Target, TrendingUp } from 'lucide-react'
+import { Star, Target, TrendUp } from '@phosphor-icons/react'
 import { RANKING_MODES, RankingMode } from '../../config/constants'
 
 interface RankingModeToggleProps {
@@ -27,7 +27,7 @@ export const RankingModeToggle: React.FC<RankingModeToggleProps> = React.memo(({
     {
       key: RANKING_MODES.LIFETIME,
       label: 'Lifetime',
-      icon: TrendingUp,
+      icon: TrendUp,
       color: 'text-info',
     },
   ]

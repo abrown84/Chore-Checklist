@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkles, CheckCircle, Share2 } from 'lucide-react'
+import { Sparkle, CheckCircle, ShareNetwork } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { LEVELS } from '../../types/chore'
 import { UserStats } from '../../types/user'
@@ -23,7 +23,7 @@ export const AchievementsPreview: React.FC<AchievementsPreviewProps> = React.mem
     return (
       <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.8s' }}>
         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-warning animate-sparkle" />
+          <Sparkle className="w-5 h-5 mr-2 text-warning animate-sparkle" />
           Achievements
         </h3>
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -72,7 +72,7 @@ export const AchievementsPreview: React.FC<AchievementsPreviewProps> = React.mem
     <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.8s' }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-warning animate-sparkle" />
+          <Sparkle className="w-5 h-5 mr-2 text-warning animate-sparkle" />
           Achievements
         </h3>
         <button
@@ -80,7 +80,7 @@ export const AchievementsPreview: React.FC<AchievementsPreviewProps> = React.mem
           className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
           title="Share Progress"
         >
-          <Share2 className="w-4 h-4" />
+          <ShareNetwork className="w-4 h-4" />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">

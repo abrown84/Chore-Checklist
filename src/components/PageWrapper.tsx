@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { animate } from 'animejs'
-import { Volume2, VolumeX } from 'lucide-react'
+import { SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react'
 
 interface PageWrapperProps {
   children: React.ReactNode
@@ -284,9 +284,9 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
           title={isMuted ? 'Unmute background audio' : 'Mute background audio'}
         >
           {isMuted ? (
-            <VolumeX className="w-5 h-5 text-muted-foreground" />
+            <SpeakerSlash className="w-5 h-5 text-muted-foreground" />
           ) : (
-            <Volume2 className="w-5 h-5 text-primary" />
+            <SpeakerHigh className="w-5 h-5 text-primary" />
           )}
         </button>
       )}

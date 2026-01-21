@@ -1,5 +1,5 @@
 import React from 'react'
-import { Star, CheckCircle, Target, Users } from 'lucide-react'
+import { Star, CheckCircle, Target, Users } from '@phosphor-icons/react'
 import { useHouseholdStats } from '../../hooks/useHouseholdStats'
 
 interface HouseholdStatsProps {

@@ -9,24 +9,7 @@ import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useAuth } from '../hooks/useAuth'
 import { ROLE_PERMISSIONS } from '../types/user'
 import { getDisplayName } from '../utils/convexHelpers'
-import {
-  Users,
-  UserPlus,
-  Settings,
-  Crown,
-  UserMinus,
-  Mail,
-  Check,
-  X,
-  Edit3,
-  ToggleLeft,
-  ToggleRight,
-  Baby,
-  GraduationCap,
-  Home,
-  Loader2,
-  Share2,
-} from 'lucide-react'
+import { Users, UserPlus, Gear, Crown, Envelope, Check, X, Baby, GraduationCap, House, CircleNotch, ShareNetwork, PencilSimple, UserMinus, ToggleRight, ToggleLeft } from '@phosphor-icons/react'
 
 export const HouseholdManager: React.FC = () => {
   const { user: currentUser } = useAuth()
@@ -367,7 +350,7 @@ export const HouseholdManager: React.FC = () => {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
+            <CircleNotch className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
             <p className="text-gray-600">Loading household...</p>
           </CardContent>
         </Card>
@@ -416,7 +399,7 @@ export const HouseholdManager: React.FC = () => {
               >
                 {isJoining ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <CircleNotch className="w-4 h-4 mr-2 animate-spin" />
                     Joining...
                   </>
                 ) : (
@@ -443,7 +426,7 @@ export const HouseholdManager: React.FC = () => {
         {/* Create Household Section */}
         <Card>
           <CardContent className="p-6 text-center">
-            <Home className="w-12 h-12 mx-auto mb-4 text-indigo-500" />
+            <House className="w-12 h-12 mx-auto mb-4 text-indigo-500" />
             <h2 className="text-2xl font-bold text-gray-900 mb-4">🏠 Create Your Household</h2>
             <p className="text-gray-600 mb-6 break-words px-4">
               Start managing chores together with your family, roommates, or friends!
@@ -468,7 +451,7 @@ export const HouseholdManager: React.FC = () => {
               >
                 {isCreatingHousehold ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <CircleNotch className="w-4 h-4 mr-2 animate-spin" />
                     Creating...
                   </>
                 ) : (
@@ -488,7 +471,7 @@ export const HouseholdManager: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Settings className="w-6 h-6 text-indigo-500" />
+            <Gear className="w-6 h-6 text-indigo-500" />
             <span>Household Settings</span>
           </CardTitle>
         </CardHeader>
@@ -527,7 +510,7 @@ export const HouseholdManager: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Share2 className="w-6 h-6 text-green-500" />
+              <ShareNetwork className="w-6 h-6 text-green-500" />
               <span>Invite New Member</span>
             </CardTitle>
           </CardHeader>
@@ -556,7 +539,7 @@ export const HouseholdManager: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <Share2 className="w-4 h-4" />
+                          <ShareNetwork className="w-4 h-4" />
                           <span>Share</span>
                         </>
                       )}
@@ -568,7 +551,7 @@ export const HouseholdManager: React.FC = () => {
                         onClick={handleRegenerateJoinCode}
                         className="flex items-center gap-2"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <PencilSimple className="w-4 h-4" />
                         <span>Regenerate</span>
                       </Button>
                     )}
@@ -622,7 +605,7 @@ export const HouseholdManager: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Mail className="w-6 h-6 text-purple-500" />
+              <Envelope className="w-6 h-6 text-purple-500" />
               <span>Invitations Received</span>
             </CardTitle>
           </CardHeader>
@@ -635,7 +618,7 @@ export const HouseholdManager: React.FC = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <Home className="w-4 h-4 text-purple-600 shrink-0" />
+                      <House className="w-4 h-4 text-purple-600 shrink-0" />
                       <p className="font-medium text-gray-900 break-words">
                         {invite.household?.name || 'Unknown Household'}
                       </p>
@@ -681,7 +664,7 @@ export const HouseholdManager: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Mail className="w-6 h-6 text-orange-500" />
+              <Envelope className="w-6 h-6 text-orange-500" />
               <span>Pending Invites</span>
             </CardTitle>
           </CardHeader>
@@ -815,7 +798,7 @@ export const HouseholdManager: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Settings className="w-6 h-6 text-purple-500" />
+              <Gear className="w-6 h-6 text-purple-500" />
               <span>Advanced Settings</span>
             </CardTitle>
           </CardHeader>

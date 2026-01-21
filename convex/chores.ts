@@ -700,11 +700,31 @@ export const resetAllData = mutation({
       deletedCounts.deductions++;
     }
 
+    // 7. Seed default chores
+    let addedChoresCount = 0;
+    for (const chore of DEFAULT_CHORES) {
+      await ctx.db.insert("chores", {
+        title: chore.title,
+        description: chore.description,
+        points: chore.points,
+        difficulty: chore.difficulty,
+        category: chore.category,
+        priority: chore.priority,
+        householdId: args.householdId,
+        status: "pending",
+        dueDate: getDueDateForCategory(chore.category),
+        createdAt: now,
+        updatedAt: now,
+      });
+      addedChoresCount++;
+    }
+
     return {
       success: true,
       deletedCounts,
       resetUsers,
-      message: `Reset complete: ${deletedCounts.chores} chores, ${deletedCounts.completions} completions, ${deletedCounts.stats} stats, ${deletedCounts.redemptions} redemptions, ${deletedCounts.deductions} deductions, and reset ${resetUsers} users' points/levels.`,
+      addedChoresCount,
+      message: `Reset complete: ${deletedCounts.chores} chores deleted, ${deletedCounts.completions} completions, ${deletedCounts.stats} stats, ${deletedCounts.redemptions} redemptions, ${deletedCounts.deductions} deductions, reset ${resetUsers} users' points/levels, and added ${addedChoresCount} default chores.`,
     };
   },
 });

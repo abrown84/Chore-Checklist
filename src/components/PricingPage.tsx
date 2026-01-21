@@ -3,16 +3,7 @@ import { animate } from 'animejs'
 import { PageWrapper } from './PageWrapper'
 import { PricingCard } from './PricingCard'
 import { Card, CardContent } from './ui/card'
-import {
-  Check,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Shield,
-  Zap,
-  Users,
-  Star,
-} from 'lucide-react'
+import { Check, CaretDown, Shield, Lightning, Users, Star } from '@phosphor-icons/react'
 import { useSubscription } from '../hooks/useSubscription'
 import { PLANS, BillingInterval, SubscriptionPlan } from '../types/subscription'
 import { cn } from '../utils/cn'
@@ -171,7 +162,7 @@ export const PricingPage: React.FC = () => {
             <span>Secure Payment</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Zap className="h-4 w-4 text-amber-400" />
+            <Lightning className="h-4 w-4 text-amber-400" />
             <span>Instant Access</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -370,7 +361,7 @@ export const PricingPage: React.FC = () => {
                         {expandedFaq === index ? (
                           <ChevronUp className="h-5 w-5 text-muted-foreground" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          <CaretDown className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                     </div>

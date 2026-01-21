@@ -20,6 +20,7 @@ import type * as invites from "../invites.js";
 import type * as migrations from "../migrations.js";
 import type * as onboarding from "../onboarding.js";
 import type * as redemptions from "../redemptions.js";
+import type * as siteAdmin from "../siteAdmin.js";
 import type * as stats from "../stats.js";
 import type * as stripe from "../stripe.js";
 import type * as subscriptionHelpers from "../subscriptionHelpers.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   onboarding: typeof onboarding;
   redemptions: typeof redemptions;
+  siteAdmin: typeof siteAdmin;
   stats: typeof stats;
   stripe: typeof stripe;
   subscriptionHelpers: typeof subscriptionHelpers;

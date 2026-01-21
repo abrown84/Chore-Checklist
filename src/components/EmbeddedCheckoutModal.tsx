@@ -9,7 +9,7 @@ import {
 import { useAction } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { Button } from './ui/button'
-import { X, Crown, Lock } from 'lucide-react'
+import { X, Crown, Lock } from '@phosphor-icons/react'
 import { STRIPE_PUBLISHABLE_KEY } from '../config/stripe'
 import { BillingInterval } from '../types/subscription'
 
@@ -160,7 +160,7 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
         className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
         style={{ opacity: 0 }}
       >
-        <div className="w-full max-w-xl max-h-[90vh] overflow-hidden relative pointer-events-auto flex flex-col rounded-2xl border border-amber-500/10 bg-card shadow-2xl shadow-amber-500/10">
+        <div className="w-full max-w-[95vw] sm:max-w-lg md:max-w-xl max-h-[90vh] overflow-hidden relative pointer-events-auto flex flex-col rounded-2xl border border-amber-500/10 bg-card shadow-2xl shadow-amber-500/10">
           {/* Premium Header */}
           <div className="relative overflow-hidden">
             {/* Gradient background */}
@@ -168,13 +168,13 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card/80" />
 
             {/* Header content */}
-            <div className="relative flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
-                  <Crown className="h-5 w-5 text-slate-900" />
+            <div className="relative flex items-center justify-between p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                  <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-slate-900" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Premium Checkout</h3>
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base">Premium Checkout</h3>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Lock className="h-3 w-3 text-green-400" />
                     <span>Secure payment</span>
@@ -195,20 +195,20 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
           {/* Checkout Content */}
           <div className="flex-1 overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {isLoading && (
-              <div className="flex items-center justify-center h-[400px] p-8">
+              <div className="flex items-center justify-center min-h-[300px] sm:h-[400px] p-4 sm:p-8">
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
                     <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-400/30 border-t-amber-400" />
                     <Crown className="absolute inset-0 m-auto h-4 w-4 text-amber-400" />
                   </div>
-                  <p className="text-muted-foreground">Preparing your checkout...</p>
+                  <p className="text-muted-foreground text-sm sm:text-base">Preparing your checkout...</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="flex items-center justify-center h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+              <div className="flex items-center justify-center min-h-[300px] sm:h-[400px] p-4 sm:p-8">
+                <div className="flex flex-col items-center gap-4 text-center max-w-sm px-4">
                   <div className="p-4 rounded-full bg-red-500/10 border border-red-500/30">
                     <X className="h-6 w-6 text-red-400" />
                   </div>

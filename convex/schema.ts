@@ -36,6 +36,8 @@ export default defineSchema({
     // Onboarding fields
     hasCompletedOnboarding: v.optional(v.boolean()),
     onboardingDismissedPermanently: v.optional(v.boolean()),
+    // Site admin flag - for global app management
+    isSiteAdmin: v.optional(v.boolean()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])

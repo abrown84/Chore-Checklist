@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { animate } from 'animejs'
-import { Star, Zap, Plus, Sparkles } from 'lucide-react'
+import { Star, Lightning, Plus, Sparkle } from '@phosphor-icons/react'
 
 interface PopupCelebration {
   id: string
@@ -165,14 +165,14 @@ const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove
       case 'bonus':
         return {
           gradient: 'from-emerald-400 via-green-500 to-emerald-600',
-          icon: <Sparkles className="w-3.5 h-3.5" />,
+          icon: <Sparkle className="w-3.5 h-3.5" />,
           shadow: 'shadow-emerald-500/50',
           prefix: '+'
         }
       case 'streak':
         return {
           gradient: 'from-amber-400 via-orange-500 to-amber-600',
-          icon: <Zap className="w-3.5 h-3.5 fill-current" />,
+          icon: <Lightning className="w-3.5 h-3.5 fill-current" />,
           shadow: 'shadow-orange-500/50',
           prefix: '🔥'
         }
@@ -194,7 +194,7 @@ const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove
         } else if (points >= 25) {
           return {
             gradient: 'from-violet-400 via-purple-500 to-violet-600',
-            icon: <Sparkles className="w-3.5 h-3.5" />,
+            icon: <Sparkle className="w-3.5 h-3.5" />,
             shadow: 'shadow-violet-500/50',
             prefix: '+'
           }

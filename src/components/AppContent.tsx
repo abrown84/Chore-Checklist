@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react'
+import { PageTransition } from './animations'
 
 // Lazy load ALL tab components for optimal code splitting
 const ChoreList = lazy(() =>
@@ -31,6 +32,9 @@ const PointRedemption = lazy(() =>
 const AdminControlPanel = lazy(() =>
   import('./AdminControlPanel').then(module => ({ default: module.AdminControlPanel }))
 )
+const SiteAdminPanel = lazy(() =>
+  import('./SiteAdminPanel').then(module => ({ default: module.SiteAdminPanel }))
+)
 const AboutPage = lazy(() =>
   import('./AboutPage').then(module => ({ default: module.AboutPage }))
 )
@@ -46,72 +50,73 @@ interface AppContentProps {
   activeTab: string
 }
 
+// Render the appropriate tab content
+const renderTabContent = (tab: string) => {
+  switch (tab) {
+    case 'chores':
+      return (
+        <div className="space-y-8">
+          <PointsCounter />
+          <ChoreList />
+          <AddChoreForm />
+        </div>
+      )
+    case 'leaderboard':
+      return (
+        <div className="space-y-6">
+          <Leaderboard />
+        </div>
+      )
+    case 'household':
+      return (
+        <div className="space-y-6">
+          <HouseholdManager />
+        </div>
+      )
+    case 'profile':
+      return (
+        <div className="space-y-6">
+          <ProfileAndRewards />
+        </div>
+      )
+    case 'redemption':
+      return (
+        <div className="space-y-6">
+          <PointRedemption />
+        </div>
+      )
+    case 'admin':
+      return (
+        <div className="space-y-6">
+          <AdminControlPanel />
+        </div>
+      )
+    case 'siteAdmin':
+      return (
+        <div className="space-y-6">
+          <SiteAdminPanel />
+        </div>
+      )
+    case 'about':
+      return (
+        <div className="space-y-6">
+          <AboutPage />
+        </div>
+      )
+    default:
+      return null
+  }
+}
+
 export const AppContent: React.FC<AppContentProps> = ({ activeTab }) => {
   return (
     <>
-      {/* Tab Content */}
-      {activeTab === 'chores' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-8">
-            {/* Points Counter */}
-            <PointsCounter />
-
-            {/* Chore List */}
-            <ChoreList />
-
-            {/* Add Chore Form - Moved to bottom */}
-            <AddChoreForm />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'leaderboard' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <Leaderboard />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'household' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <HouseholdManager />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'profile' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <ProfileAndRewards />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'redemption' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <PointRedemption />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'admin' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <AdminControlPanel />
-          </div>
-        </Suspense>
-      )}
-
-      {activeTab === 'about' && (
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="space-y-6">
-            <AboutPage />
-          </div>
-        </Suspense>
-      )}
+      {/* Tab Content with Page Transitions */}
+      <Suspense fallback={<LoadingFallback />}>
+        <PageTransition activeTab={activeTab}>
+          {renderTabContent(activeTab)}
+        </PageTransition>
+      </Suspense>
 
       {/* Celebrations */}
       <Suspense fallback={null}>

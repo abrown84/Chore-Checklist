@@ -1,5 +1,5 @@
 import React from 'react'
-import { Star, Lock, CheckCircle } from 'lucide-react'
+import { Star, Lock, CheckCircle } from '@phosphor-icons/react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { LEVELS } from '../../types/chore'
 import { LevelMeme } from './LevelMeme'

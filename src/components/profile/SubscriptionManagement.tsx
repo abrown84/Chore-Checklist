@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { useSubscription } from '../../hooks/useSubscription'
-import { CreditCard, Crown, Clock, AlertCircle, ExternalLink, Loader2 } from 'lucide-react'
+import { CreditCard, Crown, Clock, WarningCircle, ArrowSquareOut, CircleNotch } from '@phosphor-icons/react'
 
 /**
  * Subscription management component for user profile
@@ -103,7 +103,7 @@ export const SubscriptionManagement: React.FC = React.memo(() => {
         {/* Cancel at Period End Warning */}
         {cancelAtPeriodEnd && (
           <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <WarningCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
             <span className="text-sm text-yellow-700 dark:text-yellow-300">
               Your subscription will end at the current billing period
             </span>
@@ -113,7 +113,7 @@ export const SubscriptionManagement: React.FC = React.memo(() => {
         {/* Error Message */}
         {error && (
           <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <WarningCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
             <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
           </div>
         )}
@@ -128,12 +128,12 @@ export const SubscriptionManagement: React.FC = React.memo(() => {
           >
             {isManaging ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <CircleNotch className="h-4 w-4 mr-2 animate-spin" />
                 Opening...
               </>
             ) : (
               <>
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ArrowSquareOut className="h-4 w-4 mr-2" />
                 {isTrial ? 'Cancel Trial' : 'Manage Subscription'}
               </>
             )}

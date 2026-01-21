@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Crown, Clock, Sparkles, ChevronRight } from 'lucide-react'
+import { Crown, Clock, Sparkle, CaretRight } from '@phosphor-icons/react'
 import { useSubscription } from '../hooks/useSubscription'
 import { UpgradeModal } from './UpgradeModal'
 import { cn } from '../utils/cn'
@@ -56,10 +56,10 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
             className
           )}
         >
-          <Sparkles className={iconSizes[size]} />
+          <Sparkle className={iconSizes[size]} />
           <span>Free</span>
           {showManageLink && (
-            <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
+            <CaretRight className={cn(iconSizes[size], 'opacity-50')} />
           )}
         </button>
         <UpgradeModal
@@ -98,7 +98,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
             )}
           </span>
           {showManageLink && (
-            <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
+            <CaretRight className={cn(iconSizes[size], 'opacity-50')} />
           )}
         </button>
         <UpgradeModal
@@ -127,7 +127,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
       <Crown className={iconSizes[size]} />
       <span>Premium</span>
       {showManageLink && (
-        <ChevronRight className={cn(iconSizes[size], 'opacity-50')} />
+        <CaretRight className={cn(iconSizes[size], 'opacity-50')} />
       )}
     </button>
   )
@@ -162,7 +162,7 @@ export const SubscriptionBadgeCompact: React.FC<{
           )}
           title="Upgrade to Premium"
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkle className="h-4 w-4" />
         </button>
         <UpgradeModal
           isOpen={showUpgradeModal}

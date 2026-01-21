@@ -1,5 +1,5 @@
 import React from 'react'
-import { Star, Target, CheckCircle, DollarSign, Clock, TrendingUp, Award, Flame } from 'lucide-react'
+import { Star, Crosshair, CheckCircle, CurrencyDollar, Clock, TrendUp, Medal, Fire } from '@phosphor-icons/react'
 import { RANKING_MODES, RankingMode } from '../../config/constants'
 import { getEfficiencyBadge, getRankIcon } from '../../hooks/useLeaderboardData'
 import { useRedemption } from '../../contexts/RedemptionContext'
@@ -141,7 +141,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                     </h4>
                     {hasActiveStreak && (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/20 dark:bg-orange-500/30 rounded-full animate-pulse" title={`${member.currentStreak} day streak!`}>
-                        <Flame className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                        <Fire className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
                         <span className="text-xs font-bold text-orange-700 dark:text-orange-300">{member.currentStreak}</span>
                       </span>
                     )}
@@ -185,13 +185,13 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
                   {rankingMode === RANKING_MODES.EFFICIENCY ? (
                     <>
-                      <Target className="w-5 h-5 mx-auto mb-1 text-success" />
+                      <Crosshair className="w-5 h-5 mx-auto mb-1 text-success" />
                       <div className="text-lg font-black text-foreground">{member.efficiencyScore.toFixed(0)}</div>
                       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Efficiency</div>
                     </>
                   ) : rankingMode === RANKING_MODES.LIFETIME ? (
                     <>
-                      <Award className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                      <Medal className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
                       <div className="text-lg font-black text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</div>
                       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifetime</div>
                     </>
@@ -214,7 +214,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 {/* Available Value */}
                 {(rankingMode === RANKING_MODES.POINTS || rankingMode === RANKING_MODES.LIFETIME) && (
                   <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm">
-                    <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-600 dark:text-green-400" />
+                    <CurrencyDollar className="w-5 h-5 mx-auto mb-1 text-green-600 dark:text-green-400" />
                     <div className="text-lg font-black text-green-600 dark:text-green-400">${availableValue.toFixed(0)}</div>
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Available</div>
                   </div>
@@ -223,7 +223,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 {/* Lifetime (when ranking by points) */}
                 {rankingMode === RANKING_MODES.POINTS && (
                   <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm hidden lg:block">
-                    <Award className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                    <Medal className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
                     <div className="text-lg font-black text-blue-600 dark:text-blue-400">{lifetimePoints.toLocaleString()}</div>
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifetime</div>
                   </div>
@@ -232,7 +232,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = React.memo(({
                 {/* Redeemed Value */}
                 {redemptionStatus.totalRedeemed > 0 && (
                   <div className="bg-white/60 dark:bg-slate-800/60 rounded-lg p-2.5 text-center backdrop-blur-sm hidden lg:block">
-                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
+                    <TrendUp className="w-5 h-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
                     <div className="text-lg font-black text-purple-600 dark:text-purple-400">${redemptionStatus.totalRedeemed.toFixed(0)}</div>
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Redeemed</div>
                   </div>

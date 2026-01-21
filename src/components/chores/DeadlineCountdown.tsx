@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, AlertCircle } from 'lucide-react'
+import { Clock, WarningCircle } from '@phosphor-icons/react'
 import { normalizeDueDate, getHoursDifference, formatTimeDifference } from '../../utils/dateHelpers'
 
 interface DeadlineCountdownProps {
@@ -60,7 +60,7 @@ export const DeadlineCountdown: React.FC<DeadlineCountdownProps> = ({ dueDate, c
   }
 
   const getUrgencyIcon = () => {
-    if (isOverdue || hoursRemaining < 6) return <AlertCircle className="w-3 h-3" />
+    if (isOverdue || hoursRemaining < 6) return <WarningCircle className="w-3 h-3" />
     return <Clock className="w-3 h-3" />
   }
 

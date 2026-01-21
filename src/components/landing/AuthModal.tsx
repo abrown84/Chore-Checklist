@@ -5,16 +5,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useAuth } from '../../hooks/useAuth'
 import { validateEmail, validatePassword, validateName } from '../../utils/validation'
-import {
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  X,
-  ShieldCheck as ShieldCheckIcon,
-} from 'lucide-react'
+import { Envelope, Lock, User, WarningCircle, X, ShieldCheck as ShieldCheckIcon, Eye, EyeSlash } from '@phosphor-icons/react'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -267,7 +258,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   {getFieldError('name') && (
                     <p className="text-sm text-destructive flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
+                      <WarningCircle className="w-4 h-4 mr-1" />
                       {getFieldError('name')}
                     </p>
                   )}
@@ -281,7 +272,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <Envelope className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <Input
                     ref={emailRef}
@@ -306,7 +297,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 {getFieldError('email') && (
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <WarningCircle className="w-4 h-4 mr-1" />
                     {getFieldError('email')}
                   </p>
                 )}
@@ -345,7 +336,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeSlash className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
@@ -353,7 +344,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 {getFieldError('password') && (
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <WarningCircle className="w-4 h-4 mr-1" />
                     {getFieldError('password')}
                   </p>
                 )}
@@ -393,7 +384,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeSlash className="h-4 w-4" />
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
@@ -425,7 +416,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {error && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                   <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <WarningCircle className="w-4 h-4 mr-2" />
                     {error}
                   </p>
                 </div>

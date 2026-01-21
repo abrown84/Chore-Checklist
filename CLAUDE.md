@@ -11,7 +11,7 @@ A gamified household chore management app with points, levels, redemptions, and 
 - **Styling**: Tailwind CSS, shadcn/ui components
 - **Payments**: Stripe (subscriptions & payment links)
 - **Auth**: Convex Auth
-- **Icons**: Lucide React
+- **Icons**: Phosphor Icons (6 weights: thin, light, regular, bold, fill, duotone)
 - **Animations**: Custom CSS + potential anime.js integration
 
 ## Project Structure
@@ -104,8 +104,11 @@ await mutate({ arg: value })
 ## Development Notes
 
 ### Icons
-- Use Lucide React: `import { IconName } from 'lucide-react'`
-- Common icons: Trophy, Star, Coins, DollarSign, CheckCircle, Target, Award
+- Use Phosphor Icons: `import { IconName } from '@phosphor-icons/react'`
+- Default styling via IconContext in AppProviders (size: 20, weight: 'regular')
+- Available weights: thin, light, regular, bold, fill, duotone
+- Common icons: Trophy, Star, Coins, CurrencyDollar, CheckCircle, Crosshair, Medal
+- Override weight per icon: `<Star weight="fill" />`
 
 ### Animations
 - Predefined animations in `index.css`: animate-fade-in, animate-slide-in, animate-float, animate-bounce-in

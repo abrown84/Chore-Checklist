@@ -3,16 +3,7 @@ import { createPortal } from 'react-dom'
 import { animate, stagger } from 'animejs'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Button } from './ui/button'
-import {
-  X,
-  Check,
-  Sparkles,
-  Zap,
-  Crown,
-  Shield,
-  Clock,
-  Star,
-} from 'lucide-react'
+import { X, Check, Sparkle, Lightning, Crown, Shield, Clock, Star } from '@phosphor-icons/react'
 import { useSubscription } from '../hooks/useSubscription'
 import { BillingInterval, PLANS } from '../types/subscription'
 import { cn } from '../utils/cn'
@@ -27,7 +18,7 @@ interface UpgradeModalProps {
 
 const benefits = [
   {
-    icon: Zap,
+    icon: Lightning,
     title: 'Unlimited Chores',
     description: 'Create as many chores as you need',
   },
@@ -218,7 +209,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
               style={{ opacity: 0, transform: 'scale(0)' }}
             >
               <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400/20 to-orange-400/20 px-4 py-2 border border-amber-400/30">
-                <Sparkles className="h-5 w-5 text-amber-400" />
+                <Sparkle className="h-5 w-5 text-amber-400" />
                 <span className="text-sm font-semibold text-amber-400">
                   Premium
                 </span>

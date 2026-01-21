@@ -1,10 +1,12 @@
 import React from 'react'
 import { ConvexReactClient } from 'convex/react'
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
+import { IconContext } from '@phosphor-icons/react'
 import { ChoreProvider, useChores } from '../contexts/ChoreContext'
 import { UserProvider, useUsers } from '../contexts/UserContext'
 import { StatsProvider } from '../contexts/StatsContext'
 import { ThemeProvider } from '../contexts/ThemeContext'
+import { SoundProvider } from '../contexts/SoundContext'
 import { DemoProvider, useDemo } from '../contexts/DemoContext'
 import { RedemptionProvider } from '../contexts/RedemptionContext'
 import { PWAInstallProvider } from '../contexts/PWAInstallContext'
@@ -78,20 +80,24 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
-    <ConvexAuthProvider client={convex}>
-      <ThemeProvider>
-        <PWAInstallProvider>
-          <PasswordFlowProvider>
-            <DemoProvider>
-              <ProtectedRoute>
-                <DemoModeWrapperWithDemo>
-                  {children}
-                </DemoModeWrapperWithDemo>
-              </ProtectedRoute>
-            </DemoProvider>
-          </PasswordFlowProvider>
-        </PWAInstallProvider>
-      </ThemeProvider>
-    </ConvexAuthProvider>
+    <IconContext.Provider value={{ size: 20, weight: 'regular' }}>
+      <ConvexAuthProvider client={convex}>
+        <ThemeProvider>
+          <SoundProvider>
+            <PWAInstallProvider>
+            <PasswordFlowProvider>
+              <DemoProvider>
+                <ProtectedRoute>
+                  <DemoModeWrapperWithDemo>
+                    {children}
+                  </DemoModeWrapperWithDemo>
+                </ProtectedRoute>
+              </DemoProvider>
+            </PasswordFlowProvider>
+          </PWAInstallProvider>
+          </SoundProvider>
+        </ThemeProvider>
+      </ConvexAuthProvider>
+    </IconContext.Provider>
   )
 }

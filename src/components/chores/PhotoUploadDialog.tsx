@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
-import { Camera, Upload, X } from 'lucide-react'
+import { Camera, Upload, X } from '@phosphor-icons/react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 

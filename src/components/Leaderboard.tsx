@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react'
-import { Trophy, DollarSign, Coins, Clock, CheckCircle, Target } from 'lucide-react'
+import { Trophy, CurrencyDollar, Coins, Clock, CheckCircle, Crosshair } from '@phosphor-icons/react'
 import { useUsers } from '../contexts/UserContext'
 import { useStats } from '../hooks/useStats'
 import { useChores } from '../contexts/ChoreContext'
@@ -169,7 +169,7 @@ export const Leaderboard: React.FC = React.memo(() => {
         {/* Compact Redemption Stats */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 bg-green-500/10 dark:bg-green-500/20 px-4 py-2 rounded-lg border border-green-500/30">
-            <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <CurrencyDollar className="w-5 h-5 text-green-600 dark:text-green-400" />
             <div>
               <div className="text-xs text-muted-foreground">Available</div>
               <div className="text-lg font-black text-green-600 dark:text-green-400">
@@ -226,7 +226,7 @@ export const Leaderboard: React.FC = React.memo(() => {
                 <div className="text-[10px] text-muted-foreground uppercase">Completed</div>
               </div>
               <div className="bg-white/50 dark:bg-slate-900/50 rounded-lg p-3 text-center">
-                <Target className="w-4 h-4 mx-auto mb-1 text-chart-4" />
+                <Crosshair className="w-4 h-4 mx-auto mb-1 text-chart-4" />
                 <div className="text-xl font-black text-foreground">{(currentUserStats.efficiencyScore || 0).toFixed(0)}%</div>
                 <div className="text-[10px] text-muted-foreground uppercase">Efficiency</div>
               </div>

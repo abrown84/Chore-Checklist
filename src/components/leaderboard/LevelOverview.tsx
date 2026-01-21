@@ -1,5 +1,5 @@
 import React from 'react'
-import { Award } from 'lucide-react'
+import { Medal } from '@phosphor-icons/react'
 import { User } from '../../types/user'
 import { UserStats } from '../../types/user'
 import { APP_CONFIG } from '../../config/constants'
@@ -25,7 +25,7 @@ export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members
     return (
       <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>
         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-          <Award className="w-5 h-5 mr-2 text-chart-4 animate-float" />
+          <Medal className="w-5 h-5 mr-2 text-chart-4 animate-float" />
           Level Progress
         </h3>
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -42,7 +42,7 @@ export const LevelOverview: React.FC<LevelOverviewProps> = React.memo(({ members
   return (
     <div className="bg-card p-6 rounded-xl border shadow-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>
       <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-        <Award className="w-5 h-5 mr-2 text-chart-4 animate-float" />
+        <Medal className="w-5 h-5 mr-2 text-chart-4 animate-float" />
         Level Progress
       </h3>
       <div className="space-y-4">

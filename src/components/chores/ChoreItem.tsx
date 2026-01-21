@@ -2,7 +2,7 @@ import React, { useEffect, memo, useState, useRef, useCallback } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Chore, DIFFICULTY_COLORS, PRIORITY_COLORS, CATEGORY_COLORS } from '../../types/chore'
-import { Calendar, Edit, Image as ImageIcon, X, Check, Sun, CalendarDays, CalendarRange, Leaf } from 'lucide-react'
+import { Calendar, PencilSimple, Image as ImageIcon, X, Check, Sun, CalendarBlank, Leaf } from '@phosphor-icons/react'
 import { isOverdue as checkIsOverdue, normalizeDueDate } from '../../utils/dateHelpers'
 import { EditChoreForm } from '../EditChoreForm'
 import { DeadlineCountdown } from './DeadlineCountdown'
@@ -11,8 +11,8 @@ import { animateElement } from '../../hooks/useAnime'
 // Category icons with their respective colors
 const CATEGORY_ICONS = {
   daily: { icon: Sun, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
-  weekly: { icon: CalendarDays, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/40' },
-  monthly: { icon: CalendarRange, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/40' },
+  weekly: { icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/40' },
+  monthly: { icon: CalendarBlank, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/40' },
   seasonal: { icon: Leaf, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/40' }
 } as const
 
@@ -177,7 +177,7 @@ export const ChoreItem = memo<ChoreItemProps>(({
               className="absolute top-2 right-2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/50"
               title="Edit chore"
             >
-              <Edit className="w-4 h-4" />
+              <PencilSimple className="w-4 h-4" />
             </Button>
           )}
           

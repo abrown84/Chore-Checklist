@@ -8,6 +8,7 @@ import { ProfileHeader } from './profile/ProfileHeader'
 import { AvatarCustomization } from './profile/AvatarCustomization'
 import { RewardsProgress } from './profile/RewardsProgress'
 import { NotificationSettings } from './NotificationSettings'
+import { SoundSettings } from './SoundSettings'
 import { SubscriptionManagement } from './profile/SubscriptionManagement'
 import { PasswordSettings } from './profile/PasswordSettings'
 
@@ -204,6 +205,9 @@ export const ProfileAndRewards: React.FC = () => {
 
       {/* Notification Settings */}
       <NotificationSettings />
+
+      {/* Sound Settings */}
+      <SoundSettings />
 
       {/* Avatar Customization */}
       <AvatarCustomization

@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from '@phosphor-icons/react'
 import { useTheme } from '../contexts/ThemeContext'
 import { Button } from './ui/button'
 

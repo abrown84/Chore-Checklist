@@ -3,7 +3,7 @@ import { animate } from 'animejs'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Check, X, Crown, Sparkles } from 'lucide-react'
+import { Check, X, Crown, Sparkle } from '@phosphor-icons/react'
 import { PlanDetails, BillingInterval, SubscriptionPlan } from '../types/subscription'
 import { cn } from '../utils/cn'
 
@@ -63,7 +63,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
       {plan.isPopular && !isCurrentPlan && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
           <Badge className="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 border-0 px-3 py-1">
-            <Sparkles className="h-3 w-3 mr-1" />
+            <Sparkle className="h-3 w-3 mr-1" />
             Most Popular
           </Badge>
         </div>
@@ -102,7 +102,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
               {isPremiumPlan ? (
                 <Crown className="h-7 w-7 text-amber-400" />
               ) : (
-                <Sparkles className="h-7 w-7 text-muted-foreground" />
+                <Sparkle className="h-7 w-7 text-muted-foreground" />
               )}
             </div>
           </div>

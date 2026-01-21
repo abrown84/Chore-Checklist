@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkle } from '@phosphor-icons/react'
 import { User } from '../../types/user'
 import { UserStats } from '../../types/user'
 import { useUserProgress } from '../../hooks/useUserProgress'
@@ -118,7 +118,7 @@ export const PersonalProgress: React.FC<PersonalProgressProps> = React.memo(({
             </div>
           ) : (
             <div className="text-center">
-              <Sparkles className="w-8 h-8 text-warning mx-auto mb-2 animate-sparkle" />
+              <Sparkle className="w-8 h-8 text-warning mx-auto mb-2 animate-sparkle" />
               <p className="text-sm font-medium text-success">Max Level Achieved!</p>
             </div>
           )}

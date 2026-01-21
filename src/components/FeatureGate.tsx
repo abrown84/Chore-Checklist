@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, ReactNode } from 'react'
 import { animate } from 'animejs'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
-import { Lock, Crown, Sparkles, ArrowRight } from 'lucide-react'
+import { Lock, Crown, Sparkle, ArrowRight } from '@phosphor-icons/react'
 import { useFeatureGate, useFeatureMessage } from '../hooks/useFeatureGate'
 import { PremiumFeature } from '../types/subscription'
 import { UpgradeModal } from './UpgradeModal'
@@ -171,7 +171,7 @@ export const FeatureGatePrompt: React.FC<FeatureGatePromptProps> = ({
               onClick={onUpgrade}
               className="w-full sm:w-auto bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 hover:from-amber-300 hover:to-orange-300 font-semibold"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkle className="h-4 w-4 mr-2" />
               Upgrade
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>

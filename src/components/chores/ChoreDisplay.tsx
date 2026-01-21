@@ -2,13 +2,13 @@ import React from 'react'
 import { Button } from '../ui/button'
 import { Chore } from '../../types/chore'
 import { ChoreItem } from './ChoreItem'
-import { Sun, CalendarDays, CalendarRange, Leaf } from 'lucide-react'
+import { Sun, Calendar, CalendarBlank, Leaf } from '@phosphor-icons/react'
 
 // Category configuration for headers
 const CATEGORY_CONFIG = {
   daily: { icon: Sun, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/40', border: 'border-emerald-200 dark:border-emerald-800' },
-  weekly: { icon: CalendarDays, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/40', border: 'border-blue-200 dark:border-blue-800' },
-  monthly: { icon: CalendarRange, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/40', border: 'border-purple-200 dark:border-purple-800' },
+  weekly: { icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/40', border: 'border-blue-200 dark:border-blue-800' },
+  monthly: { icon: CalendarBlank, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/40', border: 'border-purple-200 dark:border-purple-800' },
   seasonal: { icon: Leaf, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/40', border: 'border-amber-200 dark:border-amber-800' }
 } as const
 

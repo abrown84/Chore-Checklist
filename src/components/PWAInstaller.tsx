@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, Download, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { CheckCircle, DownloadSimple, ArrowClockwise, WifiHigh, WifiSlash } from '@phosphor-icons/react';
 import { usePWAInstall } from '../contexts/PWAInstallContext';
 
 // Conditional import for PWA registration
@@ -85,7 +85,7 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
         <Card className="w-80 bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 shadow-lg">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <RefreshCw className="h-5 w-5 animate-spin" />
+              <ArrowClockwise className="h-5 w-5 animate-spin" />
               Update Available
             </CardTitle>
             <CardDescription className="text-purple-100">
@@ -131,7 +131,7 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
         <Card className="w-80 bg-gradient-to-r from-orange-600 to-red-600 text-white border-0 shadow-lg">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Download className="h-5 w-5" />
+              <DownloadSimple className="h-5 w-5" />
               Install App
             </CardTitle>
             <CardDescription className="text-orange-100">
@@ -161,7 +161,7 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
         <Card className="w-80 bg-gradient-to-r from-gray-600 to-slate-600 text-white border-0 shadow-lg">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <WifiOff className="h-5 w-5" />
+              <WifiSlash className="h-5 w-5" />
               Offline Mode
             </CardTitle>
             <CardDescription className="text-gray-100">

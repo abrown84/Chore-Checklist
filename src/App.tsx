@@ -22,27 +22,19 @@ function AppContentWrapper() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
-  // Handle payment result URL params (shows toast for success/cancel)
   usePaymentResult()
 
   const completeOnboarding = useMutation(api.onboarding.completeOnboarding)
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
+  const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false)
-  }
-
-  // Sync authentication state with UserContext when user changes
   useEffect(() => {
     if (user) {
       syncWithAuth(user)
     }
   }, [user, syncWithAuth])
 
-  // Show onboarding for new users
   useEffect(() => {
     if (user && user.hasCompletedOnboarding === false && !isDemoMode) {
       setShowOnboarding(true)
@@ -60,51 +52,39 @@ function AppContentWrapper() {
 
   const handleSignOut = () => {
     try {
-      // CRITICAL: Don't reset user state - this preserves user levels and chore history
-      // resetUserState() - REMOVED: This was causing level reset on logout/login
-      
-      // Don't clear chore state - this preserves chore completion history and points
-      // clearChoreState() - REMOVED: This was causing chore data loss
-      
-      // Call signOut to clear auth state only (chores and levels persist in localStorage)
       signOut()
     } catch (error) {
       console.error('Error during sign out:', error)
-      // Force sign out even if there's an error
       signOut()
     }
   }
 
-
-  const handleGoHome = () => {
-    setActiveTab('chores')
-  }
+  const handleGoHome = () => setActiveTab('chores')
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       <Toaster position="top-right" />
-      
-      {/* Migration Banner */}
       <MigrationBanner />
 
-      {/* Onboarding Modal */}
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={handleOnboardingClose}
       />
 
-      {/* Header */}
-      <AppHeader
-        user={user}
-        isDemoMode={isDemoMode}
-        onSignOut={handleSignOut}
-        onExitDemo={exitDemoMode}
-        onGoHome={handleGoHome}
-        onMenuToggle={toggleMobileMenu}
-        isMenuOpen={isMobileMenuOpen}
-      />
+      {/* Mobile Header - hidden on desktop */}
+      <div className="lg:hidden">
+        <AppHeader
+          user={user}
+          isDemoMode={isDemoMode}
+          onSignOut={handleSignOut}
+          onExitDemo={exitDemoMode}
+          onGoHome={handleGoHome}
+          onMenuToggle={toggleMobileMenu}
+          isMenuOpen={isMobileMenuOpen}
+        />
+      </div>
 
-      {/* Layout Container */}
+      {/* Main Layout */}
       <AppLayout
         activeTab={activeTab}
         onTabChange={setActiveTab}

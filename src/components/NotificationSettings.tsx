@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bell, BellOff, BellRing, AlertCircle } from 'lucide-react'
+import { Bell, BellSlash, BellRinging, WarningCircle } from '@phosphor-icons/react'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { useNotifications } from '../hooks/useNotifications'
@@ -24,7 +24,7 @@ export const NotificationSettings: React.FC = () => {
   const getStatusInfo = () => {
     if (!isSupported) {
       return {
-        icon: AlertCircle,
+        icon: WarningCircle,
         text: 'Notifications not supported',
         description: 'Your browser does not support notifications.',
         color: 'text-muted-foreground',

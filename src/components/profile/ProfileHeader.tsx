@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Edit, Save, X, CheckCircle } from 'lucide-react'
+import { PencilSimple, FloppyDisk, X, CheckCircle } from '@phosphor-icons/react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Avatar } from '../ui/Avatar'
@@ -105,7 +105,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {isSaving ? 'Saving...' : <Save className="w-4 h-4" />}
+                    {isSaving ? 'Saving...' : <FloppyDisk className="w-4 h-4" />}
                   </Button>
                   <Button
                     onClick={handleNameCancel}
@@ -124,7 +124,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     size="sm"
                     className="text-gray-500 hover:text-gray-700"
                   >
-                    <Edit className="w-4 h-4" />
+                    <PencilSimple className="w-4 h-4" />
                   </Button>
                 </div>
               )}
