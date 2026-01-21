@@ -71,12 +71,8 @@ src/brand_assets/thumbnail-philosophy.md
 BRAND_PHILOSOPHY.md
 PRODUCT_HUNT_LAUNCH.md
 
-# Beads local files (keep .beads/issues.jsonl committed)
-.beads/beads.db*
-.beads/.sync.lock
-.beads/daemon.lock
-.beads/daemon.log
-.beads/daemon.pid
-.beads/bd.sock
-.beads/interactions.jsonl
-.beads/last-touched
+# Beads local files
+.beads/
+
+# Serena
+.serena/

@@ -170,7 +170,7 @@ export const PWAInstaller: React.FC<PWAInstallerProps> = ({ className }) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
-              <Wifi className="h-4 w-4" />
+              <WifiHigh className="h-4 w-4" />
               <span>Reconnect to restore full functionality</span>
             </div>
           </CardContent>
