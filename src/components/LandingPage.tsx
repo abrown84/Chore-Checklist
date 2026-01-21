@@ -28,14 +28,15 @@ const fadeInUp: Variants = {
 	}
 }
 
-const fadeInScale: Variants = {
-	hidden: { opacity: 0, scale: 0.95 },
-	visible: {
-		opacity: 1,
-		scale: 1,
-		transition: { duration: 0.5, ease: smoothEase }
-	}
-}
+// fadeInScale available for future use
+// const fadeInScale: Variants = {
+// 	hidden: { opacity: 0, scale: 0.95 },
+// 	visible: {
+// 		opacity: 1,
+// 		scale: 1,
+// 		transition: { duration: 0.5, ease: smoothEase }
+// 	}
+// }
 
 const staggerContainer: Variants = {
 	hidden: { opacity: 0 },
