@@ -14,28 +14,30 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { X, Users, Coins, Trophy, CalendarCheck, ShieldCheck, Sparkle, Star, CaretRight, CheckCircle } from '@phosphor-icons/react'
-import { motion, useInView } from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 
-// Scroll animation variants
-const fadeInUp = {
+// Scroll animation variants with proper typing
+const smoothEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
+
+const fadeInUp: Variants = {
 	hidden: { opacity: 0, y: 40 },
 	visible: {
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+		transition: { duration: 0.6, ease: smoothEase }
 	}
 }
 
-const fadeInScale = {
+const fadeInScale: Variants = {
 	hidden: { opacity: 0, scale: 0.95 },
 	visible: {
 		opacity: 1,
 		scale: 1,
-		transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+		transition: { duration: 0.5, ease: smoothEase }
 	}
 }
 
-const staggerContainer = {
+const staggerContainer: Variants = {
 	hidden: { opacity: 0 },
 	visible: {
 		opacity: 1,
@@ -46,12 +48,12 @@ const staggerContainer = {
 	}
 }
 
-const staggerItem = {
+const staggerItem: Variants = {
 	hidden: { opacity: 0, y: 30 },
 	visible: {
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+		transition: { duration: 0.5, ease: smoothEase }
 	}
 }
 
@@ -59,7 +61,7 @@ const staggerItem = {
 const ScrollReveal = ({ children, className = '', variants = fadeInUp, ...props }: {
 	children: React.ReactNode
 	className?: string
-	variants?: typeof fadeInUp
+	variants?: Variants
 	[key: string]: unknown
 }) => {
 	const ref = useRef(null)

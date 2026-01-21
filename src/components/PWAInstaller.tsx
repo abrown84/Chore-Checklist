@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, DownloadSimple, ArrowClockwise, WifiHigh, WifiSlash } from '@phosphor-icons/react';
+import { CheckCircle, DownloadSimple, ArrowClockwise, WifiHigh, WifiSlash, Wifi } from '@phosphor-icons/react';
 import { usePWAInstall } from '../contexts/PWAInstallContext';
 
 // Conditional import for PWA registration

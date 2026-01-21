@@ -33,7 +33,7 @@ export const NotificationSettings: React.FC = () => {
 
     if (permission === 'denied') {
       return {
-        icon: BellOff,
+        icon: BellSlash,
         text: 'Notifications blocked',
         description: 'Please enable notifications in your browser settings.',
         color: 'text-destructive',
@@ -42,7 +42,7 @@ export const NotificationSettings: React.FC = () => {
 
     if (isEnabled) {
       return {
-        icon: BellRing,
+        icon: BellRinging,
         text: 'Notifications enabled',
         description: 'You will receive chore reminders.',
         color: 'text-green-500',

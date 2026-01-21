@@ -3,7 +3,7 @@ import { animate } from 'animejs'
 import { PageWrapper } from './PageWrapper'
 import { PricingCard } from './PricingCard'
 import { Card, CardContent } from './ui/card'
-import { Check, CaretDown, Shield, Lightning, Users, Star } from '@phosphor-icons/react'
+import { Check, CaretDown, CaretUp, Shield, Lightning, Users, Star, Question } from '@phosphor-icons/react'
 import { useSubscription } from '../hooks/useSubscription'
 import { PLANS, BillingInterval, SubscriptionPlan } from '../types/subscription'
 import { cn } from '../utils/cn'
@@ -340,7 +340,7 @@ export const PricingPage: React.FC = () => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
-                        <HelpCircle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                        <Question className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <h3 className="font-medium text-foreground text-sm">
                             {faq.question}
@@ -359,7 +359,7 @@ export const PricingPage: React.FC = () => {
                       </div>
                       <div className="flex-shrink-0">
                         {expandedFaq === index ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                          <CaretUp className="h-5 w-5 text-muted-foreground" />
                         ) : (
                           <CaretDown className="h-5 w-5 text-muted-foreground" />
                         )}
