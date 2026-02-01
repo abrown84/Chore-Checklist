@@ -13,22 +13,64 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { House, UserPlus } from '@phosphor-icons/react'
 import { Chore } from '../types/chore'
 
+// Module-level celebration tracker - persists across renders and HMR
+const celebratedChores = new Map<string, number>()
+
 export const ChoreList: React.FC = memo(() => {
-  const { state, completeChore, deleteChore, updateChore } = useChores()
+  const { state, completeChore, deleteChore, updateChore, reorderChores } = useChores()
   const { state: userState } = useUsers()
   const { forceRefresh } = useStats()
   const householdId = useCurrentHousehold()
   const { isDemoMode } = useDemo()
-  
+
   // Animation state
   const [animatingChores, setAnimatingChores] = useState<Set<string>>(new Set())
   const [completingChores, setCompletingChores] = useState<Set<string>>(new Set())
-  
+
   // Photo upload state
   const [photoUploadChore, setPhotoUploadChore] = useState<{ id: string; title: string; clickX: number; clickY: number } | null>(null)
 
   // Popup celebration hook
   const { celebrations, addCelebration, removeCelebration } = usePopupCelebrations()
+
+  // Helper to trigger celebration only once per chore (uses module-level tracker)
+  const triggerCelebration = useCallback((
+    choreId: string,
+    points: number,
+    choreTitle: string,
+    clickX: number,
+    clickY: number,
+    celebrationType: 'points' | 'bonus' | 'streak' | 'level'
+  ) => {
+    const now = Date.now()
+    const lastCelebrated = celebratedChores.get(choreId)
+
+    // Block if celebrated within the last 2 seconds
+    if (lastCelebrated && now - lastCelebrated < 2000) {
+      console.log('[Celebration] BLOCKED duplicate for chore:', choreId, 'time since last:', now - lastCelebrated, 'ms')
+      return
+    }
+
+    // Mark as celebrated with timestamp
+    celebratedChores.set(choreId, now)
+    console.log('[Celebration] Triggering for chore:', choreId)
+
+    // Trigger the celebration
+    addCelebration(points, choreTitle, clickX, clickY, celebrationType)
+
+    // Clean up old entries after 10 seconds
+    setTimeout(() => {
+      const timestamp = celebratedChores.get(choreId)
+      if (timestamp && Date.now() - timestamp >= 10000) {
+        celebratedChores.delete(choreId)
+      }
+    }, 10000)
+  }, [addCelebration])
+
+  // Simple close handler for dialog (no celebration trigger)
+  const handleClosePhotoDialog = useCallback(() => {
+    setPhotoUploadChore(null)
+  }, [])
 
   // Custom hook for chore list logic
   const choreListLogic = useChoreList({
@@ -41,17 +83,25 @@ export const ChoreList: React.FC = memo(() => {
   // No need for explicit effect
 
   const handleCompleteChore = useCallback((choreId: string, event?: React.MouseEvent) => {
+    console.log('[DEBUG] handleCompleteChore called:', choreId)
     // Find the chore to get points
     const chore = state.chores.find(c => c.id === choreId)
     if (!chore) return
+
+    // Prevent double-trigger if dialog is already open for this chore
+    if (photoUploadChore?.id === choreId) {
+      console.log('[DEBUG] Skipping - dialog already open for this chore')
+      return
+    }
 
     // Capture click coordinates or use center of screen as fallback
     const clickX = event?.clientX ?? window.innerWidth / 2
     const clickY = event?.clientY ?? window.innerHeight / 2
 
     // Show photo upload dialog first (optional)
+    console.log('[DEBUG] Opening photo dialog for:', choreId)
     setPhotoUploadChore({ id: choreId, title: chore.title, clickX, clickY })
-  }, [state.chores])
+  }, [state.chores, photoUploadChore?.id])
 
   const handlePhotoUploaded = useCallback(async (storageId: string) => {
     if (!photoUploadChore) return
@@ -129,43 +179,15 @@ export const ChoreList: React.FC = memo(() => {
         setPhotoUploadChore(null)
       })
 
-    // Get click position and trigger multiple popup celebrations (like damage popups in games)
+    // Trigger celebration (guarded against duplicates)
     if (chore && photoUploadChore) {
       const points = chore.finalPoints || chore.points
-      // Use stored click coordinates from when the chore was clicked
-      const clickX = photoUploadChore.clickX
-      const clickY = photoUploadChore.clickY
-
-      // Determine celebration type based on various factors
       let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
-
-      // Check if this is a streak or special completion
-      if (chore.bonusMessage) {
-        celebrationType = 'bonus'
-      }
-
-      // Check if user leveled up (you might want to add level tracking logic here)
+      if (chore.bonusMessage) celebrationType = 'bonus'
       const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
-      if (userStats && points >= 30) { // High value chores might indicate level potential
-        celebrationType = 'streak'
-      }
+      if (userStats && points >= 30) celebrationType = 'streak'
 
-      // Trigger the damage popup style celebration
-      addCelebration(points, chore.title, clickX, clickY, celebrationType)
-      
-      // For extra special chores, add some additional celebration popups
-      if (points >= 25) {
-        // Add some extra "critical hit" style popups around the main one
-        setTimeout(() => {
-          addCelebration(
-            Math.floor(points * 0.4), 
-            'BONUS!', 
-            clickX + (Math.random() - 0.5) * 100,
-            clickY + (Math.random() - 0.5) * 80,
-            'bonus'
-          )
-        }, 150)
-      }
+      triggerCelebration(choreId, points, chore.title, photoUploadChore.clickX, photoUploadChore.clickY, celebrationType)
     }
     
     // Remove animation state after a delay - should match the completion animation duration
@@ -176,7 +198,7 @@ export const ChoreList: React.FC = memo(() => {
         return newSet
       })
       }, 500) // Match the 500ms completion animation duration
-  }, [completeChore, userState.currentUser, state.chores, userState.memberStats, addCelebration, photoUploadChore])
+  }, [completeChore, userState.currentUser, state.chores, userState.memberStats, triggerCelebration, photoUploadChore])
 
   const handleSkipPhoto = useCallback(async () => {
     if (!photoUploadChore) return
@@ -251,19 +273,15 @@ export const ChoreList: React.FC = memo(() => {
         setPhotoUploadChore(null)
       })
 
-    // Trigger celebrations using stored click coordinates
+    // Trigger celebration (guarded against duplicates)
     if (photoUploadChore) {
       const points = chore.finalPoints || chore.points
-      const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
       let celebrationType: 'points' | 'bonus' | 'streak' | 'level' = 'points'
-      if (chore.bonusMessage) {
-        celebrationType = 'bonus'
-      }
-      if (userStats && points >= 30) {
-        celebrationType = 'streak'
-      }
-      // Use stored click coordinates from when the chore was clicked
-      addCelebration(points, chore.title, photoUploadChore.clickX, photoUploadChore.clickY, celebrationType)
+      if (chore.bonusMessage) celebrationType = 'bonus'
+      const userStats = userState.memberStats.find(stats => stats.userId === currentUserId)
+      if (userStats && points >= 30) celebrationType = 'streak'
+
+      triggerCelebration(choreId, points, chore.title, photoUploadChore.clickX, photoUploadChore.clickY, celebrationType)
     }
 
     setTimeout(() => {
@@ -273,7 +291,7 @@ export const ChoreList: React.FC = memo(() => {
         return newSet
       })
     }, 500)
-  }, [completeChore, userState.currentUser, state.chores, userState.memberStats, addCelebration, photoUploadChore, forceRefresh])
+  }, [completeChore, userState.currentUser, state.chores, userState.memberStats, triggerCelebration, photoUploadChore])
 
   const handleDeleteChore = useCallback((choreId: string) => {
     deleteChore(choreId)
@@ -299,6 +317,14 @@ export const ChoreList: React.FC = memo(() => {
   const handleFilterReset = useCallback(() => {
     choreListLogic.setFilter('all')
   }, [choreListLogic])
+
+  const handleReorder = useCallback(async (category: string, choreIds: string[]) => {
+    try {
+      await reorderChores(category, choreIds)
+    } catch (error) {
+      console.error('Error reordering chores:', error)
+    }
+  }, [reorderChores])
 
   // Show message if user is not in a household (but skip in demo mode)
   if (!householdId && !isDemoMode) {
@@ -331,7 +357,8 @@ export const ChoreList: React.FC = memo(() => {
       {photoUploadChore && (
         <PhotoUploadDialog
           open={!!photoUploadChore}
-          onClose={handleSkipPhoto}
+          onClose={handleClosePhotoDialog}
+          onSkip={handleSkipPhoto}
           onPhotoUploaded={handlePhotoUploaded}
           choreTitle={photoUploadChore.title}
         />
@@ -370,6 +397,8 @@ export const ChoreList: React.FC = memo(() => {
         getCategoryStats={choreListLogic.getCategoryStats}
         filter={choreListLogic.filter}
         onFilterReset={handleFilterReset}
+        sortBy={choreListLogic.sortBy}
+        onReorder={handleReorder}
       />
     </div>
   )

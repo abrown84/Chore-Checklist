@@ -258,10 +258,28 @@ export const ChoreItem = memo<ChoreItemProps>(({
               {chore.dueDate && !chore.completed && (
                 <div className="mb-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>Due: {normalizeDueDate(chore.dueDate).toLocaleDateString()}</span>
-                      <span className="text-muted-foreground/60">
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">
+                        {(() => {
+                          const dueDate = normalizeDueDate(chore.dueDate)
+                          const today = new Date()
+                          const tomorrow = new Date(today)
+                          tomorrow.setDate(tomorrow.getDate() + 1)
+
+                          // Check if it's today
+                          if (dueDate.toDateString() === today.toDateString()) {
+                            return 'Today'
+                          }
+                          // Check if it's tomorrow
+                          if (dueDate.toDateString() === tomorrow.toDateString()) {
+                            return 'Tomorrow'
+                          }
+                          // Otherwise show day name
+                          return dueDate.toLocaleDateString('en-US', { weekday: 'long' })
+                        })()}
+                      </span>
+                      <span className="text-muted-foreground/60 text-xs">
                         {normalizeDueDate(chore.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -273,7 +291,7 @@ export const ChoreItem = memo<ChoreItemProps>(({
               {chore.dueDate && chore.completed && (
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-3">
                   <Calendar className="w-4 h-4" />
-                  <span>Was due: {normalizeDueDate(chore.dueDate).toLocaleDateString()}</span>
+                  <span>Was due: {normalizeDueDate(chore.dueDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                 </div>
               )}
 

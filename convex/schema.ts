@@ -100,6 +100,7 @@ export default defineSchema({
     finalPoints: v.optional(v.number()), // includes bonuses/penalties
     bonusMessage: v.optional(v.string()),
     proofPhotoId: v.optional(v.id("_storage")), // Photo proof of completion
+    sortOrder: v.optional(v.number()), // Custom sort position within category
     createdAt: v.number(),
     updatedAt: v.number(),
   })

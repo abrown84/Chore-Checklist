@@ -5,12 +5,12 @@ interface ChoreFiltersProps {
   filter: 'all' | 'pending' | 'completed'
   deadlineFilter?: 'all' | 'overdue' | 'due-soon' | 'upcoming'
   categoryFilter: string
-  sortBy: 'priority' | 'difficulty' | 'dueDate'
+  sortBy: 'priority' | 'difficulty' | 'dueDate' | 'custom'
   categories: string[]
   onFilterChange: (filter: 'all' | 'pending' | 'completed') => void
   onDeadlineFilterChange?: (filter: 'all' | 'overdue' | 'due-soon' | 'upcoming') => void
   onCategoryFilterChange: (category: string) => void
-  onSortByChange: (sortBy: 'priority' | 'difficulty' | 'dueDate') => void
+  onSortByChange: (sortBy: 'priority' | 'difficulty' | 'dueDate' | 'custom') => void
 }
 
 export const ChoreFilters: React.FC<ChoreFiltersProps> = ({
@@ -86,12 +86,16 @@ export const ChoreFilters: React.FC<ChoreFiltersProps> = ({
           <span className="text-sm font-medium text-gray-700">Sort by:</span>
           <select
             value={sortBy}
-            onChange={(e) => onSortByChange(e.target.value as 'priority' | 'difficulty' | 'dueDate')}
+            onChange={(e) => {
+              console.log('[ChoreFilters] Sort changed to:', e.target.value)
+              onSortByChange(e.target.value as 'priority' | 'difficulty' | 'dueDate' | 'custom')
+            }}
             className="px-3 py-2 sm:py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] bg-background"
           >
             <option value="priority">Priority</option>
             <option value="difficulty">Difficulty</option>
             <option value="dueDate">Due Date</option>
+            <option value="custom">Custom (Drag to reorder)</option>
           </select>
         </div>
       </div>

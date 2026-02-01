@@ -1,7 +1,24 @@
-import React from 'react'
+import React, { useCallback } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
 import { Button } from '../ui/button'
 import { Chore } from '../../types/chore'
 import { ChoreItem } from './ChoreItem'
+import { SortableChoreItem } from './SortableChoreItem'
 import { Sun, Calendar, CalendarBlank, Leaf } from '@phosphor-icons/react'
 
 // Category configuration for headers
@@ -25,6 +42,8 @@ interface ChoreDisplayProps {
   getCategoryStats: (category: string) => { total: number; completed: number; pending: number }
   filter: 'all' | 'pending' | 'completed'
   onFilterReset: () => void
+  sortBy?: 'priority' | 'difficulty' | 'dueDate' | 'custom'
+  onReorder?: (category: string, choreIds: string[]) => void
 }
 
 export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
@@ -39,9 +58,51 @@ export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
   onAnimationComplete,
   getCategoryStats,
   filter,
-  onFilterReset
+  onFilterReset,
+  sortBy,
+  onReorder
 }) => {
   const totalChores = Object.values(groupedChores).flat().length
+  const isCustomSort = sortBy === 'custom'
+
+  // Debug log
+  if (import.meta.env.DEV) {
+    console.log('[ChoreDisplay] sortBy:', sortBy, 'isCustomSort:', isCustomSort)
+  }
+
+  // DnD sensors for mouse, touch, and keyboard
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback((category: string, chores: Chore[]) => (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = chores.findIndex((c) => c.id === active.id)
+      const newIndex = chores.findIndex((c) => c.id === over.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newChores = arrayMove(chores, oldIndex, newIndex)
+        const choreIds = newChores.map((c) => c.id)
+        onReorder?.(category, choreIds)
+      }
+    }
+  }, [onReorder])
 
   if (totalChores === 0) {
     // Different empty states based on filter
@@ -124,25 +185,37 @@ export const ChoreDisplay: React.FC<ChoreDisplayProps> = ({
             </div>
           )}
           
-          <div className={`grid gap-4 transition-all duration-500 ease-in-out ${
-            viewMode === 'grid'
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-              : 'grid-cols-1'
-          }`}>
-            {chores.map((chore, index) => (
-              <ChoreItem
-                key={chore.id}
-                chore={chore}
-                onComplete={onComplete}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                isAnimating={animatingChores.has(chore.id)}
-                isCompleting={completingChores.has(chore.id)}
-                onAnimationComplete={onAnimationComplete}
-                index={index}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd(category, chores)}
+          >
+            <SortableContext
+              items={chores.map((c) => c.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className={`grid gap-4 transition-all duration-500 ease-in-out ${
+                viewMode === 'grid'
+                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1'
+              }`}>
+                {chores.map((chore, index) => (
+                  <SortableChoreItem
+                    key={chore.id}
+                    chore={chore}
+                    onComplete={onComplete}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    isAnimating={animatingChores.has(chore.id)}
+                    isCompleting={completingChores.has(chore.id)}
+                    onAnimationComplete={onAnimationComplete}
+                    index={index}
+                    isDragEnabled={true}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
         )
       })}

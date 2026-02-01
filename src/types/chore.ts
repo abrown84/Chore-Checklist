@@ -16,7 +16,7 @@ export interface Chore {
   bonusMessage?: string
   proofPhotoId?: string // Storage ID for photo proof
   proofPhotoUrl?: string // URL for displaying photo (derived from storage ID)
-  // Removed approval system fields - no longer needed for chores
+  sortOrder?: number // Custom sort position within category
 }
 
 export interface ChoreStats {

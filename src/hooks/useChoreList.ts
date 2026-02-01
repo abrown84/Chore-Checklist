@@ -13,7 +13,13 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
   const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'overdue' | 'due-soon' | 'upcoming'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'priority' | 'difficulty' | 'dueDate'>('priority')
+  const [sortBy, setSortByInternal] = useState<'priority' | 'difficulty' | 'dueDate' | 'custom'>('priority')
+
+  // Wrapper to log sortBy changes
+  const setSortBy = useCallback((value: 'priority' | 'difficulty' | 'dueDate' | 'custom') => {
+    console.log('[useChoreList] setSortBy called with:', value)
+    setSortByInternal(value)
+  }, [])
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [groupByCategory, setGroupByCategory] = useState<boolean>(true)
 
@@ -121,6 +127,12 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
           if (!a.dueDate) return 1
           if (!b.dueDate) return -1
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        case 'custom': {
+          // Sort by sortOrder, nulls last
+          const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER
+          const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER
+          return aOrder - bOrder
+        }
         default:
           return 0
       }

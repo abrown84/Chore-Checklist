@@ -22,6 +22,7 @@ export function convexChoreToChore(convexChore: any, storageUrl?: string | null)
     finalPoints: convexChore.finalPoints,
     bonusMessage: convexChore.bonusMessage,
     proofPhotoId: convexChore.proofPhotoId,
+    sortOrder: convexChore.sortOrder,
   };
   
   // Add photo URL if we have a storage ID and URL

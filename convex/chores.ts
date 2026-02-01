@@ -389,6 +389,45 @@ export const updateChore = mutation({
   },
 });
 
+// Mutation: Reorder chores within a category
+export const reorderChores = mutation({
+  args: {
+    householdId: v.id("households"),
+    updates: v.array(v.object({
+      choreId: v.id("chores"),
+      sortOrder: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getCurrentUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user is member of household
+    const membership = await ctx.db
+      .query("householdMembers")
+      .withIndex("by_household_user", (q) => q.eq("householdId", args.householdId).eq("userId", userId as any))
+      .first();
+
+    if (!membership) {
+      throw new Error("Not a member of this household");
+    }
+
+    const now = Date.now();
+
+    // Update each chore's sortOrder
+    for (const { choreId, sortOrder } of args.updates) {
+      const chore = await ctx.db.get(choreId);
+      if (chore && chore.householdId === args.householdId) {
+        await ctx.db.patch(choreId, { sortOrder, updatedAt: now });
+      }
+    }
+
+    return { success: true, updatedCount: args.updates.length };
+  },
+});
+
 // Mutation: Delete a chore
 export const deleteChore = mutation({
   args: { choreId: v.id("chores") },

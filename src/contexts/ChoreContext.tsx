@@ -17,6 +17,7 @@ interface ChoreContextType {
   completeChore: (id: string, completedBy: string, proofPhotoId?: string) => void
   deleteChore: (id: string) => void
   updateChore: (chore: Chore) => void
+  reorderChores: (category: string, choreIds: string[]) => void
   resetChores: () => void
   clearChoreState: () => void
   repairDefaultUserChores: () => void
@@ -92,6 +93,7 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
   const completeChoreMutation = useMutation(api.chores.completeChore);
   const updateChoreMutation = useMutation(api.chores.updateChore);
   const deleteChoreMutation = useMutation(api.chores.deleteChore);
+  const reorderChoresMutation = useMutation(api.chores.reorderChores);
 
   // Initialize chores: from demo function in demo mode, empty in Convex mode (will be populated by query)
   const [chores, setChores] = useState<Chore[]>(() => {
@@ -267,7 +269,43 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
       throw new Error('Cannot update chore: no household ID. Please ensure you are logged in and have a household.');
     }
   }, [isDemoMode, householdId, updateChoreMutation])
-  
+
+  const reorderChores = useCallback(async (category: string, choreIds: string[]) => {
+    if (isDemoMode) {
+      // Demo mode: update local state with new order
+      setChores(prev => {
+        const categoryChores = prev.filter(c => c.category === category)
+        const otherChores = prev.filter(c => c.category !== category)
+
+        // Create new array with updated sortOrder
+        const reorderedChores = choreIds.map((id, index) => {
+          const chore = categoryChores.find(c => c.id === id)
+          if (chore) {
+            return { ...chore, sortOrder: index }
+          }
+          return null
+        }).filter(Boolean) as Chore[]
+
+        return [...otherChores, ...reorderedChores]
+      })
+    } else if (householdId) {
+      // Convex mode: use mutation
+      try {
+        const updates = choreIds.map((id, index) => ({
+          choreId: id as Id<"chores">,
+          sortOrder: index,
+        }))
+        await reorderChoresMutation({ householdId, updates })
+        // The query will automatically update chores via useEffect
+      } catch (error) {
+        console.error('Error reordering chores:', error)
+        throw error
+      }
+    } else {
+      throw new Error('Cannot reorder chores: no household ID.')
+    }
+  }, [isDemoMode, householdId, reorderChoresMutation])
+
   const resetChores = useCallback(() => {
     const defaultChores = resetChoresToDefaults()
     const choresWithIds = defaultChores.map(chore => ({
@@ -293,6 +331,7 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
     completeChore,
     deleteChore,
     updateChore,
+    reorderChores,
     resetChores,
     clearChoreState,
     repairDefaultUserChores,
