@@ -17,7 +17,6 @@ import {
 } from '@dnd-kit/sortable'
 import { Button } from '../ui/button'
 import { Chore } from '../../types/chore'
-import { ChoreItem } from './ChoreItem'
 import { SortableChoreItem } from './SortableChoreItem'
 import { Sun, Calendar, CalendarBlank, Leaf } from '@phosphor-icons/react'
 

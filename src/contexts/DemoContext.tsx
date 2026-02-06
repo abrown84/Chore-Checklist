@@ -109,43 +109,69 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
     }
   }
 
+  // Helper function to get approved demo redemption points by user
+  const getDemoRedeemedPointsByUser = (): Record<string, number> => {
+    try {
+      const saved = localStorage.getItem('demoRedemptionRequests')
+      if (saved) {
+        const requests = JSON.parse(saved)
+        const redeemed: Record<string, number> = {}
+        requests
+          .filter((req: any) => req.status === 'approved')
+          .forEach((req: any) => {
+            if (!redeemed[req.userId]) {
+              redeemed[req.userId] = 0
+            }
+            redeemed[req.userId] += req.pointsRequested || 0
+          })
+        return redeemed
+      }
+    } catch (error) {
+      console.error('Error loading demo redemptions for stats:', error)
+    }
+    return {}
+  }
+
   // Helper function to calculate demo stats from existing chores
   const getDemoStatsFromChores = (chores: Chore[]): UserStats[] => {
     try {
       const demoUsers = getDemoUsers()
-      
+      const redeemedPointsByUser = getDemoRedeemedPointsByUser()
 
-      
+
       return demoUsers.map(user => {
         // Get chores for this user
-        const userChores = chores.filter(chore => 
+        const userChores = chores.filter(chore =>
           chore.assignedTo === user.id || chore.completedBy === user.id
         )
         const completedChores = userChores.filter(chore => chore.completed)
-        
-        // Calculate points - use finalPoints if available, otherwise fall back to base points
-        const earnedPoints = completedChores.reduce((sum, chore) => {
-          // For demo mode, always use finalPoints if available (includes bonus points)
+
+        // Calculate lifetime points (total earned) - use finalPoints if available
+        const lifetimePointsFromChores = completedChores.reduce((sum, chore) => {
           const pointsToAdd = chore.finalPoints !== undefined ? chore.finalPoints : chore.points
           return sum + pointsToAdd
         }, 0)
+
+        // Calculate earned points = lifetime - redeemed
+        const redeemedPoints = redeemedPointsByUser[user.id] || 0
+        const earnedPoints = Math.max(0, lifetimePointsFromChores - redeemedPoints)
         
-        // Calculate level based on points
+        // Calculate level based on LIFETIME points (level is never lost due to redemptions)
         let currentLevel = 1
         for (let i = LEVELS.length - 1; i >= 0; i--) {
-          if (earnedPoints >= LEVELS[i].pointsRequired) {
+          if (lifetimePointsFromChores >= LEVELS[i].pointsRequired) {
             currentLevel = LEVELS[i].level
             break
           }
         }
-        
-        // Calculate level progress
+
+        // Calculate level progress based on lifetime points
         const currentLevelData = LEVELS.find(level => level.level === currentLevel)
         const nextLevelData = LEVELS.find(level => level.level === currentLevel + 1)
-        
-        const currentLevelPoints = Math.max(0, earnedPoints - (currentLevelData?.pointsRequired || 0))
-        const pointsToNextLevel = nextLevelData 
-          ? Math.max(0, nextLevelData.pointsRequired - earnedPoints)
+
+        const currentLevelPoints = Math.max(0, lifetimePointsFromChores - (currentLevelData?.pointsRequired || 0))
+        const pointsToNextLevel = nextLevelData
+          ? Math.max(0, nextLevelData.pointsRequired - lifetimePointsFromChores)
           : 0
         
         // Calculate streaks (simplified for demo)
@@ -176,8 +202,8 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
           totalChores: userChores.length,
           completedChores: completedChores.length,
           totalPoints: userChores.reduce((sum, c) => sum + (c.finalPoints || c.points), 0), // Use finalPoints for total
-          lifetimePoints: earnedPoints, // In demo mode, lifetime equals earned since no redemptions
-          earnedPoints,
+          lifetimePoints: lifetimePointsFromChores, // Total points ever earned (never decreases)
+          earnedPoints, // Available points after redemptions
           currentStreak,
           longestStreak,
           currentLevel,

@@ -340,6 +340,9 @@ const CoinPopupItem: React.FC<CoinPopupItemProps> = ({ celebration, onRemove }) 
 // Hook to manage popup celebrations
 export const usePopupCelebrations = () => {
   const [celebrations, setCelebrations] = useState<PopupCelebration[]>([])
+  // Track recent celebrations to prevent duplicates (debounce)
+  const recentCelebrations = useRef<Map<string, number>>(new Map())
+  const DEBOUNCE_MS = 500 // Prevent same chore celebration within 500ms
 
   const addCelebration = (
     points: number,
@@ -348,6 +351,26 @@ export const usePopupCelebrations = () => {
     y: number,
     type?: 'points' | 'bonus' | 'streak' | 'level'
   ) => {
+    // Create a key based on chore title and type to detect duplicates
+    const dedupeKey = `${choreTitle}-${type || 'points'}-${points}`
+    const now = Date.now()
+    const lastTime = recentCelebrations.current.get(dedupeKey)
+
+    // Skip if this exact celebration was triggered recently (prevents double-fire)
+    if (lastTime && now - lastTime < DEBOUNCE_MS) {
+      console.debug('[Celebration] Skipping duplicate:', dedupeKey)
+      return
+    }
+    recentCelebrations.current.set(dedupeKey, now)
+
+    // Clean up old entries periodically
+    if (recentCelebrations.current.size > 20) {
+      const cutoff = now - DEBOUNCE_MS * 2
+      recentCelebrations.current.forEach((time, key) => {
+        if (time < cutoff) recentCelebrations.current.delete(key)
+      })
+    }
+
     const popup: PopupCelebration = {
       id: `celebration-${Date.now()}-${Math.random()}`,
       points,

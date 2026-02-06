@@ -133,7 +133,6 @@ export const EmbeddedCheckoutModal: React.FC<EmbeddedCheckoutModalProps> = ({
 
   // Handle checkout completion
   const handleComplete = useCallback(() => {
-    console.log('Checkout completed successfully')
     // Note: Stripe will redirect to return_url automatically
     // The modal will remain open until redirect happens
     // The usePaymentResult hook will show success toast after redirect

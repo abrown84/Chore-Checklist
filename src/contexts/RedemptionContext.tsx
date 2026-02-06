@@ -5,6 +5,7 @@ import { Id } from '../../convex/_generated/dataModel'
 import { useCurrentHousehold } from '../hooks/useCurrentHousehold'
 import { useUsers } from './UserContext'
 import { getDisplayName } from '../utils/convexHelpers'
+import { useDemo } from './DemoContext'
 
 export interface RedemptionRequest {
   id: string
@@ -57,23 +58,76 @@ interface RedemptionProviderProps {
   children: ReactNode
 }
 
+// Helper to load demo redemptions from localStorage
+const loadDemoRedemptions = (): RedemptionRequest[] => {
+  try {
+    const saved = localStorage.getItem('demoRedemptionRequests')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return parsed.map((req: any) => ({
+        ...req,
+        requestedAt: new Date(req.requestedAt),
+        processedAt: req.processedAt ? new Date(req.processedAt) : undefined,
+      }))
+    }
+  } catch (error) {
+    console.error('Error loading demo redemptions:', error)
+  }
+  return []
+}
+
+// Helper to save demo redemptions to localStorage
+const saveDemoRedemptions = (requests: RedemptionRequest[]) => {
+  try {
+    localStorage.setItem('demoRedemptionRequests', JSON.stringify(requests))
+  } catch (error) {
+    console.error('Error saving demo redemptions:', error)
+  }
+}
+
 export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children }) => {
   const householdId = useCurrentHousehold()
   const { state: userState } = useUsers()
-  
-  // Convex queries and mutations
+  const { isDemoMode } = useDemo()
+
+  // Demo mode state
+  const [demoRedemptionRequests, setDemoRedemptionRequests] = useState<RedemptionRequest[]>(() => {
+    if (typeof window !== 'undefined') {
+      return loadDemoRedemptions()
+    }
+    return []
+  })
+
+  // Convex queries and mutations (skip in demo mode)
   const convexRedemptionRequests = useQuery(
     api.redemptions.getHouseholdRedemptionRequests,
-    householdId ? { householdId } : "skip"
+    !isDemoMode && householdId ? { householdId } : "skip"
   )
-  
+
   const createRedemptionRequestMutation = useMutation(api.redemptions.createRedemptionRequest)
   const updateRedemptionRequestMutation = useMutation(api.redemptions.updateRedemptionRequestStatus)
-  
-  // Convert Convex redemption requests to app format
-  const redemptionRequests = useMemo(() => {
-    if (!convexRedemptionRequests) return []
-    
+
+  // Save demo redemptions to localStorage when they change
+  useEffect(() => {
+    if (isDemoMode && demoRedemptionRequests.length > 0) {
+      saveDemoRedemptions(demoRedemptionRequests)
+    }
+  }, [isDemoMode, demoRedemptionRequests])
+
+  // Load demo redemptions on mount/mode change
+  useEffect(() => {
+    if (isDemoMode) {
+      const loaded = loadDemoRedemptions()
+      if (loaded.length > 0) {
+        setDemoRedemptionRequests(loaded)
+      }
+    }
+  }, [isDemoMode])
+
+  // Convert Convex redemption requests to app format (only used in non-demo mode)
+  const convexFormattedRequests = useMemo(() => {
+    if (isDemoMode || !convexRedemptionRequests) return []
+
     return convexRedemptionRequests.map(req => {
       const user = userState.members.find(m => m.id === req.userId)
       const processedByUser = req.processedBy ? userState.members.find(m => m.id === req.processedBy) : undefined
@@ -91,7 +145,10 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
         adminNotes: req.adminNotes,
       } as RedemptionRequest
     })
-  }, [convexRedemptionRequests, userState.members])
+  }, [isDemoMode, convexRedemptionRequests, userState.members])
+
+  // Use demo or convex requests based on mode
+  const redemptionRequests = isDemoMode ? demoRedemptionRequests : convexFormattedRequests
   
   // Conversion rate - stored in localStorage as a UI preference (not core data)
   // This is intentionally kept in localStorage as it's a household setting preference
@@ -126,11 +183,23 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
   }, [])
 
   const addRedemptionRequest = useCallback(async (request: RedemptionRequest) => {
+    if (isDemoMode) {
+      // Demo mode: add to local state
+      const newRequest: RedemptionRequest = {
+        ...request,
+        id: `demo-redemption-${Date.now()}`,
+        status: 'pending',
+        requestedAt: new Date(),
+      }
+      setDemoRedemptionRequests(prev => [...prev, newRequest])
+      return
+    }
+
     if (!householdId) {
       console.error('Cannot add redemption request: no household ID')
       return
     }
-    
+
     try {
       await createRedemptionRequestMutation({
         userId: request.userId as Id<"users">,
@@ -142,14 +211,27 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
       console.error('Error creating redemption request:', error)
       throw error
     }
-  }, [householdId, createRedemptionRequestMutation])
+  }, [isDemoMode, householdId, createRedemptionRequestMutation])
 
   const updateRedemptionRequest = useCallback(async (requestId: string, updates: Partial<RedemptionRequest>) => {
+    if (isDemoMode) {
+      // Demo mode: update local state
+      setDemoRedemptionRequests(prev => prev.map(req => {
+        if (req.id !== requestId) return req
+        return {
+          ...req,
+          ...updates,
+          processedAt: new Date(),
+        }
+      }))
+      return
+    }
+
     if (!updates.status || (updates.status !== 'approved' && updates.status !== 'rejected')) {
       console.error('Invalid status update')
       return
     }
-    
+
     try {
       await updateRedemptionRequestMutation({
         requestId: requestId as Id<"redemptionRequests">,
@@ -160,7 +242,7 @@ export const RedemptionProvider: React.FC<RedemptionProviderProps> = ({ children
       console.error('Error updating redemption request:', error)
       throw error
     }
-  }, [updateRedemptionRequestMutation])
+  }, [isDemoMode, updateRedemptionRequestMutation])
 
   // Get pending redemption points for a specific user
   const getPendingRedemptionPoints = (userId: string): number => {

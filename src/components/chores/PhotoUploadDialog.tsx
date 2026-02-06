@@ -8,6 +8,7 @@ import { api } from '../../../convex/_generated/api'
 interface PhotoUploadDialogProps {
   open: boolean
   onClose: () => void
+  onSkip: () => void
   onPhotoUploaded: (storageId: string) => void
   choreTitle: string
 }
@@ -15,6 +16,7 @@ interface PhotoUploadDialogProps {
 export const PhotoUploadDialog: React.FC<PhotoUploadDialogProps> = ({
   open,
   onClose,
+  onSkip,
   onPhotoUploaded,
   choreTitle
 }) => {
@@ -104,8 +106,8 @@ export const PhotoUploadDialog: React.FC<PhotoUploadDialogProps> = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-    onClose()
-  }, [onClose])
+    onSkip()
+  }, [onSkip])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -231,7 +231,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boo
           id: 'demo-alex',
           name: 'Alex',
           email: 'alex@demo.com',
-          role: 'parent' as const,
+          role: 'admin' as const, // Admin role allows approving redemptions
           joinedAt: new Date('2024-01-01'),
           avatar: '👨‍💼',
           isActive: true,
@@ -241,7 +241,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode; isDemoMode: boo
           id: 'demo-janice',
           name: 'Janice',
           email: 'janice@demo.com',
-          role: 'parent' as const,
+          role: 'admin' as const, // Admin role allows approving redemptions
           joinedAt: new Date('2024-01-15'),
           avatar: '👩‍💼',
           isActive: true,

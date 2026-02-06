@@ -1,7 +1,6 @@
 import React, { useState, useCallback, memo } from 'react'
 import { useChores } from '../contexts/ChoreContext'
 import { useUsers } from '../contexts/UserContext'
-import { useStats } from '../hooks/useStats'
 import { ChorePopupCelebration, usePopupCelebrations } from './ChorePopupCelebration'
 import { ChoreFilters } from './chores/ChoreFilters'
 import { ChoreDisplay } from './chores/ChoreDisplay'
@@ -19,7 +18,6 @@ const celebratedChores = new Map<string, number>()
 export const ChoreList: React.FC = memo(() => {
   const { state, completeChore, deleteChore, updateChore, reorderChores } = useChores()
   const { state: userState } = useUsers()
-  const { forceRefresh } = useStats()
   const householdId = useCurrentHousehold()
   const { isDemoMode } = useDemo()
 
@@ -47,13 +45,11 @@ export const ChoreList: React.FC = memo(() => {
 
     // Block if celebrated within the last 2 seconds
     if (lastCelebrated && now - lastCelebrated < 2000) {
-      console.log('[Celebration] BLOCKED duplicate for chore:', choreId, 'time since last:', now - lastCelebrated, 'ms')
       return
     }
 
     // Mark as celebrated with timestamp
     celebratedChores.set(choreId, now)
-    console.log('[Celebration] Triggering for chore:', choreId)
 
     // Trigger the celebration
     addCelebration(points, choreTitle, clickX, clickY, celebrationType)
@@ -83,14 +79,12 @@ export const ChoreList: React.FC = memo(() => {
   // No need for explicit effect
 
   const handleCompleteChore = useCallback((choreId: string, event?: React.MouseEvent) => {
-    console.log('[DEBUG] handleCompleteChore called:', choreId)
     // Find the chore to get points
     const chore = state.chores.find(c => c.id === choreId)
     if (!chore) return
 
     // Prevent double-trigger if dialog is already open for this chore
     if (photoUploadChore?.id === choreId) {
-      console.log('[DEBUG] Skipping - dialog already open for this chore')
       return
     }
 
@@ -99,7 +93,6 @@ export const ChoreList: React.FC = memo(() => {
     const clickY = event?.clientY ?? window.innerHeight / 2
 
     // Show photo upload dialog first (optional)
-    console.log('[DEBUG] Opening photo dialog for:', choreId)
     setPhotoUploadChore({ id: choreId, title: chore.title, clickX, clickY })
   }, [state.chores, photoUploadChore?.id])
 
@@ -129,22 +122,7 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId, storageId))
       .then((result: any) => {
-        console.log('✅ Chore completion result:', result)
-        if (result && typeof result === 'object' && 'finalPoints' in result) {
-          console.log(`✅ Points awarded: ${result.finalPoints}`)
-        }
-
-        // Check if user leveled up from backend
-        console.log('[LevelUp] Checking result for leveledUp:', {
-          hasResult: !!result,
-          leveledUp: result?.leveledUp,
-          newLevel: result?.newLevel,
-          previousLevel: result?.previousLevel,
-          fullResult: result
-        })
-
         if (result?.leveledUp) {
-          console.log(`🎉 DISPATCHING LEVEL UP EVENT! ${result.previousLevel} → ${result.newLevel}`)
           // Dispatch custom event for LevelUpCelebration to catch
           window.dispatchEvent(new CustomEvent('levelUp', {
             detail: {
@@ -152,8 +130,6 @@ export const ChoreList: React.FC = memo(() => {
               previousLevel: result.previousLevel
             }
           }))
-        } else {
-          console.log('[LevelUp] No level up in result')
         }
 
         // Convex queries are reactive and will automatically update when the userStats table changes
@@ -225,22 +201,7 @@ export const ChoreList: React.FC = memo(() => {
 
     Promise.resolve(completeChore(choreId, currentUserId))
       .then((result: any) => {
-        console.log('✅ Chore completion result (skip photo):', result)
-        if (result && typeof result === 'object' && 'finalPoints' in result) {
-          console.log(`✅ Points awarded: ${result.finalPoints}`)
-        }
-
-        // Check if user leveled up from backend
-        console.log('[LevelUp] Checking result for leveledUp:', {
-          hasResult: !!result,
-          leveledUp: result?.leveledUp,
-          newLevel: result?.newLevel,
-          previousLevel: result?.previousLevel,
-          fullResult: result
-        })
-
         if (result?.leveledUp) {
-          console.log(`🎉 DISPATCHING LEVEL UP EVENT! ${result.previousLevel} → ${result.newLevel}`)
           // Dispatch custom event for LevelUpCelebration to catch
           window.dispatchEvent(new CustomEvent('levelUp', {
             detail: {
@@ -248,8 +209,6 @@ export const ChoreList: React.FC = memo(() => {
               previousLevel: result.previousLevel
             }
           }))
-        } else {
-          console.log('[LevelUp] No level up in result')
         }
 
         // Convex queries are reactive and will automatically update when the userStats table changes

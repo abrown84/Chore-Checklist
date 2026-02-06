@@ -15,9 +15,7 @@ export const useChoreList = ({ chores, animatingChores, completingChores }: UseC
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortByInternal] = useState<'priority' | 'difficulty' | 'dueDate' | 'custom'>('priority')
 
-  // Wrapper to log sortBy changes
   const setSortBy = useCallback((value: 'priority' | 'difficulty' | 'dueDate' | 'custom') => {
-    console.log('[useChoreList] setSortBy called with:', value)
     setSortByInternal(value)
   }, [])
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')

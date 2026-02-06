@@ -87,7 +87,6 @@ export const ChoreFilters: React.FC<ChoreFiltersProps> = ({
           <select
             value={sortBy}
             onChange={(e) => {
-              console.log('[ChoreFilters] Sort changed to:', e.target.value)
               onSortByChange(e.target.value as 'priority' | 'difficulty' | 'dueDate' | 'custom')
             }}
             className="px-3 py-2 sm:py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] bg-background"

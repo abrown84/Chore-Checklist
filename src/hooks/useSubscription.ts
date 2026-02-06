@@ -37,7 +37,6 @@ export function useSubscription(): SubscriptionState {
     billingInterval: BillingInterval
   ) => {
     if (plan === 'free') {
-      console.log('Free plan selected - no checkout needed')
       return
     }
 
