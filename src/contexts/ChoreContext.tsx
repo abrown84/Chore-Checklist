@@ -104,6 +104,20 @@ export const ChoreProvider: React.FC<ChoreProviderProps> = ({
     return []
   })
 
+  // Load demo chores when entering demo mode (after initial mount)
+  // This handles the case where isDemoMode changes from false to true
+  useEffect(() => {
+    if (isDemoMode && getDemoChores) {
+      setChores(prevChores => {
+        // Only load demo chores if we don't have any (avoids overwriting completed chores)
+        if (prevChores.length === 0) {
+          return getDemoChores()
+        }
+        return prevChores
+      })
+    }
+  }, [isDemoMode, getDemoChores])
+
   // Update chores from Convex when data is available
   useEffect(() => {
     if (!isDemoMode && convexChores && householdId) {

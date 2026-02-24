@@ -1,4 +1,4 @@
-// Security configuration for the Chore Checklist app
+// Security configuration for the Daily Bag app
 
 export const SECURITY_CONFIG = {
   // Session management

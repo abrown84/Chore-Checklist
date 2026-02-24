@@ -14,12 +14,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { X, Users, Coins, Trophy, CalendarCheck, ShieldCheck, Sparkle, Star, CaretRight, CheckCircle } from '@phosphor-icons/react'
-import { motion, useInView, type Variants } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 
-// Scroll animation variants with proper typing
-const smoothEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
+// Scroll animation variants - using 'as const' for proper type inference
+const smoothEase = [0.22, 1, 0.36, 1] as const
 
-const fadeInUp: Variants = {
+const fadeInUp = {
 	hidden: { opacity: 0, y: 40 },
 	visible: {
 		opacity: 1,
@@ -28,17 +28,16 @@ const fadeInUp: Variants = {
 	}
 }
 
-// fadeInScale available for future use
-// const fadeInScale: Variants = {
-// 	hidden: { opacity: 0, scale: 0.95 },
-// 	visible: {
-// 		opacity: 1,
-// 		scale: 1,
-// 		transition: { duration: 0.5, ease: smoothEase }
-// 	}
-// }
+const fadeInScale = {
+	hidden: { opacity: 0, scale: 0.95 },
+	visible: {
+		opacity: 1,
+		scale: 1,
+		transition: { duration: 0.5, ease: smoothEase }
+	}
+}
 
-const staggerContainer: Variants = {
+const staggerContainer = {
 	hidden: { opacity: 0 },
 	visible: {
 		opacity: 1,
@@ -49,7 +48,7 @@ const staggerContainer: Variants = {
 	}
 }
 
-const staggerItem: Variants = {
+const staggerItem = {
 	hidden: { opacity: 0, y: 30 },
 	visible: {
 		opacity: 1,
@@ -62,7 +61,7 @@ const staggerItem: Variants = {
 const ScrollReveal = ({ children, className = '', variants = fadeInUp, ...props }: {
 	children: React.ReactNode
 	className?: string
-	variants?: Variants
+	variants?: typeof fadeInUp
 	[key: string]: unknown
 }) => {
 	const ref = useRef(null)

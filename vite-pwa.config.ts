@@ -49,7 +49,7 @@ export default defineConfig({
       },
       includeAssets: ['favicon.png', 'icon-512.png'],
       manifest: {
-        name: 'Daily Bag - Chore Checklist',
+        name: 'Daily Bag',
         short_name: 'Daily Bag',
         description: 'A gamified chore checklist app to make daily tasks fun and rewarding',
         theme_color: '#8b5cf6',

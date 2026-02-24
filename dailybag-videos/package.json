@@ -1,0 +1,40 @@
+{
+  "name": "dailybag-videos",
+  "version": "1.0.0",
+  "description": "Remotion video project for Daily Bag app",
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle src/index.ts --public-dir public",
+    "render": "remotion render",
+    "render:promo": "remotion render PromoVideo out/promo.mp4",
+    "render:promo-square": "remotion render PromoVideoSquare out/promo-square.mp4",
+    "render:levelup": "remotion render LevelUp out/levelup.mp4",
+    "render:achievement": "remotion render AchievementUnlocked out/achievement.mp4",
+    "render:points": "remotion render PointsEarned out/points.mp4",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/captions": "^4.0.409",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/gif": "^4.0.409",
+    "@remotion/lottie": "^4.0.409",
+    "@remotion/media": "^4.0.409",
+    "@remotion/media-utils": "^4.0.409",
+    "@remotion/player": "^4.0.0",
+    "@remotion/tailwind": "^4.0.0",
+    "@remotion/transitions": "^4.0.409",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.0"
+  }
+}

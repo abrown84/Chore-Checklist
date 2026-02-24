@@ -1,8 +1,8 @@
-# Chore Checklist - Project Guide
+# Daily Bag - Project Guide
 
 ## Project Overview
 
-A gamified household chore management app with points, levels, redemptions, and social features. Built with React, TypeScript, Vite, Convex (backend), and Tailwind CSS.
+A gamified daily task management app with points, levels, redemptions, and social features. Built with React, TypeScript, Vite, Convex (backend), and Tailwind CSS.
 
 ## Tech Stack
 
